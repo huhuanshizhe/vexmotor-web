@@ -164,6 +164,25 @@ export async function getKnowledgeCatalog(): Promise<KnowledgeCatalog> {
   return serverFetch<KnowledgeCatalog>('/api/front/knowledge');
 }
 
+export type BoardFaqItem = {
+  id: string;
+  title: string;
+  body: string;
+};
+
+export type BoardFaqListResponse = {
+  locale: string;
+  boardKey: string;
+  items: BoardFaqItem[];
+};
+
+export async function getBoardFaqs(boardKey: string, locale?: string): Promise<BoardFaqListResponse> {
+  return serverFetch<BoardFaqListResponse>(
+    `/api/front/boards/${encodeURIComponent(boardKey)}/faqs`,
+    { locale: toLocaleHeader(locale) },
+  );
+}
+
 export async function getPressCatalog(locale = 'en'): Promise<PressCatalog> {
   return serverFetch<PressCatalog>('/api/front/press', { locale: toLocaleHeader(locale) });
 }
