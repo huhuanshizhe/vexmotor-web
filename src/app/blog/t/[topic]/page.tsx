@@ -3,12 +3,20 @@ import Link from 'next/link';
 import { StorefrontFrame } from '@/components/layout/storefront-frame';
 import { NewsletterSignupForm } from '@/components/storefront/newsletter-signup-form';
 import { JsonLdScript } from '@/components/seo/json-ld';
-import { blogProductTopicFromSlug, type BlogProductTopic } from '@/lib/blog';
+import {
+  filterBoardBlogsByProductTopic,
+  blogProductTopicFromSlug,
+  type BlogProductTopic,
+} from '@/lib/blog-taxonomy';
+import {
+  formatBoardBlogDate,
+  paginateBoardBlogPosts,
+} from '@/lib/board-blog-helpers';
 import { withLocalePath } from '@/lib/i18n';
 import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-server';
 import { buildBreadcrumbJsonLd, buildMetadata } from '@/lib/seo';
 import { SITE_URL } from '@/lib/site-config';
-import { getBlogAuthorById, getBlogCatalog, getPostsByProductTopic, paginateBlogPosts } from '@/lib/storefront-api';
+import { getBoardBlogs } from '@/lib/storefront-api';
 
 const topicDescriptions: Record<BlogProductTopic, string> = {
   'Stepper Motor': 'Technical guides, selection criteria, and application notes for Nema 8 through Nema 34 stepper motor systems.',
@@ -23,9 +31,7 @@ type TopicPageProps = {
 };
 
 export async function generateStaticParams() {
-  return Object.values(blogProductTopicFromSlug).map((topic) => ({
-    topic: Object.entries(blogProductTopicFromSlug).find(([, v]) => v === topic)?.[0] ?? topic.toLowerCase(),
-  }));
+  return Object.keys(blogProductTopicFromSlug).map((topic) => ({ topic }));
 }
 
 export async function generateMetadata({ params }: TopicPageProps) {
@@ -61,9 +67,9 @@ export default async function BlogTopicPage({ params, searchParams }: TopicPageP
     );
   }
 
-  const catalog = await getBlogCatalog(locale);
-  const topicPosts = getPostsByProductTopic(catalog, topicSlug);
-  const pagination = paginateBlogPosts(topicPosts, Number(pageParam) || 1, catalog.pageSize);
+  const blogBoard = await getBoardBlogs('blog', locale);
+  const topicPosts = filterBoardBlogsByProductTopic(blogBoard.items, topic);
+  const pagination = paginateBoardBlogPosts(topicPosts, Number(pageParam) || 1);
   const description = topicDescriptions[topic];
 
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
@@ -106,7 +112,6 @@ export default async function BlogTopicPage({ params, searchParams }: TopicPageP
       <JsonLdScript id={`blog-topic-${topicSlug}-breadcrumb`} data={breadcrumbJsonLd} />
       <JsonLdScript id={`blog-topic-${topicSlug}-collection`} data={collectionJsonLd} />
 
-      {/* ── Hero ── */}
       <section className="blog-topic-hero">
         <div className="section-inner">
           <div className="blog-topic-breadcrumb">
@@ -118,86 +123,61 @@ export default async function BlogTopicPage({ params, searchParams }: TopicPageP
         </div>
       </section>
 
-      {/* ── Content ── */}
       <section className="section">
-        <div className="section-inner blog-layout">
-          <div className="blog-main">
+        <div className="section-inner">
+          {pagination.items.length ? (
             <div className="blog-card-grid">
-              {pagination.items.map((post) => {
-                const author = getBlogAuthorById(catalog, post.authorId);
-                return (
-                  <article key={post.slug} className="blog-card">
-                    <a href={withLocalePath(`/blog/${post.slug}`, locale)} className="blog-card-cover-wrap">
-                      <img src={withLocalePath(`/blog/cover/${post.slug}`, locale)} alt={post.coverAlt} className="blog-card-cover" />
-                    </a>
-                    <div className="blog-card-body">
-                      <div className="blog-card-meta-row">
-                        <span className="blog-category-chip">{post.category}</span>
-                        <span className="blog-meta-text">{post.readMinutes} min</span>
-                      </div>
-                      <h3 className="blog-card-title">
-                        <Link href={withLocalePath(`/blog/${post.slug}`, locale)}>{post.title}</Link>
-                      </h3>
-                      <p className="blog-card-summary">{post.summary}</p>
-                      <div className="blog-card-footer">
-                        <span className="blog-author-name">{author?.name}</span>
-                        <span className="blog-meta-text">{new Date(post.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                      </div>
+              {pagination.items.map((post) => (
+                <article key={post.slug} className="blog-card">
+                  <a href={withLocalePath(`/blog/${post.slug}`, locale)} className="blog-card-cover-wrap">
+                    <img src={withLocalePath(`/blog/cover/${post.slug}`, locale)} alt={post.title} className="blog-card-cover" />
+                  </a>
+                  <div className="blog-card-body">
+                    <div className="blog-card-meta-row">
+                      {post.category ? <span className="blog-category-chip">{post.category}</span> : null}
                     </div>
-                  </article>
+                    <h2 className="blog-card-title">
+                      <Link href={withLocalePath(`/blog/${post.slug}`, locale)}>{post.title}</Link>
+                    </h2>
+                    {post.summary ? <p className="blog-card-summary">{post.summary}</p> : null}
+                    <div className="blog-card-footer">
+                      {post.author.name ? <span className="blog-author-name">{post.author.name}</span> : null}
+                      <span className="blog-meta-text">
+                        {formatBoardBlogDate(post.publishedAt, locale, { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="section-description">No articles tagged with this topic yet.</p>
+          )}
+
+          {pagination.totalPages > 1 ? (
+            <nav className="blog-pagination" aria-label="Topic pagination">
+              {Array.from({ length: pagination.totalPages }, (_, index) => {
+                const pageNum = String(index + 1);
+                const isActive = pageNum === String(pagination.page);
+                return (
+                  <Link
+                    key={pageNum}
+                    href={buildTopicHref(pageNum)}
+                    className={isActive ? 'blog-page-link is-active' : 'blog-page-link'}
+                    aria-current={isActive ? 'page' : undefined}
+                  >
+                    {pageNum}
+                  </Link>
                 );
               })}
-            </div>
+            </nav>
+          ) : null}
+        </div>
+      </section>
 
-            {pagination.items.length === 0 ? (
-              <div className="blog-empty-state">
-                <p>{t('blog.noArticlesTopic')}</p>
-                <Link href={withLocalePath('/blog', locale)} className="blog-clear-link">{t('blog.browseAll')}</Link>
-              </div>
-            ) : null}
-
-            {pagination.totalPages > 1 ? (
-              <div className="blog-pagination">
-                {Array.from({ length: pagination.totalPages }, (_, index) => {
-                  const pageNumber = String(index + 1);
-                  const isActive = pagination.page === index + 1;
-                  return (
-                    <Link
-                      key={pageNumber}
-                      href={buildTopicHref(pageNumber)}
-                      className={`blog-page-btn${isActive ? ' is-active' : ''}`}
-                      aria-current={isActive ? 'page' : undefined}
-                    >
-                      {pageNumber}
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : null}
-          </div>
-
-          {/* ── Sidebar ── */}
-          <aside className="blog-sidebar">
-            <div className="blog-sidebar-card">
-              <h3 className="blog-sidebar-heading">{t('blog.subscribe')}</h3>
-              <p className="blog-sidebar-text">Get new {topic.toLowerCase()} articles in your inbox.</p>
-              <NewsletterSignupForm placeholder="Work email" buttonLabel="Subscribe" />
-            </div>
-
-            <div className="blog-sidebar-card">
-              <h3 className="blog-sidebar-heading">{t('blog.otherTopics')}</h3>
-              <div className="blog-sidebar-list">
-                {Object.entries(blogProductTopicFromSlug)
-                  .filter(([, topicValue]) => topicValue !== topic)
-                  .map(([slug, topicValue]) => (
-                    <Link key={slug} href={withLocalePath(`/blog/${slug}`, locale)} className="blog-sidebar-link">
-                      <strong>{topicValue}</strong>
-                      <span className="blog-meta-text">{catalog.posts.filter((p) => p.productTopics.includes(topicValue)).length} {t('blog.articles')}</span>
-                    </Link>
-                  ))}
-              </div>
-            </div>
-          </aside>
+      <section className="section">
+        <div className="section-inner">
+          <NewsletterSignupForm placeholder="Work email" buttonLabel="Subscribe" />
         </div>
       </section>
     </StorefrontFrame>

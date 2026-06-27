@@ -1,5 +1,4 @@
 import { serverFetch } from '@/lib/api-client';
-import type { BlogPost } from '@/lib/blog';
 import type { CommerceConfig } from '@/lib/commerce-config';
 import type { GlossaryTerm, StorefrontFaq, TechFaqCategory, TechFaqEntry } from '@/lib/knowledge';
 import type { PressRelease } from '@/lib/press';
@@ -29,25 +28,6 @@ export type {
   StorefrontCompatibleGroup,
   SupportPage,
 } from './storefront-types';
-
-export type {
-  BlogCatalog,
-  BlogFilters,
-} from './blog-helpers';
-
-export {
-  filterBlogPosts,
-  getBlogAuthorById,
-  getBlogPostBySlug as findBlogPostInCatalog,
-  getBlogYears,
-  getCategoryCounts,
-  getMostReadPosts,
-  getPostsByProductTopic,
-  getProductTopicBySlug,
-  getProductTopicCounts,
-  getRelatedPosts,
-  paginateBlogPosts,
-} from './blog-helpers';
 
 export type SupportCatalog = {
   sourceMode: 'code-seeded' | 'admin-managed';
@@ -128,25 +108,6 @@ export async function getCommerceConfig(): Promise<CommerceConfig> {
   return serverFetch<CommerceConfig>('/api/front/commerce');
 }
 
-export async function getBlogCatalog(locale = 'en'): Promise<import('./blog-helpers').BlogCatalog> {
-  return serverFetch('/api/front/blog', { locale: toLocaleHeader(locale) });
-}
-
-export async function getPublishedBlogPosts(locale = 'en') {
-  const catalog = await getBlogCatalog(locale);
-  return catalog.posts;
-}
-
-export async function getBlogPostBySlug(slug: string, locale = 'en'): Promise<BlogPost | null> {
-  try {
-    return await serverFetch<BlogPost>(`/api/front/blog/${encodeURIComponent(slug)}`, { locale: toLocaleHeader(locale) });
-  } catch {
-    const catalog = await getBlogCatalog(locale);
-    const { getBlogPostBySlug: findInCatalog } = await import('./blog-helpers');
-    return findInCatalog(catalog, slug) ?? null;
-  }
-}
-
 export async function getSupportCatalog(): Promise<SupportCatalog> {
   return serverFetch<SupportCatalog>('/api/front/support');
 }
@@ -181,6 +142,90 @@ export async function getBoardFaqs(boardKey: string, locale?: string): Promise<B
     `/api/front/boards/${encodeURIComponent(boardKey)}/faqs`,
     { locale: toLocaleHeader(locale) },
   );
+}
+
+export type BoardBlogAuthor = {
+  name: string | null;
+  title: string | null;
+  bio: string | null;
+};
+
+export type BoardBlogItem = {
+  id: string;
+  title: string;
+  summary: string | null;
+  slug: string;
+  category: string | null;
+  categorySlug: string | null;
+  coverStyle: number | null;
+  author: BoardBlogAuthor;
+  tags: string[];
+  publishedAt: string | null;
+};
+
+export type BoardBlogListResponse = {
+  locale: string;
+  boardKey: string;
+  items: BoardBlogItem[];
+};
+
+export type BlogCategoryItem = {
+  label: string;
+  slug: string;
+};
+
+export type BlogCategoriesResponse = {
+  items: BlogCategoryItem[];
+};
+
+export type StorefrontBlogDetail = {
+  id: string;
+  title: string;
+  summary: string | null;
+  body: string;
+  slug: string;
+  category: string | null;
+  categorySlug: string | null;
+  coverStyle: number | null;
+  author: BoardBlogAuthor;
+  seo: {
+    title: string | null;
+    description: string | null;
+  };
+  publishedAt: string | null;
+  boardKeys: string[];
+  tags: string[];
+  relatedProductSlugs: string[];
+};
+
+export async function getBoardBlogs(boardKey: string, locale?: string): Promise<BoardBlogListResponse> {
+  return serverFetch<BoardBlogListResponse>(
+    `/api/front/boards/${encodeURIComponent(boardKey)}/blogs`,
+    { locale: toLocaleHeader(locale) },
+  );
+}
+
+export async function getBlogCategories(): Promise<BlogCategoriesResponse> {
+  return serverFetch<BlogCategoriesResponse>('/api/front/blog/categories');
+}
+
+export async function getStorefrontBlogDetail(slug: string, locale?: string): Promise<StorefrontBlogDetail | null> {
+  try {
+    return await serverFetch<StorefrontBlogDetail>(`/api/front/blog/${encodeURIComponent(slug)}`, {
+      locale: toLocaleHeader(locale),
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function getPublishedBlogPosts(locale = 'en'): Promise<BoardBlogItem[]> {
+  const board = await getBoardBlogs('blog', locale);
+  return board.items;
+}
+
+export async function getBlogPostBySlug(slug: string, locale = 'en'): Promise<StorefrontBlogDetail | null> {
+  return getStorefrontBlogDetail(slug, locale);
 }
 
 export async function getPressCatalog(locale = 'en'): Promise<PressCatalog> {

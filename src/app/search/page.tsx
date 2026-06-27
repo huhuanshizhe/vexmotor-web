@@ -101,10 +101,10 @@ export default async function SearchPage({
     ...blogPosts.map((post) => ({
       id: `blog-${post.slug}`,
       title: post.title,
-      description: post.summary,
+      description: post.summary ?? '',
       href: withLocalePath(`/blog/${post.slug}`, preferences.locale),
-      meta: `Blog · ${post.category}`,
-      haystack: `${post.title} ${post.summary} ${post.lead} ${post.category} ${post.productTopics.join(' ')} ${post.industry}`.toLowerCase(),
+      meta: `Blog · ${post.category ?? 'Article'}`,
+      haystack: `${post.title} ${post.summary ?? ''} ${post.category ?? ''} ${post.tags.join(' ')} ${post.author.name ?? ''}`.toLowerCase(),
     })),
     ...applicationCaseStudies.map((caseStudy) => ({
       id: `application-${caseStudy.slug}`,
@@ -297,7 +297,7 @@ export default async function SearchPage({
                   <Link key={resource.id} href={resource.href} className="pdp-doc-card">
                     <span className="pdp-doc-card-meta">{resource.meta}</span>
                     <strong>{highlightText(resource.title, query)}</strong>
-                    <p className="section-description compact-copy">{highlightText(resource.description, query)}</p>
+                    <p className="section-description compact-copy">{highlightText(resource.description ?? '', query)}</p>
                   </Link>
                 ))}
               </div>

@@ -9,7 +9,8 @@ import { withLocalePath } from '@/lib/i18n';
 import { getServerSitePreferences } from '@/lib/i18n-server';
 import { buildMetadata, buildWebsiteJsonLd } from '@/lib/seo';
 import { solutionIndustries } from '@/lib/solutions';
-import { getBlogCatalog } from '@/lib/storefront-api';
+import { getBoardBlogs } from '@/lib/storefront-api';
+import { getRecentBoardBlogPosts } from '@/lib/board-blog-helpers';
 import { getCategories, getHomeData, getProductList } from '@/lib/storefront-api';
 
 export async function generateMetadata() {
@@ -69,11 +70,11 @@ export default async function HomePage() {
   const preferences = await getServerSitePreferences();
   const locale = preferences.locale;
 
-  const [homeData, categories, featuredResult, blogCatalog] = await Promise.all([
+  const [homeData, categories, featuredResult, blogBoard] = await Promise.all([
     getHomeData(),
     getCategories(),
     getProductList({ purchaseMode: 'buy', pageSize: 8, sort: 'featured' }),
-    getBlogCatalog(locale),
+    getBoardBlogs('blog', locale),
   ]);
 
   const categoryTiles = [
@@ -89,9 +90,7 @@ export default async function HomePage() {
     .slice(0, 15); // 3 排 x 5 列 = 15 个
   const featuredIndustries = solutionIndustries.slice(0, 6);
   const featuredProducts = featuredResult.items.slice(0, 8);
-  const latestArticles = [...blogCatalog.posts]
-    .sort((left, right) => new Date(right.publishedAt).getTime() - new Date(left.publishedAt).getTime())
-    .slice(0, 4);
+  const latestArticles = getRecentBoardBlogPosts(blogBoard.items, 4);
   const dateFormatter = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
   return (
@@ -345,8 +344,8 @@ export default async function HomePage() {
                 <h3>
                   <Link href={withLocalePath(`/blog/${article.slug}`, locale)}>{article.title}</Link>
                 </h3>
-                <p className="section-description compact-copy">{article.summary}</p>
-                <p className="product-meta">{formatPublishedDate(article.publishedAt, dateFormatter)} · {article.readMinutes} min read</p>
+                <p className="section-description compact-copy">{article.summary ?? ''}</p>
+                <p className="product-meta">{article.publishedAt ? formatPublishedDate(article.publishedAt, dateFormatter) : 'Date TBD'}</p>
               </article>
             ))}
           </div>

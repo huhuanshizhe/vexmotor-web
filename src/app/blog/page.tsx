@@ -3,20 +3,18 @@ import Link from 'next/link';
 import { StorefrontFrame } from '@/components/layout/storefront-frame';
 import { NewsletterSignupForm } from '@/components/storefront/newsletter-signup-form';
 import { JsonLdScript } from '@/components/seo/json-ld';
-import { blogCategorySlug } from '@/lib/blog';
+import {
+  filterBoardBlogPosts,
+  formatBoardBlogDate,
+  getBoardCategoryCounts,
+  getRecentBoardBlogPosts,
+  paginateBoardBlogPosts,
+} from '@/lib/board-blog-helpers';
 import { withLocalePath } from '@/lib/i18n';
 import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-server';
 import { buildBreadcrumbJsonLd, buildMetadata } from '@/lib/seo';
 import { SITE_URL } from '@/lib/site-config';
-import {
-  getBlogAuthorById,
-  getBlogCatalog,
-  getCategoryCounts,
-  getMostReadPosts,
-  getProductTopicCounts,
-  paginateBlogPosts,
-  filterBlogPosts,
-} from '@/lib/storefront-api';
+import { getBoardBlogs, getBlogCategories } from '@/lib/storefront-api';
 
 type BlogPageProps = {
   searchParams: Promise<{
@@ -40,25 +38,27 @@ export async function generateMetadata() {
 export default async function BlogPage({ searchParams }: BlogPageProps) {
   const [{ locale }, params] = await Promise.all([getServerSitePreferences(), searchParams]);
   const { t } = getServerTranslations(locale);
-  const catalog = await getBlogCatalog(locale);
+  const [blogBoard, blogCategories] = await Promise.all([
+    getBoardBlogs('blog', locale),
+    getBlogCategories(),
+  ]);
+  const items = blogBoard.items;
 
   const filters = {
     query: params.q?.trim() || undefined,
-    category: params.category?.trim() || undefined,
+    categorySlug: params.category?.trim() || undefined,
   };
-  const filteredPosts = filterBlogPosts(catalog, filters);
-  const pagination = paginateBlogPosts(filteredPosts, Number(params.page) || 1, catalog.pageSize);
-  const categoryCounts = getCategoryCounts(catalog);
-  const productTopicCounts = getProductTopicCounts(catalog);
+  const filteredPosts = filterBoardBlogPosts(items, filters);
+  const pagination = paginateBoardBlogPosts(filteredPosts, Number(params.page) || 1);
+  const categoryCounts = getBoardCategoryCounts(blogCategories.items, items);
 
-  // Featured post: latest published post (only show when no filter is active)
-  const isFiltered = Boolean(filters.query || filters.category);
-  const featuredPost = !isFiltered && catalog.posts.length > 0 ? catalog.posts[0] : null;
+  const isFiltered = Boolean(filters.query || filters.categorySlug);
+  const featuredPost = !isFiltered && items.length > 0 ? items[0] : null;
   const displayPosts = featuredPost
     ? pagination.items.filter((post) => post.slug !== featuredPost.slug)
     : pagination.items;
 
-  const mostReadPosts = getMostReadPosts(catalog, 5);
+  const recentPosts = getRecentBoardBlogPosts(items, 5);
 
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: 'Home', path: '/' },
@@ -80,12 +80,12 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
     blogPost: pagination.items.map((post) => ({
       '@type': 'BlogPosting',
       headline: post.title,
-      description: post.seoDescription ?? post.summary,
-      inLanguage: post.locale,
-      articleSection: post.category,
-      keywords: [post.category, ...post.productTopics, post.industry].join(', '),
+      description: post.summary ?? '',
+      inLanguage: locale,
+      articleSection: post.category ?? undefined,
+      keywords: post.category ?? undefined,
       url: `${SITE_URL}${withLocalePath(`/blog/${post.slug}`, locale)}`,
-      datePublished: post.publishedAt,
+      datePublished: post.publishedAt ?? undefined,
     })),
   };
 
@@ -111,7 +111,6 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
       <JsonLdScript id="blog-index-breadcrumb-jsonld" data={breadcrumbJsonLd} />
       <JsonLdScript id="blog-index-jsonld" data={blogJsonLd} />
 
-      {/* ── Hero ── */}
       <section className="blog-hero">
         <div className="section-inner">
           <span className="blog-hero-eyebrow">{t('blog.knowledgeCenter')}</span>
@@ -132,7 +131,6 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
         </div>
       </section>
 
-      {/* ── Category tabs ── */}
       <nav className="blog-category-tabs">
         <div className="section-inner blog-tabs-inner">
           <Link
@@ -154,63 +152,82 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
         </div>
       </nav>
 
-      {/* ── Main content ── */}
       <section className="section">
         <div className="section-inner blog-layout">
           <div className="blog-main">
-            {/* Featured post */}
             {featuredPost ? (
               <article className="blog-featured-card">
                 <a href={withLocalePath(`/blog/${featuredPost.slug}`, locale)} className="blog-featured-cover-wrap">
-                  <img src={withLocalePath(`/blog/cover/${featuredPost.slug}`, locale)} alt={featuredPost.coverAlt} className="blog-featured-cover" />
+                  <img
+                    src={withLocalePath(`/blog/cover/${featuredPost.slug}`, locale)}
+                    alt={featuredPost.title}
+                    className="blog-featured-cover"
+                  />
                 </a>
                 <div className="blog-featured-body">
                   <div className="blog-card-meta-row">
-                    <span className="blog-category-chip">{featuredPost.category}</span>
-                    <span className="blog-meta-sep">·</span>
-                    <span className="blog-meta-text">{featuredPost.readMinutes} {t('blog.minRead')}</span>
-                    <span className="blog-meta-sep">·</span>
-                    <span className="blog-meta-text">{new Date(featuredPost.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                    {featuredPost.category ? <span className="blog-category-chip">{featuredPost.category}</span> : null}
+                    {featuredPost.publishedAt ? (
+                      <>
+                        {featuredPost.category ? <span className="blog-meta-sep">·</span> : null}
+                        <span className="blog-meta-text">
+                          {formatBoardBlogDate(featuredPost.publishedAt, locale, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </span>
+                      </>
+                    ) : null}
                   </div>
                   <h2 className="blog-featured-title">
                     <Link href={withLocalePath(`/blog/${featuredPost.slug}`, locale)}>{featuredPost.title}</Link>
                   </h2>
-                  <p className="blog-featured-summary">{featuredPost.summary}</p>
-                  <div className="blog-featured-footer">
-                    <span className="blog-author-name">{getBlogAuthorById(catalog, featuredPost.authorId)?.name}</span>
-                    <span className="blog-meta-sep">·</span>
-                    <span className="blog-meta-text">{featuredPost.industry}</span>
-                  </div>
+                  {featuredPost.summary ? <p className="blog-featured-summary">{featuredPost.summary}</p> : null}
+                  {featuredPost.author.name ? (
+                    <div className="blog-featured-footer">
+                      <span className="blog-author-name">{featuredPost.author.name}</span>
+                      {featuredPost.author.title ?? featuredPost.category ? (
+                        <>
+                          <span className="blog-meta-sep">·</span>
+                          <span>{featuredPost.author.title ?? featuredPost.category}</span>
+                        </>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               </article>
             ) : null}
 
-            {/* Article grid */}
             <div className="blog-card-grid">
-              {displayPosts.map((post) => {
-                const author = getBlogAuthorById(catalog, post.authorId);
-                return (
-                  <article key={post.slug} className="blog-card">
-                    <a href={withLocalePath(`/blog/${post.slug}`, locale)} className="blog-card-cover-wrap">
-                      <img src={withLocalePath(`/blog/cover/${post.slug}`, locale)} alt={post.coverAlt} className="blog-card-cover" />
-                    </a>
-                    <div className="blog-card-body">
-                      <div className="blog-card-meta-row">
-                        <span className="blog-category-chip">{post.category}</span>
-                        <span className="blog-meta-text">{post.readMinutes} min</span>
-                      </div>
-                      <h3 className="blog-card-title">
-                        <Link href={withLocalePath(`/blog/${post.slug}`, locale)}>{post.title}</Link>
-                      </h3>
-                      <p className="blog-card-summary">{post.summary}</p>
-                      <div className="blog-card-footer">
-                        <span className="blog-author-name">{author?.name}</span>
-                        <span className="blog-meta-text">{new Date(post.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                      </div>
+              {displayPosts.map((post) => (
+                <article key={post.slug} className="blog-card">
+                  <a href={withLocalePath(`/blog/${post.slug}`, locale)} className="blog-card-cover-wrap">
+                    <img
+                      src={withLocalePath(`/blog/cover/${post.slug}`, locale)}
+                      alt={post.title}
+                      className="blog-card-cover"
+                    />
+                  </a>
+                  <div className="blog-card-body">
+                    <div className="blog-card-meta-row">
+                      {post.category ? <span className="blog-category-chip">{post.category}</span> : null}
                     </div>
-                  </article>
-                );
-              })}
+                    <h3 className="blog-card-title">
+                      <Link href={withLocalePath(`/blog/${post.slug}`, locale)}>{post.title}</Link>
+                    </h3>
+                    {post.summary ? <p className="blog-card-summary">{post.summary}</p> : null}
+                    <div className="blog-card-footer">
+                      {post.author.name ? <span className="blog-author-name">{post.author.name}</span> : null}
+                      {post.publishedAt ? (
+                        <span className="blog-meta-text">
+                          {formatBoardBlogDate(post.publishedAt, locale, { month: 'short', day: 'numeric' })}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                </article>
+              ))}
             </div>
 
             {displayPosts.length === 0 ? (
@@ -220,7 +237,6 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
               </div>
             ) : null}
 
-            {/* Pagination */}
             {pagination.totalPages > 1 ? (
               <div className="blog-pagination">
                 {Array.from({ length: pagination.totalPages }, (_, index) => {
@@ -241,51 +257,38 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
             ) : null}
           </div>
 
-          {/* ── Sidebar ── */}
           <aside className="blog-sidebar">
-            {/* Subscribe */}
             <div className="blog-sidebar-card">
               <h3 className="blog-sidebar-heading">{t('blog.subscribe')}</h3>
               <p className="blog-sidebar-text">{t('blog.subscribeDesc')}</p>
               <NewsletterSignupForm placeholder="Work email" buttonLabel="Subscribe" />
             </div>
 
-            {/* Most read */}
             <div className="blog-sidebar-card">
-              <h3 className="blog-sidebar-heading">{t('blog.mostRead')}</h3>
+              <h3 className="blog-sidebar-heading">Recent Posts</h3>
               <div className="blog-sidebar-list">
-                {mostReadPosts.map((post, index) => (
+                {recentPosts.map((post, index) => (
                   <Link key={post.slug} href={withLocalePath(`/blog/${post.slug}`, locale)} className="blog-sidebar-link">
                     <span className="blog-sidebar-rank">{index + 1}</span>
                     <span className="blog-sidebar-link-text">
                       <strong>{post.title}</strong>
-                      <span className="blog-meta-text">{post.viewCount.toLocaleString()} reads</span>
+                      {post.publishedAt ? (
+                        <span className="blog-meta-text">
+                          {formatBoardBlogDate(post.publishedAt, locale, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      ) : null}
                     </span>
                   </Link>
                 ))}
               </div>
             </div>
 
-            {/* Categories */}
             <div className="blog-sidebar-card">
               <h3 className="blog-sidebar-heading">{t('blog.categories')}</h3>
               <div className="blog-sidebar-list">
                 {categoryCounts.map(({ category, slug, count }) => (
                   <Link key={slug} href={buildBlogHref({ category: slug, page: '1' })} className="blog-sidebar-link">
                     <strong>{category}</strong>
-                    <span className="blog-meta-text">{count} {t('blog.articles')}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Product Topics */}
-            <div className="blog-sidebar-card">
-              <h3 className="blog-sidebar-heading">{t('blog.byProduct')}</h3>
-              <div className="blog-sidebar-list">
-                {productTopicCounts.map(({ topic, slug, count }) => (
-                  <Link key={slug} href={withLocalePath(`/blog/t/${slug}`, locale)} className="blog-sidebar-link">
-                    <strong>{topic}</strong>
                     <span className="blog-meta-text">{count} {t('blog.articles')}</span>
                   </Link>
                 ))}
