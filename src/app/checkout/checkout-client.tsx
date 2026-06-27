@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 
 import { useAuth } from '@/components/providers/auth-provider';
 import { apiFetch } from '@/lib/api-client';
+import { register as authRegister } from '@/lib/auth-client';
 import { fetchAddresses, fetchCart } from '@/lib/account-api';
 import { calculateOrderPricing, getShippingCountryOptions, type CommerceConfig } from '@/lib/commerce-config';
 import { useTranslation } from '@/lib/i18n-context';
@@ -119,7 +120,8 @@ export function CheckoutClient({
   guestMode?: boolean;
   commerceConfig: CommerceConfig;
 }) {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
+  const isGuestCheckout = guestMode && !user;
   const { t } = useTranslation();
   const router = useRouter();
   const [cart, setCart] = useState<CartDetail | null>(initialCart);
@@ -166,6 +168,7 @@ export function CheckoutClient({
   const [showQuickSignup, setShowQuickSignup] = useState(false);
   const [quickSignupFields, setQuickSignupFields] = useState({ firstName: '', lastName: '', email: '', password: '' });
   const [signupMessage, setSignupMessage] = useState<string | null>(null);
+  const [signupSuccess, setSignupSuccess] = useState(false);
 
   const paymentOptions = [
     {
@@ -188,7 +191,7 @@ export function CheckoutClient({
   const effectiveBillingAddressId = billingSameAsShipping ? shippingAddressId : billingAddressId;
   const selectedShipping = addresses.find((item) => item.id === shippingAddressId) ?? selectedShippingAddress;
   const shippingCountryOptions = getShippingCountryOptions(commerceConfig);
-  const activeCountryCode = (guestMode ? guestShippingAddress.countryCode : selectedShipping?.countryCode ?? '').trim().toUpperCase() || commerceConfig.defaultCountryCode;
+  const activeCountryCode = (isGuestCheckout ? guestShippingAddress.countryCode : selectedShipping?.countryCode ?? '').trim().toUpperCase() || commerceConfig.defaultCountryCode;
   const checkoutPricing = calculateOrderPricing(commerceConfig, {
     subtotal: cart?.subtotal.amount ?? 0,
     discountAmount: cart?.discount.amount ?? 0,
@@ -198,8 +201,8 @@ export function CheckoutClient({
   const shippingOptions = checkoutPricing.availableShippingOptions;
   const selectedShippingOption = checkoutPricing.selectedShippingOption;
   const taxIdRequired = isEuCountry(activeCountryCode) && tradeTerm !== 'EXW';
-  const contactComplete = guestMode ? Boolean(contactEmail.trim()) : true;
-  const addressComplete = guestMode
+  const contactComplete = isGuestCheckout ? Boolean(contactEmail.trim()) : true;
+  const addressComplete = isGuestCheckout
     ? isAddressComplete(guestShippingAddress) && (billingSameAsShipping || isAddressComplete(guestBillingAddress))
     : Boolean(shippingAddressId && effectiveBillingAddressId);
   const shippingComplete = Boolean(selectedShippingOption);
@@ -248,7 +251,7 @@ export function CheckoutClient({
         order = await apiFetch('/api/front/checkout/orders', {
           method: 'POST',
           body: JSON.stringify({
-            ...(guestMode
+            ...(isGuestCheckout
               ? {
                   shippingAddress: normalizeAddress({
                     ...guestShippingAddress,
@@ -288,7 +291,7 @@ export function CheckoutClient({
             method: 'POST',
             body: JSON.stringify({
               orderNumber: order.orderNumber,
-              customerEmail: guestMode ? contactEmail.trim().toLowerCase() : undefined,
+              customerEmail: isGuestCheckout ? contactEmail.trim().toLowerCase() : undefined,
             }),
           });
 
@@ -348,15 +351,15 @@ export function CheckoutClient({
         <article className="info-card checkout-account-bar" id="checkout-contact">
           <div>
             <div className="card-kicker">Account state</div>
-            <h2 className="cart-section-title">{guestMode ? 'Continue as guest or sign in for saved addresses' : 'Signed-in checkout with saved address book access'}</h2>
+            <h2 className="cart-section-title">{isGuestCheckout ? 'Continue as guest or sign in for saved addresses' : 'Signed-in checkout with saved address book access'}</h2>
             <p className="section-description">
-              {guestMode
+              {isGuestCheckout
                 ? 'Guest checkout now keeps a buyer contact section at the top, while sign-in remains the faster path for saved addresses and future order tracking.'
                 : 'Your saved address book can drive shipping and billing snapshots without leaving checkout.'}
             </p>
           </div>
 
-          {guestMode ? (
+          {isGuestCheckout ? (
             <div className="checkout-account-actions">
               <a href="/login?callbackUrl=/checkout" className="button-secondary">Sign in for saved addresses</a>
               <button type="button" className="nav-link" onClick={() => setShowQuickSignup(!showQuickSignup)}>
@@ -386,28 +389,32 @@ export function CheckoutClient({
                   <button type="button" className="button-secondary" onClick={() => {
                     startTransition(async () => {
                       setSignupMessage(null);
+                      setSignupSuccess(false);
                       try {
-                        await apiFetch('/api/front/auth/register', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            _quick: true,
-                            email: quickSignupFields.email || contactEmail,
-                            password: quickSignupFields.password,
-                            firstName: quickSignupFields.firstName,
-                            lastName: quickSignupFields.lastName,
-                          }),
+                        await authRegister({
+                          _quick: true,
+                          email: (quickSignupFields.email || contactEmail).trim().toLowerCase(),
+                          password: quickSignupFields.password,
+                          firstName: quickSignupFields.firstName.trim(),
+                          lastName: quickSignupFields.lastName.trim(),
                         });
-                        setSignupMessage('Account created! Sign in to save your address.');
+                        await refreshProfile();
+                        setSignupSuccess(true);
+                        setSignupMessage('Account created. Saved addresses are now available on this checkout.');
                         setShowQuickSignup(false);
                       } catch (error) {
+                        setSignupSuccess(false);
                         setSignupMessage(error instanceof Error ? error.message : 'Unable to create account.');
                       }
                     });
                   }} disabled={isPending}>
                     {isPending ? 'Creating...' : 'Create Account'}
                   </button>
-                  {signupMessage ? <p className="form-feedback form-feedback-error">{signupMessage}</p> : null}
+                  {signupMessage ? (
+                    <p className={`form-feedback ${signupSuccess ? 'form-feedback-success' : 'form-feedback-error'}`} role="status">
+                      {signupMessage}
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
               <span className="section-description">Guest checkout stays available for first-time buyers.</span>
@@ -419,7 +426,7 @@ export function CheckoutClient({
             </div>
           )}
 
-          {guestMode ? (
+          {isGuestCheckout ? (
             <div className="inquiry-form-grid checkout-reference-grid">
               <label className="form-field">
                 <span>Contact email</span>
@@ -448,12 +455,12 @@ export function CheckoutClient({
             <div>
               <h2 className="cart-section-title">{t('checkout.shippingAddress')}</h2>
               <p className="section-description">
-                {guestMode
+                {isGuestCheckout
                   ? 'Enter the delivery contact and destination for this guest wholesale order.'
                   : 'Pick the warehouse destination and buyer contact the order should follow.'}
               </p>
             </div>
-            {guestMode ? (
+            {isGuestCheckout ? (
               <a href="/login?callbackUrl=/checkout" className="nav-link">
                 Sign in instead
               </a>
@@ -464,7 +471,7 @@ export function CheckoutClient({
             )}
           </div>
 
-          {guestMode ? (
+          {isGuestCheckout ? (
             <div className="inquiry-form-grid checkout-reference-grid">
               <label className="form-field">
                 <span>First Name</span>
@@ -552,7 +559,7 @@ export function CheckoutClient({
           </label>
 
           {!billingSameAsShipping ? (
-            guestMode ? (
+            isGuestCheckout ? (
               <div className="inquiry-form-grid checkout-reference-grid">
                 <label className="form-field">
                   <span>Billing First Name</span>
@@ -778,7 +785,7 @@ export function CheckoutClient({
 
           <div className="checkout-summary-note">
             <strong>{selectedShippingOption?.title ?? shippingMethod}</strong>
-            <span className="section-description">{paymentMethod} · {tradeTerm} · {guestMode ? 'Guest checkout' : 'Account checkout'}</span>
+            <span className="section-description">{paymentMethod} · {tradeTerm} · {isGuestCheckout ? 'Guest checkout' : 'Account checkout'}</span>
           </div>
 
           <div className="support-list">

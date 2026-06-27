@@ -1,218 +1,112 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { DownOutlined, GlobalOutlined, CheckOutlined } from '@ant-design/icons';
-import { useTranslation, AVAILABLE_LOCALES } from '@/lib/i18n-context';
-import { type Locale } from '@/lib/i18n';
-import { withLocalePath } from '@/lib/i18n';
-import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+
+import { useTranslation } from '@/lib/i18n-context';
+import { LOCALE_MARKET_OPTIONS, type Locale } from '@/lib/i18n';
+
+function GlobeIcon() {
+  return (
+    <svg className="locale-switcher-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M3 12h18" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M12 3c2.5 3 3.8 6 3.8 9s-1.3 6-3.8 9" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M12 3c-2.5 3-3.8 6-3.8 9s1.3 6 3.8 9" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg className={`locale-switcher-chevron${open ? ' is-open' : ''}`} viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 export function LanguageSwitcher() {
-  const { locale, setLocale } = useTranslation();
+  const { locale, setLocale, t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const pathname = usePathname();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const current = LOCALE_MARKET_OPTIONS.find((item) => item.code === locale) ?? LOCALE_MARKET_OPTIONS[0];
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Close dropdown on escape key
-  useEffect(() => {
     function handleEscape(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         setIsOpen(false);
       }
     }
 
+    document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
   }, []);
 
-  const handleLocaleChange = (newLocale: Locale) => {
+  const handleSelect = (nextLocale: Locale) => {
     setIsOpen(false);
-    // setLocale() handles cookie, router.push, and router.refresh
-    setLocale(newLocale);
+    if (nextLocale !== locale) {
+      setLocale(nextLocale);
+    }
   };
 
-  const currentLocale = AVAILABLE_LOCALES.find(l => l.code === locale);
-
   return (
-    <div className="language-switcher" ref={dropdownRef}>
+    <div className="locale-switcher" ref={rootRef}>
       <button
         type="button"
-        className="language-switcher-button"
-        onClick={() => setIsOpen(!isOpen)}
+        className="locale-switcher-trigger"
+        onClick={() => setIsOpen((value) => !value)}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        aria-label="Select language"
+        aria-label={t('header.selectLanguage')}
       >
-        <GlobalOutlined style={{ fontSize: '16px' }} />
-        <span className="language-switcher-label">
-          {currentLocale?.flag} {currentLocale?.label}
+        <GlobeIcon />
+        <span className="locale-switcher-trigger-copy">
+          <span className="locale-switcher-trigger-label">{current.label}</span>
+          <span className="locale-switcher-trigger-meta">{current.currency}</span>
         </span>
-        <DownOutlined style={{ fontSize: '12px' }} />
+        <ChevronIcon open={isOpen} />
       </button>
 
-      {isOpen && (
-        <div className="language-dropdown" role="listbox">
-          {AVAILABLE_LOCALES.map((lang) => (
-            <button
-              key={lang.code}
-              type="button"
-              className={`language-dropdown-item ${locale === lang.code ? 'is-active' : ''}`}
-              onClick={() => handleLocaleChange(lang.code)}
-              role="option"
-              aria-selected={locale === lang.code}
-            >
-              <span className="language-flag">{lang.flag}</span>
-              <span className="language-name">{lang.label}</span>
-              {locale === lang.code && (
-                <CheckOutlined style={{ fontSize: '14px', color: 'var(--brand-600)' }} />
-              )}
-            </button>
-          ))}
+      {isOpen ? (
+        <div className="locale-switcher-menu" role="listbox" aria-label={t('header.selectLanguage')}>
+          <div className="locale-switcher-menu-head">{t('header.language')}</div>
+          {LOCALE_MARKET_OPTIONS.map((option) => {
+            const active = option.code === locale;
+
+            return (
+              <button
+                key={option.code}
+                type="button"
+                role="option"
+                aria-selected={active}
+                className={`locale-switcher-option${active ? ' is-active' : ''}`}
+                onClick={() => handleSelect(option.code)}
+              >
+                <span className="locale-switcher-option-code">{option.shortCode}</span>
+                <span className="locale-switcher-option-copy">
+                  <span className="locale-switcher-option-label">{option.label}</span>
+                  <span className="locale-switcher-option-currency">{option.currency}</span>
+                </span>
+                {active ? (
+                  <svg className="locale-switcher-option-check" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M3.5 8.5l3 3 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
-      )}
-
-      <style jsx>{`
-        .language-switcher {
-          position: relative;
-          display: inline-block;
-        }
-
-        .language-switcher-button {
-          display: flex;
-          align-items: center;
-          gap: var(--spacing-xs);
-          padding: 6px 12px;
-          min-height: 36px;
-          background: transparent;
-          border: 1px solid var(--color-border-primary);
-          border-radius: var(--radius-sm);
-          cursor: pointer;
-          transition: all var(--transition-fast);
-          color: var(--color-text-primary);
-          font-family: var(--font-sans);
-          font-size: 0.875rem;
-          font-weight: 500;
-        }
-
-        .language-switcher-button:hover,
-        .language-switcher-button:focus-visible {
-          background: var(--gray-50);
-          border-color: var(--brand-500);
-        }
-
-        .language-switcher-label {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          white-space: nowrap;
-        }
-
-        .language-dropdown {
-          position: absolute;
-          top: calc(100% + 8px);
-          right: 0;
-          min-width: 200px;
-          background: var(--color-bg-primary);
-          border: 1px solid var(--color-border-secondary);
-          border-radius: var(--radius-md);
-          box-shadow: var(--shadow-lg);
-          padding: var(--spacing-xs);
-          z-index: var(--z-dropdown);
-          animation: dropdownFadeIn 150ms ease-out;
-        }
-
-        @keyframes dropdownFadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(-8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .language-dropdown-item {
-          display: flex;
-          align-items: center;
-          gap: var(--spacing-sm);
-          width: 100%;
-          padding: var(--spacing-sm) var(--spacing-md);
-          background: transparent;
-          border: none;
-          border-radius: var(--radius-sm);
-          cursor: pointer;
-          transition: all var(--transition-fast);
-          color: var(--color-text-primary);
-          font-family: var(--font-sans);
-          font-size: 0.875rem;
-          text-align: left;
-        }
-
-        .language-dropdown-item:hover,
-        .language-dropdown-item:focus-visible {
-          background: var(--gray-100);
-        }
-
-        .language-dropdown-item.is-active {
-          background: var(--brand-50);
-          color: var(--brand-700);
-          font-weight: 600;
-        }
-
-        .language-flag {
-          font-size: 1.25rem;
-          line-height: 1;
-        }
-
-        .language-name {
-          flex: 1;
-        }
-
-        /* Mobile responsive */
-        @media (max-width: 767px) {
-          .language-switcher-label span:last-child {
-            display: none;
-          }
-
-          .language-dropdown {
-            position: fixed;
-            top: auto;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            min-width: 100%;
-            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-            animation: slideUp 200ms ease-out;
-          }
-
-          @keyframes slideUp {
-            from {
-              transform: translateY(100%);
-            }
-            to {
-              transform: translateY(0);
-            }
-          }
-
-          .language-dropdown-item {
-            padding: var(--spacing-md);
-            min-height: 48px;
-          }
-        }
-      `}</style>
+      ) : null}
     </div>
   );
 }

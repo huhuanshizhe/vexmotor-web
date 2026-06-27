@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState, useTransition } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 import { apiFetch } from '@/lib/api-client';
 import { COMPARE_ITEMS_UPDATED_EVENT, readCompareItems } from '@/lib/compare-items';
-import { CURRENCY_COOKIE_NAME, LOCALE_COOKIE_NAME, PREFERENCE_COOKIE_MAX_AGE, type SitePreferences, withLocalePath, parseLocaleFromPathname } from '@/lib/i18n';
+import { withLocalePath } from '@/lib/i18n';
+import { useTranslation } from '@/lib/i18n-context';
 import { LanguageSwitcher } from '@/components/storefront/language-switcher';
 import { CART_UPDATED_EVENT } from '@/components/storefront/add-to-cart-button';
 import type { StorefrontUtilityLink } from '@/lib/storefront-api';
@@ -14,10 +14,7 @@ import type { StorefrontUtilityLink } from '@/lib/storefront-api';
 type HeaderUtilityStripProps = {
   links: StorefrontUtilityLink[];
   initialCartCount: number;
-  preferences: SitePreferences;
 };
-
-/* ── Icon components for utility links ── */
 
 function CartIcon({ className }: { className?: string }) {
   return (
@@ -63,15 +60,10 @@ const UTILITY_ICONS: Record<string, (props: { className?: string }) => React.JSX
   Login: LoginIcon,
 };
 
-export function HeaderUtilityStrip({ links, initialCartCount, preferences }: HeaderUtilityStripProps) {
+export function HeaderUtilityStrip({ links, initialCartCount }: HeaderUtilityStripProps) {
+  const { locale } = useTranslation();
   const [compareCount, setCompareCount] = useState(0);
   const [cartCount, setCartCount] = useState(initialCartCount);
-  const [locale, setLocale] = useState(preferences.locale);
-  const [currency, setCurrency] = useState(preferences.currency);
-  const [isPending, startTransition] = useTransition();
-  const pathname = usePathname();
-  const router = useRouter();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     const syncCompareCount = () => {
@@ -100,49 +92,9 @@ export function HeaderUtilityStrip({ links, initialCartCount, preferences }: Hea
     };
   }, []);
 
-  const writePreferenceCookie = (name: string, value: string) => {
-    document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=${PREFERENCE_COOKIE_MAX_AGE}; SameSite=Lax`;
-  };
-
-  const applyLocale = (nextLocale: SitePreferences['locale']) => {
-    const strippedPath = parseLocaleFromPathname(pathname).pathname;
-    const queryString = searchParams.toString();
-    const nextPath = `${withLocalePath(strippedPath, nextLocale)}${queryString ? `?${queryString}` : ''}`;
-
-    setLocale(nextLocale);
-    writePreferenceCookie(LOCALE_COOKIE_NAME, nextLocale);
-
-    const currentPath = `${withLocalePath(strippedPath, locale)}${queryString ? `?${queryString}` : ''}`;
-    if (nextPath !== currentPath) {
-      router.push(nextPath);
-    } else {
-      router.refresh();
-    }
-  };
-
-  const applyCurrency = (nextCurrency: SitePreferences['currency']) => {
-    setCurrency(nextCurrency);
-    writePreferenceCookie(CURRENCY_COOKIE_NAME, nextCurrency);
-
-    startTransition(() => {
-      router.refresh();
-    });
-  };
-
   return (
     <div className="header-utility-strip">
-      <div className="header-market-group" aria-label="Site preferences">
-        <LanguageSwitcher />
-
-        <label className="header-language-chip">
-          <span className="sr-only">Currency</span>
-          <select className="header-market-select" value={currency} onChange={(event) => applyCurrency(event.target.value as SitePreferences['currency'])} disabled={isPending}>
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-            <option value="GBP">GBP</option>
-          </select>
-        </label>
-      </div>
+      <LanguageSwitcher />
 
       <div className="header-icon-links">
         {links.map((item) => {

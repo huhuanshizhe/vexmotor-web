@@ -3686,6 +3686,85 @@ main {
   align-items: center;
 }
 
+.auth-file-input-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-file-upload-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-muted, #5a7184);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.auth-file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #edf3f8;
+  color: var(--color-accent);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.auth-file-chip.is-uploading {
+  opacity: 0.92;
+}
+
+.auth-file-chip-name {
+  overflow: hidden;
+  max-width: min(280px, 100%);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-file-chip-remove {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.auth-file-chip-remove:hover:not(:disabled) {
+  color: var(--color-accent-strong, #0b4f7a);
+}
+
+.auth-file-chip-remove:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.auth-file-spinner {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: auth-file-spin 0.65s linear infinite;
+}
+
+@keyframes auth-file-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .auth-inline-row,
 .auth-link-row {
   justify-content: space-between;

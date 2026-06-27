@@ -66,7 +66,7 @@ const helpCenterGroups = [
     description: 'Login, register, inquiry tracking, and the self-service paths that sit alongside the support content itself.',
     links: [
       { label: 'Login', href: '/login', note: 'Use account access for order and inquiry history.' },
-      { label: 'Create Business Account', href: '/register', note: 'Register for approval-based business buying and future account workflows.' },
+      { label: 'Create Business Account', href: '/register', note: 'Register for business buying, saved addresses, and account workflows.' },
       { label: 'My Inquiries', href: '/account/inquiries', note: 'Track submitted inquiry and RFQ records after login.' },
     ],
   },

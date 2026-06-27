@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 
 import { login as authLogin } from '@/lib/auth-client';
+import { useAuth } from '@/components/providers/auth-provider';
 import { parseLocaleFromPathname, withLocalePath } from '@/lib/i18n';
 
 type LoginFormProps = {
@@ -77,6 +78,7 @@ function clearFailureState() {
 export function LoginForm({ callbackUrl, initialEmail, initialNotice = null }: LoginFormProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { refreshProfile } = useAuth();
   const locale = useMemo(() => parseLocaleFromPathname(pathname).locale, [pathname]);
   const [email, setEmail] = useState(initialEmail ?? '');
   const [password, setPassword] = useState('');
@@ -113,6 +115,7 @@ export function LoginForm({ callbackUrl, initialEmail, initialNotice = null }: L
 
       try {
         await authLogin(normalizedEmail, password);
+        await refreshProfile();
       } catch {
         const nextFailureState = writeFailureState(normalizedEmail);
         setMessage(nextFailureState?.lockedUntil ? 'Too many attempts. Try again in 10 minutes or reset your password.' : 'Email or password is incorrect.');

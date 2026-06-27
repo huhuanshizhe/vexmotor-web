@@ -4,7 +4,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 
-import { login as authLogin, register as authRegister } from '@/lib/auth-client';
+import { useAuth } from '@/components/providers/auth-provider';
+import {
+  buildRegisterPayload,
+  register as authRegister,
+  uploadRegistrationDocument,
+  type RegistrationDocumentInput,
+} from '@/lib/auth-client';
 
 import type { Locale } from '@/lib/i18n';
 import { withLocalePath } from '@/lib/i18n';
@@ -27,7 +33,7 @@ type RegisterFormState = {
   website: string;
   taxId: string;
   annualVolumeEstimate: string;
-  documents: string[];
+  documents: RegistrationDocumentInput[];
   termsAccepted: boolean;
   privacyAccepted: boolean;
   exportComplianceAccepted: boolean;
@@ -35,6 +41,7 @@ type RegisterFormState = {
 
 const REGISTRATION_DRAFT_STORAGE_KEY = 'vexmotor-register-draft';
 const REGISTRATION_STEPS = ['Account', 'Company', 'Verification'];
+const MAX_REGISTRATION_DOCUMENTS = 5;
 const ROLE_OPTIONS = ['Purchasing', 'Engineering', 'Operations', 'Founder / Owner', 'Other'];
 const COUNTRY_OPTIONS = ['United States', 'Germany', 'France', 'Spain', 'United Kingdom', 'Canada', 'Mexico', 'China', 'Japan', 'Other'];
 const INDUSTRY_OPTIONS = ['Factory Automation', 'Robotics', 'Medical Devices', 'Packaging', 'CNC & Tooling', 'Energy', 'University / Lab'];
@@ -59,6 +66,20 @@ const EMPTY_FORM: RegisterFormState = {
   exportComplianceAccepted: false,
 };
 
+type RegisterDraft = Omit<RegisterFormState, 'documents' | 'password'>;
+
+type PendingUpload = {
+  id: string;
+  filename: string;
+};
+
+function createPendingUpload(filename: string): PendingUpload {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    filename,
+  };
+}
+
 function getTaxIdLabel(country: string) {
   if (country === 'United States') {
     return 'Tax ID / EIN';
@@ -71,7 +92,7 @@ function getTaxIdLabel(country: string) {
   return 'VAT / Tax ID / EORI';
 }
 
-function readDraft() {
+function readDraft(): RegisterDraft | null {
   if (typeof window === 'undefined') {
     return null;
   }
@@ -82,7 +103,7 @@ function readDraft() {
   }
 
   try {
-    return JSON.parse(stored) as RegisterFormState;
+    return JSON.parse(stored) as RegisterDraft;
   } catch {
     window.localStorage.removeItem(REGISTRATION_DRAFT_STORAGE_KEY);
     return null;
@@ -116,11 +137,14 @@ function validateStep(stepIndex: number, form: RegisterFormState) {
 
 export function RegisterBusinessForm({ locale, initialEmail }: RegisterBusinessFormProps) {
   const router = useRouter();
+  const { refreshProfile } = useAuth();
   const normalizedInitialEmail = initialEmail?.trim().toLowerCase() ?? '';
   const [form, setForm] = useState<RegisterFormState>({ ...EMPTY_FORM, email: normalizedInitialEmail });
   const [stepIndex, setStepIndex] = useState(0);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -130,12 +154,15 @@ export function RegisterBusinessForm({ locale, initialEmail }: RegisterBusinessF
         ...EMPTY_FORM,
         ...draft,
         email: normalizedInitialEmail || draft.email,
+        password: '',
+        documents: [],
       });
     }
   }, [normalizedInitialEmail]);
 
   useEffect(() => {
-    window.localStorage.setItem(REGISTRATION_DRAFT_STORAGE_KEY, JSON.stringify(form));
+    const { documents: _documents, password: _password, ...draft } = form;
+    window.localStorage.setItem(REGISTRATION_DRAFT_STORAGE_KEY, JSON.stringify(draft));
   }, [form]);
 
   const taxIdLabel = useMemo(() => getTaxIdLabel(form.country), [form.country]);
@@ -147,7 +174,8 @@ export function RegisterBusinessForm({ locale, initialEmail }: RegisterBusinessF
   }
 
   function saveDraft() {
-    window.localStorage.setItem(REGISTRATION_DRAFT_STORAGE_KEY, JSON.stringify(form));
+    const { documents: _documents, password: _password, ...draft } = form;
+    window.localStorage.setItem(REGISTRATION_DRAFT_STORAGE_KEY, JSON.stringify(draft));
     setSavedMessage('Draft saved locally in this browser.');
     setFeedback(null);
   }
@@ -166,8 +194,82 @@ export function RegisterBusinessForm({ locale, initialEmail }: RegisterBusinessF
     setStepIndex((current) => Math.max(current - 1, 0));
   }
 
-  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    updateForm('documents', Array.from(event.target.files ?? []).map((file) => file.name));
+  function removeDocument(key: string) {
+    updateForm(
+      'documents',
+      form.documents.filter((document) => document.key !== key),
+    );
+  }
+
+  async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = '';
+
+    if (!files.length) {
+      return;
+    }
+
+    const remainingSlots = MAX_REGISTRATION_DOCUMENTS - form.documents.length - pendingUploads.length;
+    if (remainingSlots <= 0) {
+      setFeedback(`You can upload up to ${MAX_REGISTRATION_DOCUMENTS} documents.`);
+      return;
+    }
+
+    const filesToUpload = files.slice(0, remainingSlots);
+    if (files.length > remainingSlots) {
+      setFeedback(`Only ${remainingSlots} more file${remainingSlots === 1 ? '' : 's'} can be added (maximum ${MAX_REGISTRATION_DOCUMENTS}).`);
+    } else {
+      setFeedback(null);
+    }
+
+    const queuedUploads = filesToUpload.map((file) => createPendingUpload(file.name));
+    setPendingUploads((current) => [...current, ...queuedUploads]);
+    setUploadingFiles(true);
+
+    const uploadResults = await Promise.all(
+      filesToUpload.map(async (file, index) => {
+        const pendingId = queuedUploads[index]?.id;
+        if (!pendingId) {
+          return { ok: false as const, pendingId: '', message: 'Unable to queue the selected file.' };
+        }
+
+        try {
+          const uploaded = await uploadRegistrationDocument(file);
+          return { ok: true as const, pendingId, uploaded };
+        } catch (error) {
+          return {
+            ok: false as const,
+            pendingId,
+            message: error instanceof Error ? error.message : 'Unable to upload the selected file.',
+          };
+        }
+      }),
+    );
+
+    const uploadedDocuments: RegistrationDocumentInput[] = [];
+    const uploadErrors: string[] = [];
+
+    for (const result of uploadResults) {
+      setPendingUploads((current) => current.filter((item) => item.id !== result.pendingId));
+      if (result.ok) {
+        uploadedDocuments.push(result.uploaded);
+      } else if (result.message) {
+        uploadErrors.push(result.message);
+      }
+    }
+
+    if (uploadedDocuments.length) {
+      setForm((current) => ({
+        ...current,
+        documents: [...current.documents, ...uploadedDocuments],
+      }));
+    }
+
+    if (uploadErrors.length) {
+      setFeedback(uploadErrors[0] ?? 'Unable to upload the selected file.');
+    }
+
+    setUploadingFiles(false);
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -184,18 +286,11 @@ export function RegisterBusinessForm({ locale, initialEmail }: RegisterBusinessF
       setSavedMessage(null);
 
       try {
-        const payload = await authRegister(form);
+        const session = await authRegister(buildRegisterPayload(form));
         window.localStorage.removeItem(REGISTRATION_DRAFT_STORAGE_KEY);
-
-        try {
-          await authLogin(form.email.trim().toLowerCase(), form.password);
-        } catch {
-          router.push(`${withLocalePath('/login', locale)}?registered=1&email=${encodeURIComponent(form.email.trim().toLowerCase())}`);
-          router.refresh();
-          return;
-        }
-
-        router.push((payload as { redirectPath?: string }).redirectPath ?? '/account?pendingReview=1');
+        await refreshProfile();
+        const redirectPath = session.redirectPath ?? '/account';
+        router.push(withLocalePath(redirectPath, locale));
         router.refresh();
       } catch (error) {
         setFeedback(error instanceof Error ? error.message : 'Unable to create the business account right now.');
@@ -297,13 +392,28 @@ export function RegisterBusinessForm({ locale, initialEmail }: RegisterBusinessF
         <div className="auth-form">
           <label className="form-field">
             <span>Business license / tax certificate</span>
-            <input className="form-input" type="file" multiple onChange={handleFileChange} disabled={isPending} />
-            <small className="section-description">Optional for now. Uploading helps accelerate review; skipping keeps the account in limited pending mode.</small>
+            <div className="auth-file-input-shell">
+              <input className="form-input" type="file" multiple onChange={handleFileChange} disabled={isPending || uploadingFiles || form.documents.length + pendingUploads.length >= MAX_REGISTRATION_DOCUMENTS} />
+            </div>
+            <small className="section-description">
+              Optional. Upload up to {MAX_REGISTRATION_DOCUMENTS} files (PDF, Office, or images). Files are stored securely for B2B verification and account reconciliation.
+            </small>
           </label>
-          {form.documents.length ? (
-            <div className="auth-file-list">
-              {form.documents.map((documentName) => (
-                <span key={documentName} className="filter-chip">{documentName}</span>
+          {pendingUploads.length || form.documents.length ? (
+            <div className="auth-file-list" role={pendingUploads.length ? 'status' : undefined} aria-live={pendingUploads.length ? 'polite' : undefined}>
+              {pendingUploads.map((pending) => (
+                <span key={pending.id} className="auth-file-chip is-uploading">
+                  <span className="auth-file-spinner" aria-hidden="true" />
+                  <span className="auth-file-chip-name">{pending.filename}</span>
+                </span>
+              ))}
+              {form.documents.map((document) => (
+                <span key={document.key} className="auth-file-chip">
+                  <span className="auth-file-chip-name">{document.filename}</span>
+                  <button type="button" className="auth-file-chip-remove" onClick={() => removeDocument(document.key)} disabled={isPending || uploadingFiles}>
+                    Remove
+                  </button>
+                </span>
               ))}
             </div>
           ) : null}
@@ -337,7 +447,7 @@ export function RegisterBusinessForm({ locale, initialEmail }: RegisterBusinessF
               Continue
             </button>
           ) : (
-            <button type="submit" className="button-primary" disabled={isPending}>
+            <button type="submit" className="button-primary" disabled={isPending || uploadingFiles}>
               {isPending ? 'Creating account...' : 'Create business account'}
             </button>
           )}

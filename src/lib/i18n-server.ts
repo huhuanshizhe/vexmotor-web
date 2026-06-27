@@ -1,15 +1,11 @@
 import { cookies, headers } from 'next/headers';
 
 import {
-  CURRENCY_COOKIE_NAME,
   DEFAULT_LOCALE,
   LOCALE_COOKIE_NAME,
   LOCALE_REQUEST_HEADER,
-  UNIT_SYSTEM_COOKIE_NAME,
   getMarketDefaults,
-  normalizeCurrency,
   normalizeLocale,
-  normalizeUnitSystem,
   type Locale,
   type SitePreferences,
 } from '@/lib/i18n';
@@ -65,7 +61,7 @@ export async function getServerSitePreferences(): Promise<SitePreferences> {
 
   return {
     locale,
-    currency: normalizeCurrency(cookieStore.get(CURRENCY_COOKIE_NAME)?.value) ?? defaults.currency,
-    unitSystem: normalizeUnitSystem(cookieStore.get(UNIT_SYSTEM_COOKIE_NAME)?.value) ?? defaults.unitSystem,
+    currency: defaults.currency,
+    unitSystem: defaults.unitSystem,
   };
 }

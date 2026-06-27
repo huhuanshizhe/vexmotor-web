@@ -1,11 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/components/providers/auth-provider';
 import { apiFetch } from '@/lib/api-client';
+import { getCompanyProfile, type CompanyProfile } from '@/lib/auth-client';
 import { AddToCartButton } from '@/components/storefront/add-to-cart-button';
 import { accountDashboardTodos, accountQuoteRecords, accountRecommendedProductSlugs, accountSavedLists } from '@/lib/account-portal';
 import type { StorefrontProductDetail } from '@/lib/storefront-types';
@@ -26,8 +26,8 @@ type OrderRow = {
 };
 
 export default function AccountPage() {
-  const searchParams = useSearchParams();
   const { user } = useAuth();
+  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
   const [summary, setSummary] = useState<AccountSummary | null>(null);
   const [recentOrders, setRecentOrders] = useState<OrderRow[]>([]);
   const [recommendedProducts, setRecommendedProducts] = useState<StorefrontProductDetail[]>([]);
@@ -37,12 +37,14 @@ export default function AccountPage() {
 
     void (async () => {
       try {
-        const [summaryData, orders] = await Promise.all([
+        const [summaryData, orders, company] = await Promise.all([
           apiFetch<AccountSummary>('/api/front/account/summary'),
           apiFetch<OrderRow[]>('/api/front/orders'),
+          getCompanyProfile(),
         ]);
         setSummary(summaryData);
         setRecentOrders(orders.slice(0, 5));
+        setCompanyProfile(company);
       } catch {
         setSummary({ orders: 0, addresses: 0, inquiries: 0, wishlist: 0 });
         setRecentOrders([]);
@@ -63,12 +65,12 @@ export default function AccountPage() {
     return null;
   }
 
-  const highlightPending = searchParams.get('pendingReview') === '1';
+  const companyLabel = companyProfile?.company ?? 'Your company profile';
   const pendingQuotes = accountQuoteRecords.filter((quote) => quote.status === 'Submitted' || quote.status === 'Quoted' || quote.status === 'Negotiating');
 
   return (
     <div className="account-panel-stack">
-      {user.status === 'pending' || highlightPending ? (
+      {user.status === 'pending' ? (
         <article className="account-review-banner" aria-live="polite">
           <strong>Account pending review</strong>
           <p className="section-description">Your business account is active for sign-in and sourcing history, but pricing and approval-dependent capabilities remain in review. Approval normally lands within one working day.</p>
@@ -78,7 +80,7 @@ export default function AccountPage() {
         <div>
           <h1 className="section-title">My Account</h1>
           <p className="section-description">
-            Hi {user.firstName} {user.lastName}. {user.company ?? 'Your company profile'} is now tied to order history, quote follow-up, saved lists, downloads, invoices, and buyer-level settings.
+            Hi {user.firstName} {user.lastName}. {companyLabel} is now tied to order history, quote follow-up, saved lists, downloads, invoices, and buyer-level settings.
           </p>
         </div>
       </div>

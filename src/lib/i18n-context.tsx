@@ -2,7 +2,17 @@
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { type Locale, DEFAULT_LOCALE, withLocalePath, parseLocaleFromPathname } from '@/lib/i18n';
+import {
+  type Locale,
+  DEFAULT_LOCALE,
+  withLocalePath,
+  parseLocaleFromPathname,
+  getMarketDefaults,
+  LOCALE_COOKIE_NAME,
+  CURRENCY_COOKIE_NAME,
+  UNIT_SYSTEM_COOKIE_NAME,
+  PREFERENCE_COOKIE_MAX_AGE,
+} from '@/lib/i18n';
 
 // Import translations
 import enTranslations from '@/locales/en.json';
@@ -76,11 +86,18 @@ export function I18nProvider({
   }, [locale]);
 
   const setLocale = useCallback((newLocale: Locale) => {
+    const defaults = getMarketDefaults(newLocale);
+
     setLocaleState(newLocale);
-    document.cookie = `site_locale=${newLocale}; Path=/; Max-Age=31536000; SameSite=Lax`;
-    // Strip existing locale prefix before adding the new one
+    document.cookie = `${LOCALE_COOKIE_NAME}=${newLocale}; Path=/; Max-Age=${PREFERENCE_COOKIE_MAX_AGE}; SameSite=Lax`;
+    document.cookie = `${CURRENCY_COOKIE_NAME}=${defaults.currency}; Path=/; Max-Age=${PREFERENCE_COOKIE_MAX_AGE}; SameSite=Lax`;
+    document.cookie = `${UNIT_SYSTEM_COOKIE_NAME}=${defaults.unitSystem}; Path=/; Max-Age=${PREFERENCE_COOKIE_MAX_AGE}; SameSite=Lax`;
+    document.body.dataset.currency = defaults.currency;
+    document.body.dataset.unitSystem = defaults.unitSystem;
+
     const strippedPath = parseLocaleFromPathname(pathname).pathname;
     const newPath = withLocalePath(strippedPath, newLocale);
+
     if (newPath !== pathname) {
       router.push(newPath);
     } else {
@@ -123,9 +140,5 @@ export function getTranslations(locale: Locale = DEFAULT_LOCALE) {
   };
 }
 
-// Export available locales for UI
-export const AVAILABLE_LOCALES: { code: Locale; label: string; flag: string }[] = [
-  { code: 'en', label: 'English', flag: '🇺🇸' },
-  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
-  { code: 'es', label: 'Español', flag: '🇪🇸' },
-];
+// Export available locales for UI (legacy)
+export { LOCALE_MARKET_OPTIONS as AVAILABLE_LOCALES } from '@/lib/i18n';

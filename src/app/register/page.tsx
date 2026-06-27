@@ -10,13 +10,13 @@ const benefits = [
   'Net 30 and reviewed payment terms for qualified accounts.',
   'Saved BOM and compare-driven sourcing flows for repeat purchasing.',
   'Multi-user coordination across buyers, engineers, and operations leads.',
-  'Pending review banner and staged account privileges after sign-up.',
+  'Immediate account access after registration, with optional verification documents on file.',
 ];
 
 const timeline = [
   'Submit the account profile and company information.',
-  'The review queue receives your registration summary within the same workflow used for RFQ follow-up.',
-  'Approval normally lands within one working day, while skipped verification keeps the account in limited pending mode.',
+  'Your account is active right away for sign-in, checkout, and inquiry history.',
+  'Upload verification documents anytime to speed up commercial reconciliation and credit review.',
 ];
 
 export async function generateMetadata() {
@@ -42,7 +42,7 @@ export default async function RegisterPage({
     <StorefrontFrame
       eyebrow="Register"
       title="Create a business account"
-      description="Open a company account in minutes, keep sourcing history together, and enter the review queue without waiting on manual handoff."
+      description="Open a company account in minutes, keep sourcing history together, and start buying without waiting on manual handoff."
     >
       <section className="section">
         <div className="section-inner info-grid auth-grid">

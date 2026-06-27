@@ -81,6 +81,13 @@ export function getLocaleLabel(locale: Locale) {
   return localeDefaults[locale].label;
 }
 
+export const LOCALE_MARKET_OPTIONS = SUPPORTED_LOCALES.map((code) => ({
+  code,
+  label: localeDefaults[code].label,
+  currency: localeDefaults[code].currency,
+  shortCode: code.toUpperCase(),
+}));
+
 export function parseLocaleFromPathname(pathname: string) {
   const normalizedPathname = pathname.startsWith('/') ? pathname : `/${pathname}`;
   const [firstSegment, ...restSegments] = normalizedPathname.split('/').filter(Boolean);

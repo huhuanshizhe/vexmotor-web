@@ -22,7 +22,7 @@ const authHighlights = [
   'Use remembered email and a safer next-path redirect into checkout or account pages.',
   'SSO buttons are staged as enterprise placeholders while credentials login stays primary.',
   'Local development still supports the seeded admin credentials for validation.',
-  'Pending business accounts can sign in and see review status immediately after registration.',
+  'Business accounts are active immediately after registration.',
 ];
 
 function resolveCallbackUrl(input?: string) {
@@ -44,7 +44,7 @@ export default async function LoginPage({
   const notice = params.reset === '1'
     ? 'Password updated. Sign in with your new credentials.'
     : params.registered === '1'
-      ? 'Business account created. Sign in to review your pending account.'
+      ? 'Business account created. Sign in to continue.'
       : null;
 
   return (

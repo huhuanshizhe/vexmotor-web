@@ -66,7 +66,7 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
 
 function buildHeaders(init?: FetchOptions, includeAuth = false): Headers {
   const headers = new Headers(init?.headers);
-  if (!headers.has('Content-Type') && init?.body) {
+  if (!headers.has('Content-Type') && init?.body && !(init.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
   if (init?.locale) {
@@ -119,6 +119,24 @@ export async function apiFetch<T>(path: string, init?: FetchOptions): Promise<T>
     ...requestInit,
     headers: buildHeaders({ ...requestInit, locale }, true),
     cache: requestInit.cache ?? 'no-store',
+  });
+
+  return parseJsonResponse<T>(response);
+}
+
+export async function apiUploadForm<T>(path: string, formData: FormData, init?: FetchOptions): Promise<T> {
+  const { locale, ...requestInit } = init ?? {};
+  const headers = new Headers(requestInit.headers);
+  if (locale) {
+    headers.set('x-vex-locale', locale);
+  }
+
+  const response = await fetch(joinUrl(path), {
+    ...requestInit,
+    method: requestInit.method ?? 'POST',
+    body: formData,
+    headers,
+    cache: 'no-store',
   });
 
   return parseJsonResponse<T>(response);

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-import { type Locale, CURRENCY_COOKIE_NAME, DEFAULT_LOCALE, LOCALE_COOKIE_NAME, LOCALE_REQUEST_HEADER, SUPPORTED_LOCALES, UNIT_SYSTEM_COOKIE_NAME, getMarketDefaults, normalizeCurrency, normalizeUnitSystem, parseLocaleFromPathname } from '@/lib/i18n';
+import { type Locale, CURRENCY_COOKIE_NAME, DEFAULT_LOCALE, LOCALE_COOKIE_NAME, LOCALE_REQUEST_HEADER, SUPPORTED_LOCALES, UNIT_SYSTEM_COOKIE_NAME, getMarketDefaults, parseLocaleFromPathname } from '@/lib/i18n';
 
 function parseAcceptLanguage(header: string | null): string | null {
   if (!header) return null;
@@ -35,18 +35,10 @@ export default async function middleware(request: NextRequest) {
 
   const syncPreferenceCookies = (response: NextResponse) => {
     const localeDefaults = getMarketDefaults(locale);
-    const currentCurrency = normalizeCurrency(request.cookies.get(CURRENCY_COOKIE_NAME)?.value);
-    const currentUnitSystem = normalizeUnitSystem(request.cookies.get(UNIT_SYSTEM_COOKIE_NAME)?.value);
 
     response.cookies.set(LOCALE_COOKIE_NAME, locale, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
-
-    if (!currentCurrency) {
-      response.cookies.set(CURRENCY_COOKIE_NAME, localeDefaults.currency, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
-    }
-
-    if (!currentUnitSystem) {
-      response.cookies.set(UNIT_SYSTEM_COOKIE_NAME, localeDefaults.unitSystem, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
-    }
+    response.cookies.set(CURRENCY_COOKIE_NAME, localeDefaults.currency, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
+    response.cookies.set(UNIT_SYSTEM_COOKIE_NAME, localeDefaults.unitSystem, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
   };
 
   const response = hadPrefix
