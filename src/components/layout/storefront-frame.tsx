@@ -12,7 +12,8 @@ import type { SitePreferences } from '@/lib/i18n';
 import { withLocalePath } from '@/lib/i18n';
 import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-server';
 import { notificationBarConfig, NOTIFICATION_BAR_COOKIE_NAME } from '@/lib/site-config';
-import { getHomeData, getNavigationData } from '@/lib/storefront-api';
+import { getStorefrontNavigation, homeShell } from '@/lib/site-shell';
+import { getHomeData } from '@/lib/storefront-api';
 import { NewsletterSignupForm } from '@/components/storefront/newsletter-signup-form';
 
 type StorefrontFrameProps = {
@@ -57,8 +58,8 @@ export async function StorefrontFrame({ title, description, eyebrow, actions, ch
   const cookieStore = await cookies();
   const preferences = await getServerSitePreferences().catch(() => fallbackSitePreferences);
   const { t } = getServerTranslations(preferences.locale);
-  const homeData = await getHomeData();
-  const navigation = getNavigationData();
+  const homeData = await getHomeData().catch(() => homeShell);
+  const navigation = getStorefrontNavigation();
   const notificationDismissed = cookieStore.get(NOTIFICATION_BAR_COOKIE_NAME)?.value === notificationBarConfig.id;
   const cookieConsentAccepted = cookieStore.get(COOKIE_CONSENT_COOKIE_NAME)?.value === 'accepted';
 

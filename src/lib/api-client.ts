@@ -107,7 +107,9 @@ export async function serverFetch<T>(path: string, init?: FetchOptions): Promise
   const response = await fetch(joinUrl(path), {
     ...requestInit,
     headers,
-    next: { revalidate: 60 },
+    next: process.env.NODE_ENV === 'development' ? undefined : { revalidate: 60 },
+    cache: process.env.NODE_ENV === 'development' ? 'no-store' : undefined,
+    signal: process.env.NODE_ENV === 'development' ? AbortSignal.timeout(15_000) : requestInit.signal,
   });
 
   return parseJsonResponse<T>(response);
