@@ -68,6 +68,10 @@ export function formatStatValue(value: number) {
   return String(value).padStart(2, '0');
 }
 
+export function isHtmlContent(value: string) {
+  return /<[a-z][\s\S]*>/i.test(value.trim());
+}
+
 export function normalizeDescriptionText(value: string) {
   return value
     .replace(/\s+/g, ' ')

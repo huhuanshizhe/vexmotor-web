@@ -1,5 +1,7 @@
 import Link from 'next/link';
-import { extractOverviewContent, type ProductDetailSpecGroup, type ProductDocumentCard } from './shared';
+
+import { IsolatedHtmlContent } from '@/components/storefront/isolated-html-content';
+import { extractOverviewContent, isHtmlContent, type ProductDetailSpecGroup } from './shared';
 
 type TabOverviewProps = {
   description: string;
@@ -10,7 +12,8 @@ type TabOverviewProps = {
 };
 
 export function TabOverview({ description, specGroups, externalDocumentCount, quoteHref, customHref }: TabOverviewProps) {
-  const overviewContent = extractOverviewContent(description);
+  const isRichHtml = isHtmlContent(description);
+  const overviewContent = isRichHtml ? null : extractOverviewContent(description);
 
   return (
     <div className="detail-overview-layout">
@@ -26,34 +29,38 @@ export function TabOverview({ description, specGroups, externalDocumentCount, qu
           </div>
         </div>
 
-        <div className="product-description-content detail-copy-stack">
-          {overviewContent.leadParagraphs.map((p, i) => (
-            <p key={`${p.slice(0, 32)}-${i}`}>{p}</p>
-          ))}
+        {isRichHtml ? (
+          <IsolatedHtmlContent html={description} className="detail-rich-text-host" />
+        ) : (
+          <div className="product-description-content detail-copy-stack">
+            {overviewContent?.leadParagraphs.map((p, i) => (
+              <p key={`${p.slice(0, 32)}-${i}`}>{p}</p>
+            ))}
 
-          {overviewContent.notes.length ? (
-            <div className="detail-overview-notes">
-              {overviewContent.notes.map((note) => (
-                <article key={note.title} className="detail-overview-note">
-                  <span className="summary-label">{note.title}</span>
-                  {note.kind === 'chips' ? (
-                    <div className="detail-note-chip-list">
-                      {note.items?.map((item) => (
-                        <span key={item} className="detail-note-chip">{item}</span>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="detail-note-copy">
-                      {note.paragraphs?.map((p, i) => (
-                        <p key={`${note.title}-${i}`}>{p}</p>
-                      ))}
-                    </div>
-                  )}
-                </article>
-              ))}
-            </div>
-          ) : null}
-        </div>
+            {overviewContent?.notes.length ? (
+              <div className="detail-overview-notes">
+                {overviewContent.notes.map((note) => (
+                  <article key={note.title} className="detail-overview-note">
+                    <span className="summary-label">{note.title}</span>
+                    {note.kind === 'chips' ? (
+                      <div className="detail-note-chip-list">
+                        {note.items?.map((item) => (
+                          <span key={item} className="detail-note-chip">{item}</span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="detail-note-copy">
+                        {note.paragraphs?.map((p, i) => (
+                          <p key={`${note.title}-${i}`}>{p}</p>
+                        ))}
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        )}
       </article>
 
       <aside className="info-card detail-rail-card">

@@ -115,6 +115,17 @@ export async function serverFetch<T>(path: string, init?: FetchOptions): Promise
   return parseJsonResponse<T>(response);
 }
 
+function applyCartApiPayload(payload: unknown) {
+  if (!payload || typeof payload !== 'object' || typeof window === 'undefined') {
+    return;
+  }
+
+  const cartToken = 'cartToken' in payload ? payload.cartToken : undefined;
+  if (typeof cartToken === 'string' && cartToken.length > 0) {
+    setCartToken(cartToken);
+  }
+}
+
 export async function apiFetch<T>(path: string, init?: FetchOptions): Promise<T> {
   const { locale, ...requestInit } = init ?? {};
   const response = await fetch(joinUrl(path), {
@@ -123,7 +134,12 @@ export async function apiFetch<T>(path: string, init?: FetchOptions): Promise<T>
     cache: requestInit.cache ?? 'no-store',
   });
 
-  return parseJsonResponse<T>(response);
+  const data = await parseJsonResponse<T>(response);
+  if (path.includes('/api/front/cart')) {
+    applyCartApiPayload(data);
+  }
+
+  return data;
 }
 
 export async function apiUploadForm<T>(path: string, formData: FormData, init?: FetchOptions): Promise<T> {

@@ -3,6 +3,8 @@ import {
   getNextVolumeTier as getNextVolumeTierFromConfig,
   getVolumePricingEstimate as getVolumePricingEstimateFromConfig,
   getVolumePricingForQuantity as getVolumePricingForQuantityFromConfig,
+  getRetailVolumeTier as getRetailVolumeTierFromConfig,
+  getBulkVolumeTierForQuantity as getBulkVolumeTierForQuantityFromConfig,
   type VolumePricingRuleConfig,
   type VolumePricingTier,
 } from '@/lib/commerce-config';
@@ -38,6 +40,19 @@ export function buildVolumePricingTiers(basePrice: number, currency = 'USD', rul
 
 export function getVolumePricingForQuantity(basePrice: number, currency: string, quantity: number, rules?: VolumePricingRuleConfig[]) {
   return getVolumePricingForQuantityFromConfig(basePrice, currency, quantity, rules);
+}
+
+export function getRetailVolumeTier(basePrice: number, currency = 'USD', rules?: VolumePricingRuleConfig[]) {
+  return getRetailVolumeTierFromConfig(basePrice, currency, rules);
+}
+
+export function getBulkVolumeTierForQuantity(
+  basePrice: number,
+  currency: string,
+  quantity: number,
+  rules?: VolumePricingRuleConfig[],
+) {
+  return getBulkVolumeTierForQuantityFromConfig(basePrice, currency, quantity, rules);
 }
 
 export function getNextVolumeTier(basePrice: number, currency: string, quantity: number, rules?: VolumePricingRuleConfig[]) {

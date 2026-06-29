@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState, useTransition } from 'react';
 
 import { apiFetch } from '@/lib/api-client';
+import { notifyCartUpdatedFromResponse, type CartApiSnapshot } from '@/lib/cart-session';
 import { AddToCartButton } from '@/components/storefront/add-to-cart-button';
 import { calculateOrderPricing, type CommerceConfig } from '@/lib/commerce-config';
 import type { Locale } from '@/lib/i18n';
@@ -18,6 +19,15 @@ type Money = {
   amount: number;
   formatted: string;
 };
+
+function resolveProductSku(product: { sku?: string | null; spu?: string | null }) {
+  return product.sku?.trim() || product.spu?.trim() || '';
+}
+
+function productSkuBadge(product: { sku?: string | null; spu?: string | null }) {
+  const code = resolveProductSku(product);
+  return code.slice(0, 3).toUpperCase() || '—';
+}
 
 type CartDetail = {
   id: string;
@@ -40,7 +50,8 @@ type CartDetail = {
       id: string;
       name: string;
       slug: string;
-      sku: string;
+      sku?: string;
+      spu?: string;
       shortDescription?: string | null;
       purchaseMode: 'buy' | 'inquiry';
       inStock: boolean;
@@ -161,6 +172,7 @@ export function CartClient({ initialCart, locale, hasAccountContext, crossSellPr
   function syncCart(nextCart: CartDetail) {
     setCart(nextCart);
     setCouponCode(nextCart?.couponCode ?? '');
+    notifyCartUpdatedFromResponse(nextCart);
   }
 
   function updateQuantity(itemId: string, quantity: number) {
@@ -286,7 +298,7 @@ export function CartClient({ initialCart, locale, hasAccountContext, crossSellPr
                         sizes="120px"
                       />
                     ) : (
-                      <span className="cart-item-image-fallback">{item.product.sku.slice(0, 3)}</span>
+                      <span className="cart-item-image-fallback">{productSkuBadge(item.product)}</span>
                     )}
                   </Link>
 
@@ -294,7 +306,7 @@ export function CartClient({ initialCart, locale, hasAccountContext, crossSellPr
                     <div className="cart-item-head">
                       <div>
                         <h3 className="cart-item-title">{item.product.name}</h3>
-                        <p className="product-meta">Model {item.product.sku}</p>
+                        <p className="product-meta">Model {resolveProductSku(item.product) || '—'}</p>
                         <p className="section-description">{item.product.shortDescription}</p>
                       </div>
                       <div className="cart-line-price-block">
@@ -486,13 +498,13 @@ export function CartClient({ initialCart, locale, hasAccountContext, crossSellPr
                         {item.coverImage ? (
                           <Image src={item.coverImage.url} alt={item.coverImage.alt || item.name} fill sizes="100px" unoptimized className="cart-item-image" />
                         ) : (
-                          <span className="cart-item-image-fallback">{item.sku.slice(0, 3)}</span>
+                          <span className="cart-item-image-fallback">{productSkuBadge(item)}</span>
                         )}
                       </Link>
                       <Link href={withLocalePath(`/products/${item.slug}`, locale)}>
                         <strong>{item.name}</strong>
                       </Link>
-                      <span className="product-meta">SKU {item.sku}</span>
+                      <span className="product-meta">SKU {resolveProductSku(item) || '—'}</span>
                       <span className="card-kicker">{item.purchaseMode === 'buy' ? item.price.formatted : t('product.requestQuote')}</span>
                       {item.purchaseMode === 'buy' ? (
                         <AddToCartButton productId={item.id} redirectToCart={false} />

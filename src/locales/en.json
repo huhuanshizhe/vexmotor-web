@@ -62,6 +62,7 @@
     "buyNow": "Buy Now",
     "requestQuote": "Request Quote",
     "addToWishlist": "Add to Wishlist",
+    "inWishlist": "In wishlist",
     "addToCompare": "Add to Compare",
     "compare": "Compare",
     "sku": "SKU",
@@ -171,6 +172,8 @@
   "compare": {
     "title": "Product Comparison",
     "addToCompare": "Add to Compare",
+    "inCompare": "In compare",
+    "addedToast": "{sku} added to compare",
     "removeFromCompare": "Remove from Compare",
     "compareNow": "Compare Now",
     "maxItems": "You can compare up to 4 products",

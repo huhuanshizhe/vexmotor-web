@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { StorefrontFrame } from '@/components/layout/storefront-frame';
 import { JsonLdScript } from '@/components/seo/json-ld';
 import { AddToCartButton } from '@/components/storefront/add-to-cart-button';
+import { AddToCompareButton } from '@/components/storefront/add-to-compare-button';
+import { AddToWishlistButton } from '@/components/storefront/add-to-wishlist-button';
+import { CatalogProductCardTitle } from '@/components/storefront/catalog-product-card-title';
 import { NewsletterSignupForm } from '@/components/storefront/newsletter-signup-form';
 import { withLocalePath } from '@/lib/i18n';
 import { getServerSitePreferences } from '@/lib/i18n-server';
@@ -220,27 +223,66 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div className="home-featured-grid">
-            {featuredProducts.map((product) => (
-              <article key={product.id} className="product-card home-featured-card">
-                <div className="product-card-top">
-                  <span className="product-badge">{product.inStock ? 'In stock' : 'Lead time on request'}</span>
+          <div className="home-featured-grid catalog-product-grid">
+            {featuredProducts.map((product) => {
+              const productHref = withLocalePath(`/products/${product.slug}`, locale);
+              const cardDescription = product.shortDescription?.trim();
+              const showCardDescription = Boolean(cardDescription && cardDescription !== product.name.trim());
+
+              return (
+              <article key={product.id} className="product-card catalog-grid-card home-featured-card">
+                <div className="product-card-top catalog-grid-card-top">
+                  <span className="product-badge">{product.inStock ? 'In Stock' : 'Lead time on request'}</span>
+                  <div className="catalog-card-icon-actions">
+                    <AddToWishlistButton productId={product.id} icon />
+                    <AddToCompareButton
+                      icon
+                      item={{
+                        id: product.id,
+                        name: product.name,
+                        slug: product.slug,
+                        sku: product.sku,
+                        priceLabel: product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote',
+                        purchaseMode: product.purchaseMode,
+                        inStock: product.inStock,
+                        shortDescription: product.shortDescription,
+                        categories: [],
+                      }}
+                    />
+                  </div>
                 </div>
-                {product.coverImage ? (
-                  <Link href={withLocalePath(`/products/${product.slug}`, locale)} className="product-card-media">
-                    <Image src={product.coverImage.url} alt={product.coverImage.alt || product.name} fill sizes="320px" unoptimized className="footer-product-image" />
-                  </Link>
-                ) : null}
-                <h3>
-                  <Link href={withLocalePath(`/products/${product.slug}`, locale)}>{product.name}</Link>
-                </h3>
-                <p className="product-meta">{product.sku}</p>
-                <div className="product-card-footer">
-                  <p className="product-price">{product.price.formatted}</p>
+                <div className="catalog-grid-media-shell">
+                  {product.coverImage ? (
+                    <Link href={productHref} className="product-card-media catalog-grid-media">
+                      <Image src={product.coverImage.url} alt={product.coverImage.alt || product.name} fill sizes="320px" unoptimized className="catalog-grid-image" />
+                    </Link>
+                  ) : (
+                    <span className="catalog-grid-media-placeholder" aria-hidden="true" />
+                  )}
                 </div>
-                <AddToCartButton productId={product.id} redirectToCart={false} />
+                <div className="catalog-grid-card-body">
+                  <CatalogProductCardTitle href={productHref} name={product.name} />
+                  <p className="catalog-grid-spu">
+                    <span className="catalog-grid-spu-label">SPU</span>
+                    {product.spu}
+                  </p>
+                  {showCardDescription ? (
+                    <p className="section-description compact-copy catalog-grid-card-description">{cardDescription}</p>
+                  ) : null}
+                  <p className="product-price catalog-grid-price">{product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote'}</p>
+                  <div className="catalog-grid-footer">
+                    {product.purchaseMode === 'buy' ? (
+                      <AddToCartButton productId={product.id} redirectToCart={false} bar />
+                    ) : (
+                      <Link href={productHref} className="catalog-add-to-cart-bar catalog-add-to-cart-bar-secondary">
+                        Request Quote
+                      </Link>
+                    )}
+                  </div>
+                </div>
               </article>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

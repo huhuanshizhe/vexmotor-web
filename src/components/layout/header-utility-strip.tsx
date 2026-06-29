@@ -5,11 +5,11 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/components/providers/auth-provider';
 import { apiFetch, getAccessToken } from '@/lib/api-client';
+import { CART_UPDATED_EVENT, getCartLineItemCount, type CartApiSnapshot, type CartUpdatedDetail } from '@/lib/cart-session';
 import { COMPARE_ITEMS_UPDATED_EVENT, readCompareItems } from '@/lib/compare-items';
 import { withLocalePath } from '@/lib/i18n';
 import { useTranslation } from '@/lib/i18n-context';
 import { LanguageSwitcher } from '@/components/storefront/language-switcher';
-import { CART_UPDATED_EVENT } from '@/components/storefront/add-to-cart-button';
 import type { StorefrontUtilityLink } from '@/lib/storefront-api';
 
 type HeaderUtilityStripProps = {
@@ -89,6 +89,17 @@ function resolveUtilityLinks(links: StorefrontUtilityLink[], showAccount: boolea
   });
 }
 
+function resolveUtilityBadgeCount(label: string, cartCount: number, compareCount: number) {
+  const normalized = label.toLowerCase();
+  if (normalized === 'cart') {
+    return cartCount;
+  }
+  if (normalized === 'compare') {
+    return compareCount;
+  }
+  return null;
+}
+
 export function HeaderUtilityStrip({ links, initialCartCount }: HeaderUtilityStripProps) {
   const { locale, t } = useTranslation();
   const { user, isLoading } = useAuth();
@@ -104,24 +115,34 @@ export function HeaderUtilityStrip({ links, initialCartCount }: HeaderUtilityStr
     };
 
     const syncCartCount = () => {
-      apiFetch<{ itemCount?: number }>('/api/front/cart')
+      apiFetch<CartApiSnapshot>('/api/front/cart')
         .then((detail) => {
-          if (detail && typeof detail.itemCount === 'number') {
-            setCartCount(detail.itemCount);
+          if (detail) {
+            setCartCount(getCartLineItemCount(detail));
           }
         })
         .catch(() => {});
     };
 
+    const handleCartUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<CartUpdatedDetail>).detail;
+      if (typeof detail?.lineItemCount === 'number') {
+        setCartCount(detail.lineItemCount);
+        return;
+      }
+      syncCartCount();
+    };
+
     syncCompareCount();
+    syncCartCount();
     window.addEventListener('storage', syncCompareCount);
     window.addEventListener(COMPARE_ITEMS_UPDATED_EVENT, syncCompareCount);
-    window.addEventListener(CART_UPDATED_EVENT, syncCartCount);
+    window.addEventListener(CART_UPDATED_EVENT, handleCartUpdated);
 
     return () => {
       window.removeEventListener('storage', syncCompareCount);
       window.removeEventListener(COMPARE_ITEMS_UPDATED_EVENT, syncCompareCount);
-      window.removeEventListener(CART_UPDATED_EVENT, syncCartCount);
+      window.removeEventListener(CART_UPDATED_EVENT, handleCartUpdated);
     };
   }, []);
 
@@ -132,29 +153,36 @@ export function HeaderUtilityStrip({ links, initialCartCount }: HeaderUtilityStr
       <div className="header-icon-links">
         {resolvedLinks.map((item) => {
           const IconComponent = UTILITY_ICONS[item.label];
-          const count = item.label === 'cart' ? cartCount : item.label === 'Compare' ? compareCount : null;
+          const count = resolveUtilityBadgeCount(item.label, cartCount, compareCount);
           const isAccountLink = item.label === 'Account';
           const linkTitle = isAccountLink ? t('header.myAccount') : item.label === 'Login' ? t('header.login') : item.label;
+          const badgeLabel = count !== null && count > 0 ? String(count) : null;
 
           const linkContent = (
             <span className="header-icon-link-inner">
               {IconComponent ? <IconComponent className="header-icon-svg" /> : <span>{item.label}</span>}
-              {count !== null && count > 0 ? <span className="header-utility-count">{count}</span> : null}
+              {badgeLabel ? (
+                <span className="header-icon-badge" aria-hidden="true">
+                  {badgeLabel}
+                </span>
+              ) : null}
             </span>
           );
+
+          const ariaLabel = badgeLabel ? `${linkTitle} (${badgeLabel})` : linkTitle;
 
           const className = `header-icon-link${isAccountLink ? ' is-authenticated' : ''}`;
 
           if (item.external) {
             return (
-              <a key={`${item.label}-${item.href}`} href={item.href} className={className} target="_blank" rel="noreferrer" title={linkTitle}>
+              <a key={`${item.label}-${item.href}`} href={item.href} className={className} target="_blank" rel="noreferrer" title={linkTitle} aria-label={ariaLabel}>
                 {linkContent}
               </a>
             );
           }
 
           return (
-            <Link key={`${item.label}-${item.href}`} href={item.href.startsWith('/') ? withLocalePath(item.href, locale) : item.href} className={className} title={linkTitle}>
+            <Link key={`${item.label}-${item.href}`} href={item.href.startsWith('/') ? withLocalePath(item.href, locale) : item.href} className={className} title={linkTitle} aria-label={ariaLabel}>
               {linkContent}
             </Link>
           );

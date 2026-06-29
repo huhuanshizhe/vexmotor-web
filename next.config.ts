@@ -27,7 +27,6 @@ const nextConfig: NextConfig = {
       { source: '/support', destination: '/faq', permanent: true },
       { source: '/content/:path*', destination: '/blog', permanent: true },
       { source: '/custom', destination: '/contact', permanent: true },
-      { source: '/volume-pricing', destination: '/products', permanent: true },
       { source: '/sample', destination: '/contact', permanent: true },
       { source: '/legal/ip', destination: '/legal/privacy', permanent: true },
       { source: '/legal/cookies', destination: '/legal/privacy', permanent: true },

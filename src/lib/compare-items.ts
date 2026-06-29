@@ -46,6 +46,27 @@ export function upsertCompareItem(item: CompareItem) {
   return nextItems;
 }
 
+export type AddCompareItemResult =
+  | { added: true; items: CompareItem[] }
+  | { added: false; reason: 'duplicate' | 'full'; items: CompareItem[] };
+
+export function addCompareItem(item: CompareItem): AddCompareItemResult {
+  const current = readCompareItems();
+  if (current.some((entry) => entry.id === item.id)) {
+    return { added: false, reason: 'duplicate', items: current };
+  }
+  if (current.length >= 4) {
+    return { added: false, reason: 'full', items: current };
+  }
+  const nextItems = [item, ...current];
+  writeCompareItems(nextItems);
+  return { added: true, items: nextItems };
+}
+
+export function isProductInCompare(productId: string) {
+  return readCompareItems().some((entry) => entry.id === productId);
+}
+
 export function removeCompareItem(id: string) {
   const nextItems = readCompareItems().filter((entry) => entry.id !== id);
   writeCompareItems(nextItems);

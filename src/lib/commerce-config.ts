@@ -223,6 +223,60 @@ export function getVolumePricingForQuantity(
   return tiers.reduce((current, tier) => (normalizedQuantity >= tier.minQuantity ? tier : current), tiers[0]!);
 }
 
+export function getRetailVolumeTier(
+  basePrice: number,
+  currency = 'USD',
+  rules: VolumePricingRuleConfig[] = defaultCommerceConfig.volumePricingRules,
+): VolumePricingTier {
+  const tiers = buildVolumePricingTiers(basePrice, currency, rules);
+  const listTier = tiers.find((tier) => tier.minQuantity === 1);
+
+  if (listTier) {
+    return listTier;
+  }
+
+  const firstBulkMin = tiers.find((tier) => tier.minQuantity > 1)?.minQuantity;
+  const unitPriceAmount = roundMoney(basePrice);
+
+  return {
+    label: 'List',
+    minQuantity: 1,
+    maxQuantity: firstBulkMin ? firstBulkMin - 1 : null,
+    rangeLabel: firstBulkMin ? `1-${firstBulkMin - 1}` : '1',
+    priceFactor: 1,
+    unitPriceAmount,
+    unitPriceLabel: formatMoney(unitPriceAmount, currency),
+    savingsPercent: 0,
+    note: null,
+  };
+}
+
+export function getBulkVolumeTierForQuantity(
+  basePrice: number,
+  currency: string,
+  quantity: number,
+  rules: VolumePricingRuleConfig[] = defaultCommerceConfig.volumePricingRules,
+): VolumePricingTier | null {
+  const tiers = buildVolumePricingTiers(basePrice, currency, rules);
+  const bulkTiers = tiers.filter((tier) => tier.minQuantity > 1);
+
+  if (!bulkTiers.length) {
+    return null;
+  }
+
+  const normalizedQuantity = Math.max(1, quantity);
+  const firstBulkMin = bulkTiers[0]!.minQuantity;
+
+  if (normalizedQuantity < firstBulkMin) {
+    return null;
+  }
+
+  return bulkTiers.reduce(
+    (current, tier) => (normalizedQuantity >= tier.minQuantity ? tier : current),
+    bulkTiers[0]!,
+  );
+}
+
 export function getNextVolumeTier(
   basePrice: number,
   currency: string,

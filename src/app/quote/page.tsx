@@ -16,15 +16,37 @@ export async function generateMetadata() {
   });
 }
 
-export default async function QuotePage() {
-  const { locale } = await getServerSitePreferences();
-  const catalog = await getProductList({ pageSize: 24 });
+type QuotePageProps = {
+  searchParams: Promise<{
+    addSku?: string;
+    productId?: string;
+  }>;
+};
+
+export default async function QuotePage({ searchParams }: QuotePageProps) {
+  const [{ locale }, params] = await Promise.all([getServerSitePreferences(), searchParams]);
+  const catalog = await getProductList({ pageSize: 96, sort: 'featured' });
+
+  let intakeProduct =
+    (params.productId ? catalog.items.find((item) => item.id === params.productId) : undefined)
+    ?? (params.addSku ? catalog.items.find((item) => item.sku.toLowerCase() === params.addSku!.toLowerCase()) : undefined);
+
+  if (!intakeProduct && params.addSku) {
+    const searchResult = await getProductList({ keyword: params.addSku, pageSize: 8 });
+    intakeProduct = searchResult.items.find((item) => item.sku.toLowerCase() === params.addSku!.toLowerCase()) ?? searchResult.items[0];
+  }
 
   return (
     <StorefrontFrame>
       <section className="section">
         <div className="section-inner">
-          <QuoteClient locale={locale} intakeProductId="" intakeProductName="" cart={null} catalogProducts={catalog.items} />
+          <QuoteClient
+            locale={locale}
+            intakeProductId={intakeProduct?.id ?? ''}
+            intakeProductName={intakeProduct?.name ?? ''}
+            cart={null}
+            catalogProducts={catalog.items}
+          />
         </div>
       </section>
     </StorefrontFrame>

@@ -1,8 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import { type CompareItem, readCompareItems, upsertCompareItem } from '@/lib/compare-items';
+import { useToast } from '@C/toast';
+import {
+  type CompareItem,
+  COMPARE_ITEMS_UPDATED_EVENT,
+  addCompareItem,
+  isProductInCompare,
+  readCompareItems,
+} from '@/lib/compare-items';
 import { useTranslation } from '@/lib/i18n-context';
 
 type AddToCompareButtonProps = {
@@ -22,19 +29,54 @@ function CompareIcon({ className }: { className?: string }) {
 }
 
 export function AddToCompareButton({ item, compact = false, icon = false }: AddToCompareButtonProps) {
+  const { pushToast } = useToast();
   const { t } = useTranslation();
   const [isAdded, setIsAdded] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    setIsAdded(readCompareItems().some((entry) => entry.id === item.id));
+  const syncAddedState = useCallback(() => {
+    setIsAdded(isProductInCompare(item.id));
   }, [item.id]);
 
+  useEffect(() => {
+    syncAddedState();
+    window.addEventListener(COMPARE_ITEMS_UPDATED_EVENT, syncAddedState);
+    window.addEventListener('storage', syncAddedState);
+    return () => {
+      window.removeEventListener(COMPARE_ITEMS_UPDATED_EVENT, syncAddedState);
+      window.removeEventListener('storage', syncAddedState);
+    };
+  }, [syncAddedState]);
+
   function handleCompare() {
-    upsertCompareItem(item);
+    if (isAdded) {
+      return;
+    }
+
+    const result = addCompareItem(item);
+    if (result.added) {
+      setIsAdded(true);
+      pushToast({
+        title: t('product.addToCompare'),
+        description: t('compare.addedToast', { sku: item.sku }),
+        tone: 'success',
+      });
+      return;
+    }
+
+    if (result.reason === 'full') {
+      pushToast({
+        title: t('compare.maxItems'),
+        description: t('compare.maxItems'),
+        tone: 'error',
+        persistent: true,
+      });
+      return;
+    }
+
     setIsAdded(true);
-    setMessage(t('product.addToCompare'));
   }
+
+  const label = isAdded ? t('compare.inCompare') : t('product.addToCompare');
 
   if (icon) {
     return (
@@ -42,8 +84,10 @@ export function AddToCompareButton({ item, compact = false, icon = false }: AddT
         type="button"
         className={`catalog-card-icon-btn${isAdded ? ' is-active' : ''}`}
         onClick={handleCompare}
-        aria-label={t('product.addToCompare')}
-        title={t('product.addToCompare')}
+        disabled={isAdded}
+        aria-label={label}
+        aria-pressed={isAdded}
+        title={label}
       >
         <CompareIcon className="catalog-card-icon-svg" />
       </button>
@@ -52,18 +96,28 @@ export function AddToCompareButton({ item, compact = false, icon = false }: AddT
 
   if (compact) {
     return (
-      <button type="button" className="catalog-action-btn catalog-action-btn-ghost" onClick={handleCompare}>
-        {isAdded ? t('compare.addToCompare') : t('product.addToCompare')}
+      <button type="button" className={`catalog-action-btn catalog-action-btn-ghost${isAdded ? ' is-added' : ''}`} onClick={handleCompare} disabled={isAdded} aria-pressed={isAdded}>
+        {label}
       </button>
     );
   }
 
   return (
-    <div style={{ display: 'grid', gap: 8 }}>
-      <button type="button" className="button-secondary" onClick={handleCompare} style={{ color: 'var(--color-ink)', borderColor: 'var(--color-border)' }}>
-        {isAdded ? t('compare.addToCompare') : t('product.addToCompare')}
-      </button>
-      {message ? <span className="section-description compact-copy">{message}</span> : null}
-    </div>
+    <button
+      type="button"
+      className={`button-secondary storefront-toggle-btn${isAdded ? ' is-added' : ''}`}
+      onClick={handleCompare}
+      disabled={isAdded}
+      aria-pressed={isAdded}
+    >
+      {isAdded ? (
+        <span className="storefront-toggle-btn-inner">
+          <CompareIcon className="storefront-toggle-btn-icon" />
+          {label}
+        </span>
+      ) : (
+        label
+      )}
+    </button>
   );
 }

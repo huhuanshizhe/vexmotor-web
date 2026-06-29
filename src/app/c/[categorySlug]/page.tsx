@@ -9,6 +9,8 @@ import { JsonLdScript } from '@/components/seo/json-ld';
 import { CompareDrawer } from '@/components/storefront/compare-drawer';
 import { AddToCartButton } from '@/components/storefront/add-to-cart-button';
 import { AddToCompareButton } from '@/components/storefront/add-to-compare-button';
+import { AddToWishlistButton } from '@/components/storefront/add-to-wishlist-button';
+import { CatalogProductCardTitle } from '@/components/storefront/catalog-product-card-title';
 import { withLocalePath } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { getServerSitePreferences } from '@/lib/i18n-server';
@@ -352,37 +354,19 @@ export default async function CategoryPage({
                 <>
                   {selectedView === 'grid' ? (
                     <div className="product-grid catalog-product-grid">
-                      {listing.items.map((product) => (
+                      {listing.items.map((product) => {
+                        const cardDescription = product.shortDescription?.trim();
+                        const showCardDescription = Boolean(cardDescription && cardDescription !== product.name.trim());
+                        const productHref = normalizeLocalePath(`/products/${product.slug}`, locale);
+
+                        return (
                         <article key={product.id} className="product-card catalog-grid-card">
-                          <div className="product-card-top">
-                            <span className="product-badge">{product.purchaseMode === 'buy' ? 'Direct Buy' : 'Inquiry'}</span>
-                            <span className="product-status">{product.inStock ? 'In stock' : 'Lead time on request'}</span>
-                          </div>
-                          {product.coverImage ? (
-                            <Link href={normalizeLocalePath(`/products/${product.slug}`, locale)} className="product-card-media catalog-grid-media">
-                              <Image src={product.coverImage.url} alt={product.coverImage.alt || product.name} fill sizes="320px" unoptimized className="footer-product-image" />
-                            </Link>
-                          ) : null}
-                          <h3>
-                            <Link href={normalizeLocalePath(`/products/${product.slug}`, locale)}>{product.name}</Link>
-                          </h3>
-                          <p className="product-meta">{product.sku}</p>
-                          <p className="section-description compact-copy">{product.shortDescription ?? 'Factory-direct motion product with configurable specification support.'}</p>
-                          <div className="catalog-grid-specs">
-                            <span className="filter-chip">{product.purchaseMode === 'buy' ? 'Cart ready' : 'RFQ ready'}</span>
-                            <span className="filter-chip">{product.inStock ? 'Ships today' : 'Project lead time'}</span>
-                          </div>
-                          <div className="catalog-grid-footer">
-                            <p className="product-price">{product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote'}</p>
-                            <div className="catalog-row-buttons">
-                              {product.purchaseMode === 'buy' ? (
-                                <AddToCartButton productId={product.id} redirectToCart={false} />
-                              ) : (
-                                <Link href={normalizeLocalePath(`/products/${product.slug}`, locale)} className="button-primary">
-                                  Request Quote
-                                </Link>
-                              )}
+                          <div className="product-card-top catalog-grid-card-top">
+                            <span className="product-badge">{product.inStock ? 'In Stock' : 'Lead time on request'}</span>
+                            <div className="catalog-card-icon-actions">
+                              <AddToWishlistButton productId={product.id} icon />
                               <AddToCompareButton
+                                icon
                                 item={{
                                   id: product.id,
                                   name: product.name,
@@ -397,8 +381,38 @@ export default async function CategoryPage({
                               />
                             </div>
                           </div>
+                          <div className="catalog-grid-media-shell">
+                            {product.coverImage ? (
+                              <Link href={productHref} className="product-card-media catalog-grid-media">
+                                <Image src={product.coverImage.url} alt={product.coverImage.alt || product.name} fill sizes="320px" unoptimized className="catalog-grid-image" />
+                              </Link>
+                            ) : (
+                              <span className="catalog-grid-media-placeholder" aria-hidden="true" />
+                            )}
+                          </div>
+                          <div className="catalog-grid-card-body">
+                            <CatalogProductCardTitle href={productHref} name={product.name} />
+                            <p className="catalog-grid-spu">
+                              <span className="catalog-grid-spu-label">SPU</span>
+                              {product.spu}
+                            </p>
+                            {showCardDescription ? (
+                              <p className="section-description compact-copy catalog-grid-card-description">{cardDescription}</p>
+                            ) : null}
+                            <p className="product-price catalog-grid-price">{product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote'}</p>
+                            <div className="catalog-grid-footer">
+                              {product.purchaseMode === 'buy' ? (
+                                <AddToCartButton productId={product.id} redirectToCart={false} bar />
+                              ) : (
+                                <Link href={productHref} className="catalog-add-to-cart-bar catalog-add-to-cart-bar-secondary">
+                                  Request Quote
+                                </Link>
+                              )}
+                            </div>
+                          </div>
                         </article>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="catalog-row-list">
@@ -412,7 +426,7 @@ export default async function CategoryPage({
 
                           <div className="catalog-row-main">
                             <div className="catalog-row-topline">
-                              <span className="product-badge">{product.purchaseMode === 'buy' ? 'Direct Buy' : 'Inquiry'}</span>
+                              <span className="product-badge">{product.inStock ? 'In Stock' : 'Lead time on request'}</span>
                               <span className="catalog-row-model">Model: {product.sku}</span>
                             </div>
 

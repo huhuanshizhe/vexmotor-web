@@ -4,9 +4,12 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
 import { apiFetch } from '@/lib/api-client';
+import { CART_UPDATED_EVENT, notifyCartUpdatedFromResponse, type CartApiSnapshot } from '@/lib/cart-session';
 import { useToast } from '@C/toast';
 import { parseLocaleFromPathname, withLocalePath } from '@/lib/i18n';
 import { useTranslation } from '@/lib/i18n-context';
+
+export { CART_UPDATED_EVENT };
 
 type AddToCartButtonProps = {
   productId: string;
@@ -17,13 +20,6 @@ type AddToCartButtonProps = {
   compact?: boolean;
   bar?: boolean;
 };
-
-/** Dispatched after a successful add-to-cart so header cart count can update. */
-export const CART_UPDATED_EVENT = 'vexmotor:cart-updated';
-
-function notifyCartUpdated() {
-  window.dispatchEvent(new CustomEvent(CART_UPDATED_EVENT));
-}
 
 export function AddToCartButton({ productId, moq = 1, showQuantitySelector = false, redirectToCart = false, showBuyNow = false, compact = false, bar = false }: AddToCartButtonProps) {
   const router = useRouter();
@@ -42,16 +38,16 @@ export function AddToCartButton({ productId, moq = 1, showQuantitySelector = fal
     startTransition(async () => {
       setMessage(null);
       try {
-        await apiFetch('/api/front/cart', {
+        const cart = await apiFetch<CartApiSnapshot>('/api/front/cart', {
           method: 'POST',
           body: JSON.stringify({ productId, quantity }),
         });
+        notifyCartUpdatedFromResponse(cart);
       } catch {
         setMessage(t('common.error'));
         return;
       }
 
-      notifyCartUpdated();
       const locale = parseLocaleFromPathname(pathname).locale;
 
       if (redirectToCart) {
@@ -72,16 +68,16 @@ export function AddToCartButton({ productId, moq = 1, showQuantitySelector = fal
     startTransition(async () => {
       setMessage(null);
       try {
-        await apiFetch('/api/front/cart', {
+        const cart = await apiFetch<CartApiSnapshot>('/api/front/cart', {
           method: 'POST',
           body: JSON.stringify({ productId, quantity }),
         });
+        notifyCartUpdatedFromResponse(cart);
       } catch {
         setMessage(t('common.error'));
         return;
       }
 
-      notifyCartUpdated();
       const locale = parseLocaleFromPathname(pathname).locale;
       router.push(withLocalePath('/checkout', locale));
     });

@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 
 import { StorefrontFrame } from '@/components/layout/storefront-frame';
 import { JsonLdScript } from '@/components/seo/json-ld';
-import { AddToCartButton } from '@/components/storefront/add-to-cart-button';
+import { PdpBuyProvider, PdpPricePanel, PdpPurchaseActions } from '@/components/storefront/pdp-buy-panel';
 import { AddToCompareButton } from '@/components/storefront/add-to-compare-button';
 import { AddToWishlistButton } from '@/components/storefront/add-to-wishlist-button';
 import { CopyActionButton } from '@/components/storefront/copy-action-button';
@@ -76,7 +76,11 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     ? { ...raw, ...(translation.name ? { name: translation.name } : {}), ...(translation.shortDescription ? { shortDescription: translation.shortDescription } : {}), ...(translation.description ? { description: translation.description } : {}), ...(translation.seoTitle ? { seoTitle: translation.seoTitle } : {}), ...(translation.seoDescription ? { seoDescription: translation.seoDescription } : {}) }
     : raw;
 
-  const galleryImages = p.gallery.length ? p.gallery : p.coverImage ? [p.coverImage] : [];
+  const galleryImages = p.coverImage
+    ? [p.coverImage, ...p.gallery.filter((image) => image.url !== p.coverImage?.url)]
+    : p.gallery.length
+      ? p.gallery
+      : [];
   const category = p.categories[0] ?? null;
   const productsPath = withLocalePath('/products', locale);
   const productPath = withLocalePath(`/products/${p.slug}`, locale);
@@ -98,11 +102,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   // Build derived data
   const specGroups = buildSpecGroups(product);
   const topSpecs = specGroups.flatMap((g) => g.rows).slice(0, 5);
-  const heroSpecs = topSpecs.slice(0, 4);
+  const heroSpecs = topSpecs.filter((item) => item.label !== 'SKU').slice(0, 4);
 
   const priceHeadline = p.purchaseMode === 'buy' ? p.price.formatted : 'Request Quote';
-  const procurementLabel = p.purchaseMode === 'buy' ? 'Direct Buy' : 'RFQ Project';
-  const availabilityLabel = p.inStock ? 'Stock program active' : 'Build-to-order review';
 
   const lifecycleBadge = (() => {
     if (!p.lifecycleStatus || p.lifecycleStatus === 'active') return null;
@@ -124,11 +126,14 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       : [];
 
   // URLs
-  const queryForQuote = new URLSearchParams({ topic: 'quote', product: p.sku }).toString();
+  const queryForQuote = new URLSearchParams({
+    addSku: p.sku,
+    productId: p.id,
+  }).toString();
   const queryForSample = new URLSearchParams({ topic: 'sample', product: p.sku }).toString();
   const queryForVolume = new URLSearchParams({ sku: p.sku }).toString();
   const queryForCustom = new URLSearchParams({ sourceSku: p.sku, sourceProduct: p.name }).toString();
-  const quoteHref = `${contactPath}?${queryForQuote}`;
+  const quoteHref = `${withLocalePath('/quote', locale)}?${queryForQuote}`;
   const sampleHref = `${contactPath}?${queryForSample}`;
   const volumePricingHref = `${withLocalePath('/volume-pricing', locale)}?${queryForVolume}`;
   const customHref = `${withLocalePath('/custom', locale)}?${queryForCustom}`;
@@ -236,6 +241,92 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             </div>
 
             <article className="info-card product-summary-card pdp-buybox-card">
+              {p.purchaseMode === 'buy' ? (
+                <PdpBuyProvider
+                  productId={p.id}
+                  moq={p.moq}
+                  basePriceAmount={p.price.amount}
+                  currency={p.price.currency}
+                  volumePricingRules={commerceConfig.volumePricingRules}
+                >
+              <div className="pdp-header-stack">
+                <div className="pdp-sku-row">
+                  <p className="product-meta">SKU {p.sku}</p>
+                  <div className="pdp-sku-actions">
+                    <CopyActionButton value={p.sku} idleLabel="Copy SKU" copiedLabel="SKU copied" toastTitle="SKU copied" className="button-secondary" />
+                    {datasheetAttachment ? (
+                      <a href={datasheetAttachment.url} target="_blank" rel="noreferrer" className="button-secondary">View datasheet</a>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              <PdpPricePanel
+                priceHeadline={priceHeadline}
+                compareAtPrice={p.compareAtPrice?.formatted}
+                volumePricingHref={volumePricingHref}
+              />
+
+              <div className="pdp-specs-strip">
+                {heroSpecs.map((item) => (
+                  <span key={`${item.label}-${item.value}`} className="pdp-spec-chip">
+                    <span className="pdp-spec-chip-label">{item.label}</span>
+                    <span className="pdp-spec-chip-value">{item.value}</span>
+                  </span>
+                ))}
+              </div>
+
+              <div className="pdp-logistics-bar">
+                <span className="pdp-logistics-item">{p.moq > 1 ? `MOQ ${p.moq}` : 'No MOQ'}</span>
+                <span className="pdp-logistics-divider" aria-hidden="true" />
+                <span className="pdp-logistics-item">{p.inStock ? `${p.stockQuantity} in stock` : 'Build to order'}</span>
+                <span className="pdp-logistics-divider" aria-hidden="true" />
+                <span className="pdp-logistics-item">{p.leadTimeMin}–{p.leadTimeMax} {p.leadTimeUnit.replace(/_/g, ' ')}</span>
+                {p.efficiencyClass ? (
+                  <>
+                    <span className="pdp-logistics-divider" aria-hidden="true" />
+                    <span className="pdp-logistics-item">{p.efficiencyClass}</span>
+                  </>
+                ) : null}
+              </div>
+
+              {p.paidSampleEnabled ? (
+                <div className="pdp-sample-banner">
+                  <span className="pdp-sample-badge">Pay-for-Shipping Sample</span>
+                  <p className="pdp-sample-desc">Try before you buy — order 1 unit as a sample, pay only shipping. Our team will review and confirm your sample request.</p>
+                  <Link href={`${sampleHref}&sample=1`} className="button-primary pdp-sample-cta">Request Sample — Shipping Only</Link>
+                </div>
+              ) : null}
+
+              <PdpPurchaseActions />
+
+              <div className="pdp-primary-cta">
+                <Link href={quoteHref} className="button-secondary pdp-quote-button">Add to Quote</Link>
+                <div className="pdp-support-links">
+                  <Link href={customHref} className="detail-inline-link">Discuss a custom variant</Link>
+                  <Link href={contactPath} className="detail-inline-link">Talk to engineering support</Link>
+                </div>
+              </div>
+
+              <div className="pdp-utility-actions">
+                <AddToCompareButton
+                  item={{
+                    id: p.id,
+                    name: p.name,
+                    slug: p.slug,
+                    sku: p.sku,
+                    priceLabel: p.price.formatted,
+                    purchaseMode: p.purchaseMode,
+                    inStock: p.inStock,
+                    shortDescription: p.shortDescription,
+                    categories: p.categories.map((item) => item.name),
+                  }}
+                />
+                <AddToWishlistButton productId={p.id} />
+              </div>
+                </PdpBuyProvider>
+              ) : (
+                <>
               <div className="pdp-header-stack">
                 <div className="pdp-sku-row">
                   <p className="product-meta">SKU {p.sku}</p>
@@ -250,17 +341,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
               <div className="product-pricing-stack pdp-price-panel">
                 <p className="product-price">{priceHeadline}</p>
-                {p.compareAtPrice ? <p className="comparison-note">Ref {p.compareAtPrice.formatted}</p> : null}
-                {bulkPrices.length ? (
-                  <details className="pdp-tier-pricing">
-                    <summary>Tier pricing</summary>
-                    <div className="detail-volume-pricing">
-                      {bulkPrices.map((item) => (
-                        <span key={item.label} className="detail-volume-line">{item.rangeLabel} pcs {item.unitPriceLabel}</span>
-                      ))}
-                    </div>
-                  </details>
-                ) : null}
               </div>
 
               <div className="pdp-specs-strip">
@@ -295,29 +375,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               ) : null}
 
               <div className="product-action-stack pdp-action-cluster">
-                {p.purchaseMode === 'buy' ? (
-                  <AddToCartButton productId={p.id} moq={p.moq} showQuantitySelector showBuyNow />
-                ) : (
-                  <div className="inquiry-form-wrap">
-                    <ProductInquiryForm productId={p.id} productName={p.name} />
-                  </div>
-                )}
-
-                {p.purchaseMode === 'buy' ? (
-                  <div className="pdp-primary-cta">
-                    <Link href={quoteHref} className="button-secondary pdp-quote-button">Add to Quote</Link>
-                    <div className="pdp-support-links">
-                      <Link href={customHref} className="detail-inline-link">Discuss a custom variant</Link>
-                      <Link href={contactPath} className="detail-inline-link">Talk to engineering support</Link>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="pdp-support-links">
-                    <Link href={customHref} className="detail-inline-link">Discuss a custom variant</Link>
-                    <Link href={contactPath} className="detail-inline-link">Talk to engineering support</Link>
-                  </div>
-                )}
-
+                <div className="inquiry-form-wrap">
+                  <ProductInquiryForm productId={p.id} productName={p.name} />
+                </div>
+                <div className="pdp-support-links">
+                  <Link href={customHref} className="detail-inline-link">Discuss a custom variant</Link>
+                  <Link href={contactPath} className="detail-inline-link">Talk to engineering support</Link>
+                </div>
                 <div className="pdp-utility-actions">
                   <AddToCompareButton
                     item={{
@@ -325,7 +389,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                       name: p.name,
                       slug: p.slug,
                       sku: p.sku,
-                      priceLabel: p.purchaseMode === 'buy' ? p.price.formatted : 'Request Quote',
+                      priceLabel: 'Request Quote',
                       purchaseMode: p.purchaseMode,
                       inStock: p.inStock,
                       shortDescription: p.shortDescription,
@@ -335,6 +399,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   <AddToWishlistButton productId={p.id} />
                 </div>
               </div>
+                </>
+              )}
 
               <div className="pdp-trust-list">
                 {trustItems.map((item) => (

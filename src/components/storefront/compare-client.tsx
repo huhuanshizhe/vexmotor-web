@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 
 import { useToast } from '@C/toast';
 import { apiFetch } from '@/lib/api-client';
+import { notifyCartUpdatedFromResponse, type CartApiSnapshot } from '@/lib/cart-session';
 import type { Locale } from '@/lib/i18n';
 import { withLocalePath } from '@/lib/i18n';
 import {
@@ -285,9 +286,10 @@ export function CompareClient({ locale, catalogProducts }: CompareClientProps) {
 
     startTransition(async () => {
       let successCount = 0;
+      let lastCart: CartApiSnapshot | undefined;
       for (const item of buyItems) {
         try {
-          await apiFetch('/api/front/cart', {
+          lastCart = await apiFetch<CartApiSnapshot>('/api/front/cart', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ productId: item.id, quantity: 1 }),
@@ -299,6 +301,7 @@ export function CompareClient({ locale, catalogProducts }: CompareClientProps) {
       }
 
       if (successCount) {
+        notifyCartUpdatedFromResponse(lastCart);
         pushToast({
           title: 'Compare items added to cart',
           description: `${successCount} direct-buy SKU${successCount === 1 ? '' : 's'} added from the compare list.`,
