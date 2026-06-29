@@ -1,4 +1,5 @@
 import { serverFetch } from '@/lib/api-client';
+import { mergeCategoriesWithShell } from '@/lib/catalog-categories';
 import type { CommerceConfig } from '@/lib/commerce-config';
 import type { GlossaryTerm, StorefrontFaq, TechFaqCategory, TechFaqEntry } from '@/lib/knowledge';
 import type { PressRelease } from '@/lib/press';
@@ -100,8 +101,13 @@ export function getNavigationData(): NavigationData {
 }
 
 export async function getCategories(): Promise<StorefrontCategory[]> {
-  const response = await serverFetch<StorefrontCategory[] | { categories?: StorefrontCategory[] }>('/api/front/categories');
-  return Array.isArray(response) ? response : response.categories ?? [];
+  try {
+    const response = await serverFetch<StorefrontCategory[] | { categories?: StorefrontCategory[] }>('/api/front/categories');
+    const apiCategories = Array.isArray(response) ? response : response.categories ?? [];
+    return mergeCategoriesWithShell(apiCategories);
+  } catch {
+    return mergeCategoriesWithShell([]);
+  }
 }
 
 export async function getProductList(params: ProductListParams = {}): Promise<ProductListResult> {

@@ -13,6 +13,7 @@ import { withLocalePath } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { getServerSitePreferences } from '@/lib/i18n-server';
 import { buildBreadcrumbJsonLd, buildMetadata } from '@/lib/seo';
+import { listShellCatalogCategories, mergeCategoriesWithShell, resolveStorefrontCategory } from '@/lib/catalog-categories';
 import { getCategories, getProductList, type ProductListSort } from '@/lib/storefront-api';
 
 // ISR: revalidate category pages every 2 minutes
@@ -42,17 +43,13 @@ function normalizeLocalePath(path: string, locale: Locale) {
 }
 
 export async function generateStaticParams() {
-  try {
-    const categories = await getCategories();
-    return categories.map((category) => ({ categorySlug: category.slug }));
-  } catch {
-    return [];
-  }
+  return listShellCatalogCategories().map((category) => ({ categorySlug: category.slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ categorySlug: string }> }): Promise<Metadata> {
-  const [{ locale }, categories, { categorySlug }] = await Promise.all([getServerSitePreferences(), getCategories(), params]);
-  const category = categories.find((item) => item.slug === categorySlug);
+  const [{ locale }, { categorySlug }] = await Promise.all([getServerSitePreferences(), params]);
+  const apiCategories = await getCategories().catch(() => []);
+  const category = resolveStorefrontCategory(categorySlug, apiCategories);
 
   if (!category) {
     return buildMetadata({
@@ -78,8 +75,10 @@ export default async function CategoryPage({
   params: Promise<{ categorySlug: string }>;
   searchParams: CategoryPageSearchParams;
 }) {
-  const [{ locale }, categories, routeParams, query] = await Promise.all([getServerSitePreferences(), getCategories(), params, searchParams]);
-  const selectedCategory = categories.find((item) => item.slug === routeParams.categorySlug);
+  const [{ locale }, routeParams, query] = await Promise.all([getServerSitePreferences(), params, searchParams]);
+  const apiCategories = await getCategories().catch(() => []);
+  const categories = mergeCategoriesWithShell(apiCategories);
+  const selectedCategory = resolveStorefrontCategory(routeParams.categorySlug, apiCategories);
 
   if (!selectedCategory) {
     notFound();
