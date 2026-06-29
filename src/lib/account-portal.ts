@@ -2,15 +2,11 @@ export const accountNavLinks = [
   { href: '/account', label: 'Overview' },
   { href: '/account/orders', label: 'Orders' },
   { href: '/account/quotes', label: 'Quotes' },
-  { href: '/account/reorder', label: 'Reorder' },
-  { href: '/account/lists', label: 'Lists' },
   { href: '/account/addresses', label: 'Addresses' },
   { href: '/account/company', label: 'Company' },
   { href: '/account/invoices', label: 'Invoices' },
   { href: '/account/downloads', label: 'Downloads' },
-  { href: '/account/company#team', label: 'Team' },
   { href: '/account/settings', label: 'Settings' },
-  { href: '/account/wishlist', label: 'Wishlist' },
   { href: '/account/inquiries', label: 'Inquiries' },
 ] as const;
 

@@ -11,7 +11,8 @@ import { buildMetadata, buildWebsiteJsonLd } from '@/lib/seo';
 import { solutionIndustries } from '@/lib/solutions';
 import { getBoardBlogs } from '@/lib/storefront-api';
 import { getRecentBoardBlogPosts } from '@/lib/board-blog-helpers';
-import { getCategories, getHomeData, getProductList } from '@/lib/storefront-api';
+import { homeShopByCategories } from '@/lib/site-shell';
+import { getHomeData, getProductList } from '@/lib/storefront-api';
 
 export async function generateMetadata() {
   const { locale } = await getServerSitePreferences();
@@ -70,24 +71,12 @@ export default async function HomePage() {
   const preferences = await getServerSitePreferences();
   const locale = preferences.locale;
 
-  const [homeData, categories, featuredResult, blogBoard] = await Promise.all([
+  const [homeData, featuredResult, blogBoard] = await Promise.all([
     getHomeData(),
-    getCategories(),
     getProductList({ purchaseMode: 'buy', pageSize: 8, sort: 'featured' }),
     getBoardBlogs('blog', locale),
   ]);
 
-  const categoryTiles = [
-    ...categories
-      .filter((category) => category.isFeatured && (category.productCount ?? 0) > 0)
-      .sort((left, right) => (left.featuredOrder ?? 0) - (right.featuredOrder ?? 0)),
-    ...homeData.featuredCategories,
-    ...categories
-      .filter((category) => (category.productCount ?? 0) > 0)
-      .sort((left, right) => (right.productCount ?? 0) - (left.productCount ?? 0)),
-  ]
-    .filter((category, index, allCategories) => allCategories.findIndex((item) => item.slug === category.slug) === index)
-    .slice(0, 15); // 3 排 x 5 列 = 15 个
   const featuredIndustries = solutionIndustries.slice(0, 6);
   const featuredProducts = featuredResult.items.slice(0, 8);
   const latestArticles = getRecentBoardBlogPosts(blogBoard.items, 4);
@@ -141,7 +130,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 3. Shop by Category 三排六列 */}
+      {/* 3. Shop by Category */}
       <section className="section">
         <div className="section-inner">
           <div className="section-header">
@@ -149,19 +138,19 @@ export default async function HomePage() {
               <h2 className="section-title">Shop by Category</h2>
               <p className="section-description">Jump straight into the motion category you are sourcing.</p>
             </div>
-            <Link href={withLocalePath('/products', locale)} className="section-link">
+            <Link href={withLocalePath('/categories', locale)} className="section-link">
               View all categories
             </Link>
           </div>
 
           <ul className="home-category-grid-18">
-            {categoryTiles.map((category) => (
-              <li key={category.id}>
+            {homeShopByCategories.map((category) => (
+              <li key={category.slug}>
                 <Link href={withLocalePath(`/c/${category.slug}`, locale)} className="home-category-card">
                   <div className="home-category-image">
                     <Image
-                      src={category.image?.url ?? `/categories/${category.slug}.png`}
-                      alt={category.image?.alt ?? category.name}
+                      src={`/categories/${category.slug}.png`}
+                      alt={category.name}
                       width={200}
                       height={200}
                       sizes="(max-width: 768px) 150px, 200px"
@@ -169,9 +158,6 @@ export default async function HomePage() {
                     />
                   </div>
                   <span className="home-category-name">{category.name}</span>
-                  {typeof category.productCount === 'number' ? (
-                    <span className="home-category-count">{category.productCount} products</span>
-                  ) : null}
                 </Link>
               </li>
             ))}

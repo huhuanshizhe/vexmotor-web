@@ -2,9 +2,12 @@ import { serverFetch } from '@/lib/api-client';
 import type { CommerceConfig } from '@/lib/commerce-config';
 import type { GlossaryTerm, StorefrontFaq, TechFaqCategory, TechFaqEntry } from '@/lib/knowledge';
 import type { PressRelease } from '@/lib/press';
+import { homeShell, getStorefrontNavigation } from '@/lib/site-shell';
+import { getLocalSupportCatalog, getSupportPageBySlug as getLocalSupportPageBySlug } from '@/lib/support-content';
 
 import type {
   HomeData,
+  HomeDynamicData,
   NavigationData,
   ProductListResult,
   ProductListSort,
@@ -76,11 +79,22 @@ function buildProductListQuery(params: ProductListParams) {
 }
 
 export async function getHomeData(): Promise<HomeData> {
-  return serverFetch<HomeData>('/api/front/home');
+  try {
+    const response = await serverFetch<HomeDynamicData & { locale?: string }>('/api/front/home');
+    const { locale: _locale, ...dynamic } = response;
+    return {
+      ...homeShell,
+      ...dynamic,
+      heroBanners: dynamic.heroBanners?.length ? dynamic.heroBanners : homeShell.heroBanners,
+    };
+  } catch {
+    return homeShell;
+  }
 }
 
-export async function getNavigationData(): Promise<NavigationData> {
-  return serverFetch<NavigationData>('/api/front/navigation');
+/** Navigation links are static in web; no admin API call. */
+export function getNavigationData(): NavigationData {
+  return getStorefrontNavigation();
 }
 
 export async function getCategories(): Promise<StorefrontCategory[]> {
@@ -110,16 +124,11 @@ export async function getCommerceConfig(): Promise<CommerceConfig> {
 }
 
 export async function getSupportCatalog(): Promise<SupportCatalog> {
-  return serverFetch<SupportCatalog>('/api/front/support');
+  return getLocalSupportCatalog();
 }
 
 export async function getSupportPageBySlug(slug: string): Promise<SupportPage | null> {
-  try {
-    return await serverFetch<SupportPage>(`/api/front/support/${encodeURIComponent(slug)}`);
-  } catch {
-    const catalog = await getSupportCatalog();
-    return catalog.pages.find((page) => page.slug === slug) ?? null;
-  }
+  return getLocalSupportPageBySlug(slug);
 }
 
 export async function getKnowledgeCatalog(): Promise<KnowledgeCatalog> {

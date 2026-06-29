@@ -249,3 +249,13 @@ export type HomeData = {
   paymentMethods: string[];
   copyright: string;
 };
+
+/** Dynamic homepage payload from admin API (database-backed only). */
+export type HomeDynamicData = {
+  heroBanners?: HomeData['heroBanners'];
+  featuredCategories: StorefrontCategory[];
+  hotSale: StorefrontProductCard[];
+  newRelease: StorefrontProductCard[];
+  featuredShelves: HomeProductShelf[];
+  mostViewedProducts: StorefrontProductCard[];
+};

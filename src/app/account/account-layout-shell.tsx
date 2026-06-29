@@ -8,11 +8,6 @@ import { accountNavLinks } from '@/lib/account-portal';
 import { withLocalePath } from '@/lib/i18n';
 import { useTranslation } from '@/lib/i18n-context';
 
-const accountLinks = [
-  ...accountNavLinks,
-  { href: '/cart', label: 'Cart' },
-];
-
 export function AccountLayoutShell({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
   const { locale } = useTranslation();
@@ -38,7 +33,7 @@ export function AccountLayoutShell({ children }: { children: ReactNode }) {
       <aside className="info-card account-nav-card">
         <div className="card-kicker">Account navigation</div>
         <div className="account-nav-list">
-          {accountLinks.map((item) => (
+          {accountNavLinks.map((item) => (
             <Link key={item.href} href={withLocalePath(item.href, locale)} className="nav-link">
               {item.label}
             </Link>

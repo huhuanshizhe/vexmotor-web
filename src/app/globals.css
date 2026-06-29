@@ -247,6 +247,15 @@ main {
   color: var(--color-primary);
 }
 
+.header-icon-link.is-authenticated {
+  background: rgba(16, 41, 66, 0.08);
+  color: var(--color-primary);
+}
+
+.header-icon-link.is-authenticated:hover {
+  background: rgba(16, 41, 66, 0.12);
+}
+
 .header-icon-link-inner {
   position: relative;
   display: inline-flex;
@@ -724,13 +733,13 @@ main {
   font-weight: 500;
 }
 
-/* 3 排 × 6 列 网格 */
+/* Shop by Category — 2 排 × 5 列 */
 .home-category-grid-18 {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 20px;
   margin-top: 32px;
 }
@@ -769,10 +778,19 @@ main {
   color: #64748b;
 }
 
+.categories-page-stack {
+  display: grid;
+  gap: 40px;
+}
+
+.categories-page-group-header {
+  margin-bottom: 20px;
+}
+
 /* 响应式布局 */
 @media (max-width: 1200px) {
   .home-category-grid-18 {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { apiFetch } from '@/lib/api-client';
+import { useAuth } from '@/components/providers/auth-provider';
+import { apiFetch, getAccessToken } from '@/lib/api-client';
 import { COMPARE_ITEMS_UPDATED_EVENT, readCompareItems } from '@/lib/compare-items';
 import { withLocalePath } from '@/lib/i18n';
 import { useTranslation } from '@/lib/i18n-context';
@@ -53,17 +54,49 @@ function LoginIcon({ className }: { className?: string }) {
   );
 }
 
+function AccountIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 20c0-3.314 3.582-6 8-6s8 2.686 8 6v1H4v-1z" />
+    </svg>
+  );
+}
+
 const UTILITY_ICONS: Record<string, (props: { className?: string }) => React.JSX.Element> = {
   cart: CartIcon,
   Compare: CompareIcon,
   Wishlist: WishlistIcon,
   Login: LoginIcon,
+  Account: AccountIcon,
 };
 
+function isLoginUtilityLink(item: StorefrontUtilityLink) {
+  return item.label === 'Login' || item.href === '/login' || item.href.endsWith('/login');
+}
+
+function resolveUtilityLinks(links: StorefrontUtilityLink[], showAccount: boolean): StorefrontUtilityLink[] {
+  return links.map((item) => {
+    if (!isLoginUtilityLink(item)) {
+      return item;
+    }
+
+    if (showAccount) {
+      return { ...item, label: 'Account', href: '/account' };
+    }
+
+    return item;
+  });
+}
+
 export function HeaderUtilityStrip({ links, initialCartCount }: HeaderUtilityStripProps) {
-  const { locale } = useTranslation();
+  const { locale, t } = useTranslation();
+  const { user, isLoading } = useAuth();
   const [compareCount, setCompareCount] = useState(0);
   const [cartCount, setCartCount] = useState(initialCartCount);
+
+  const showAccount = Boolean(user) || (isLoading && Boolean(getAccessToken()));
+  const resolvedLinks = useMemo(() => resolveUtilityLinks(links, showAccount), [links, showAccount]);
 
   useEffect(() => {
     const syncCompareCount = () => {
@@ -97,9 +130,11 @@ export function HeaderUtilityStrip({ links, initialCartCount }: HeaderUtilityStr
       <LanguageSwitcher />
 
       <div className="header-icon-links">
-        {links.map((item) => {
+        {resolvedLinks.map((item) => {
           const IconComponent = UTILITY_ICONS[item.label];
           const count = item.label === 'cart' ? cartCount : item.label === 'Compare' ? compareCount : null;
+          const isAccountLink = item.label === 'Account';
+          const linkTitle = isAccountLink ? t('header.myAccount') : item.label === 'Login' ? t('header.login') : item.label;
 
           const linkContent = (
             <span className="header-icon-link-inner">
@@ -108,18 +143,18 @@ export function HeaderUtilityStrip({ links, initialCartCount }: HeaderUtilityStr
             </span>
           );
 
-          const className = 'header-icon-link';
+          const className = `header-icon-link${isAccountLink ? ' is-authenticated' : ''}`;
 
           if (item.external) {
             return (
-              <a key={`${item.label}-${item.href}`} href={item.href} className={className} target="_blank" rel="noreferrer" title={item.label}>
+              <a key={`${item.label}-${item.href}`} href={item.href} className={className} target="_blank" rel="noreferrer" title={linkTitle}>
                 {linkContent}
               </a>
             );
           }
 
           return (
-            <Link key={`${item.label}-${item.href}`} href={item.href.startsWith('/') ? withLocalePath(item.href, locale) : item.href} className={className} title={item.label}>
+            <Link key={`${item.label}-${item.href}`} href={item.href.startsWith('/') ? withLocalePath(item.href, locale) : item.href} className={className} title={linkTitle}>
               {linkContent}
             </Link>
           );
