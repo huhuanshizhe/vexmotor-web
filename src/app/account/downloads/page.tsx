@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { withLocalePath } from '@/lib/i18n';
+import { getServerSitePreferences } from '@/lib/i18n-server';
 import { accountDownloadRecords } from '@/lib/account-portal';
 
 export default async function AccountDownloadsPage({
@@ -7,7 +9,7 @@ export default async function AccountDownloadsPage({
 }: {
   searchParams: Promise<{ updated?: string; type?: string; language?: string }>;
 }) {
-  const params = await searchParams;
+  const [{ locale }, params] = await Promise.all([getServerSitePreferences(), searchParams]);
   const updatedOnly = params.updated === '1';
   const type = params.type ?? 'all';
   const language = params.language ?? 'all';
@@ -32,13 +34,13 @@ export default async function AccountDownloadsPage({
         <strong>{updatedCount} updated documents available</strong>
         <p className="section-description">Use updated-only mode for the newest document revisions, or package the current delta into one ZIP for handoff.</p>
         <div className="trade-empty-actions">
-          <Link href="/account/downloads?updated=1" className="button-secondary">Show updated only</Link>
-          <a href="/account/downloads/bulk" className="button-primary">Download updated pack</a>
+          <Link href={withLocalePath('/account/downloads?updated=1', locale)} className="button-secondary">Show updated only</Link>
+          <a href={withLocalePath('/account/downloads/bulk', locale)} className="button-primary">Download updated pack</a>
         </div>
       </article>
 
       <article className="info-card">
-        <form action="/account/downloads" className="account-toolbar">
+        <form action={withLocalePath('/account/downloads', locale)} className="account-toolbar">
           <label className="knowledge-search-field">
             <span>Document type</span>
             <select name="type" defaultValue={type} className="form-input">
@@ -87,8 +89,8 @@ export default async function AccountDownloadsPage({
             <span>{record.sizeLabel}</span>
             <span>{record.updated ? `${record.updatedAt} · New` : record.updatedAt}</span>
             <div className="account-inline-actions">
-              <a href={record.href} className="nav-link">Download</a>
-              <Link href={`/products/${record.productSlug}`} className="nav-link">Open SKU</Link>
+              <a href={record.href.startsWith('/') ? withLocalePath(record.href, locale) : record.href} className="nav-link">Download</a>
+              <Link href={withLocalePath(`/products/${record.productSlug}`, locale)} className="nav-link">Open SKU</Link>
             </div>
           </div>
         ))}

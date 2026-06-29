@@ -5,8 +5,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import {
   type Locale,
   DEFAULT_LOCALE,
+  stripLocaleFromPath,
   withLocalePath,
-  parseLocaleFromPathname,
   getMarketDefaults,
   LOCALE_COOKIE_NAME,
   CURRENCY_COOKIE_NAME,
@@ -95,7 +95,7 @@ export function I18nProvider({
     document.body.dataset.currency = defaults.currency;
     document.body.dataset.unitSystem = defaults.unitSystem;
 
-    const strippedPath = parseLocaleFromPathname(pathname).pathname;
+    const strippedPath = stripLocaleFromPath(pathname);
     const newPath = withLocalePath(strippedPath, newLocale);
 
     if (newPath !== pathname) {

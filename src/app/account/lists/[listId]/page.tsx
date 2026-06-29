@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { AddToCartButton } from '@/components/storefront/add-to-cart-button';
+import { withLocalePath } from '@/lib/i18n';
+import { getServerSitePreferences } from '@/lib/i18n-server';
 import { getAccountSavedListById } from '@/lib/account-portal';
 import { getProductBySlug } from '@/lib/storefront-api';
 
@@ -10,7 +12,7 @@ type AccountListDetailPageProps = {
 };
 
 export default async function AccountListDetailPage({ params }: AccountListDetailPageProps) {
-  const { listId } = await params;
+  const [{ locale }, { listId }] = await Promise.all([getServerSitePreferences(), params]);
   const list = getAccountSavedListById(listId);
 
   if (!list) {
@@ -35,10 +37,10 @@ export default async function AccountListDetailPage({ params }: AccountListDetai
 
       <article className="info-card">
         <div className="trade-empty-actions">
-          <Link href="/cart" className="button-primary">Add all to cart</Link>
-          <Link href="/sample" className="button-secondary">Add all to sample</Link>
-          <Link href="/quote" className="button-secondary">Add all to quote</Link>
-          <Link href="/account/lists" className="button-secondary">Duplicate / delete</Link>
+          <Link href={withLocalePath('/cart', locale)} className="button-primary">Add all to cart</Link>
+          <Link href={withLocalePath('/sample', locale)} className="button-secondary">Add all to sample</Link>
+          <Link href={withLocalePath('/quote', locale)} className="button-secondary">Add all to quote</Link>
+          <Link href={withLocalePath('/account/lists', locale)} className="button-secondary">Duplicate / delete</Link>
         </div>
       </article>
 
@@ -66,7 +68,7 @@ export default async function AccountListDetailPage({ params }: AccountListDetai
               <span>{item.priceLabel}</span>
               <div className="account-inline-actions">
                 {product ? <AddToCartButton productId={product.id} redirectToCart={false} /> : null}
-                <Link href={`/products/${item.productSlug}`} className="nav-link">Open</Link>
+                <Link href={withLocalePath(`/products/${item.productSlug}`, locale)} className="nav-link">Open</Link>
               </div>
             </div>
           );

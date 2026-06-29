@@ -1,8 +1,12 @@
 import Link from 'next/link';
 
+import { withLocalePath } from '@/lib/i18n';
+import { getServerSitePreferences } from '@/lib/i18n-server';
 import { accountCompanyProfile } from '@/lib/account-portal';
 
 export default async function AccountCompanyPage() {
+  const { locale } = await getServerSitePreferences();
+
   return (
     <div className="account-panel-stack">
       <div className="section-header">
@@ -71,7 +75,7 @@ export default async function AccountCompanyPage() {
             </article>
           </div>
           <p className="section-description">{accountCompanyProfile.credit.note}</p>
-          <Link href="/support/contact?topic=sales" className="section-link">Apply for credit</Link>
+          <Link href={withLocalePath('/support/contact?topic=sales', locale)} className="section-link">Apply for credit</Link>
         </article>
 
         <article className="info-card">
@@ -100,8 +104,8 @@ export default async function AccountCompanyPage() {
             ))}
           </div>
           <div className="trade-empty-actions">
-            <Link href="/support/contact?topic=partnership" className="button-secondary">Invite teammate</Link>
-            <Link href="/account/settings" className="button-primary">Review permissions</Link>
+            <Link href={withLocalePath('/support/contact?topic=partnership', locale)} className="button-secondary">Invite teammate</Link>
+            <Link href={withLocalePath('/account/settings', locale)} className="button-primary">Review permissions</Link>
           </div>
         </article>
       </div>

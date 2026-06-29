@@ -88,6 +88,62 @@ export const LOCALE_MARKET_OPTIONS = SUPPORTED_LOCALES.map((code) => ({
   shortCode: code.toUpperCase(),
 }));
 
+export function isDefaultLocale(locale: Locale): boolean {
+  return locale === DEFAULT_LOCALE;
+}
+
+export function parseAcceptLanguage(header: string | null | undefined): Locale | null {
+  if (!header) return null;
+  try {
+    const locales = header
+      .split(',')
+      .map((part) => {
+        const [code, q = '1'] = part.trim().split(';q=');
+        return { code: code.split('-')[0].toLowerCase(), q: parseFloat(q) };
+      })
+      .sort((a, b) => b.q - a.q);
+    for (const { code } of locales) {
+      if (isSupportedLocale(code)) return code;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve locale for an incoming document request.
+ * - `/de/*`, `/es/*`, `/en/*`: locale comes from the URL prefix (en is redirected separately).
+ * - Unprefixed paths: English (default); first-time visitors may match Accept-Language when no cookie exists.
+ */
+export function resolveRequestLocale(input: {
+  pathname: string;
+  cookieLocale?: string | null;
+  acceptLanguage?: string | null;
+}): Locale {
+  const { locale: urlLocale, hadPrefix } = parseLocaleFromPathname(input.pathname);
+
+  if (hadPrefix) {
+    return urlLocale;
+  }
+
+  const hasCookie = Boolean(input.cookieLocale);
+  if (!hasCookie) {
+    const detected = parseAcceptLanguage(input.acceptLanguage);
+    if (detected) {
+      return detected;
+    }
+  }
+
+  return DEFAULT_LOCALE;
+}
+
+/**
+ * Parse locale prefix from a pathname.
+ * - `/es/products` → locale `es`, path `/products`, hadPrefix true
+ * - `/en/products` → locale `en`, path `/products` (middleware redirects to `/products`)
+ * - `/products` → locale `en` (default), hadPrefix false
+ */
 export function parseLocaleFromPathname(pathname: string) {
   const normalizedPathname = pathname.startsWith('/') ? pathname : `/${pathname}`;
   const [firstSegment, ...restSegments] = normalizedPathname.split('/').filter(Boolean);
@@ -109,16 +165,45 @@ export function parseLocaleFromPathname(pathname: string) {
   };
 }
 
+/** Strip an optional locale prefix from a path (ignores query/hash). */
+export function stripLocaleFromPath(pathname: string) {
+  const hashIndex = pathname.indexOf('#');
+  const queryIndex = pathname.indexOf('?');
+  const pathEnd = Math.min(
+    queryIndex >= 0 ? queryIndex : pathname.length,
+    hashIndex >= 0 ? hashIndex : pathname.length,
+  );
+  const pathOnly = pathname.slice(0, pathEnd);
+  const suffix = pathname.slice(pathEnd);
+  const { pathname: stripped } = parseLocaleFromPathname(pathOnly);
+
+  return `${stripped}${suffix}`;
+}
+
+/**
+ * Prefix internal paths with the active locale.
+ * - Default locale (en): no prefix — bare path means English.
+ * - Other locales: `/de/...`, `/es/...`
+ * Idempotent: strips an existing locale prefix before applying the target locale.
+ */
 export function withLocalePath(pathname: string, locale: Locale) {
-  if (!pathname.startsWith('/')) {
+  if (!pathname.startsWith('/') || pathname.startsWith('//')) {
     return pathname;
   }
 
-  if (pathname === '/') {
+  const normalized = stripLocaleFromPath(pathname);
+  const barePath = normalized.split('?')[0].split('#')[0];
+
+  // Static assets (e.g. /downloads/file.txt) are served without locale routing.
+  if (/\.[a-z0-9]{2,8}$/i.test(barePath)) {
+    return normalized;
+  }
+
+  if (normalized === '/') {
     return locale === DEFAULT_LOCALE ? '/' : `/${locale}`;
   }
 
-  return locale === DEFAULT_LOCALE ? pathname : `/${locale}${pathname}`;
+  return locale === DEFAULT_LOCALE ? normalized : `/${locale}${normalized}`;
 }
 
 export function toPreferenceCookie(name: string, value: string, maxAge = PREFERENCE_COOKIE_MAX_AGE) {

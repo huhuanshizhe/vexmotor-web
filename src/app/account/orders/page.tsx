@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { LocalizedLink as Link } from '@/components/i18n/localized-link';
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/components/providers/auth-provider';

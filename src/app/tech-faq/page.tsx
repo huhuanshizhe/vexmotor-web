@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import { redirectLocalized } from '@/lib/i18n-server';
 
-export default function TechFaqRedirect() {
-  redirect('/faq?tab=technical');
+export default async function TechFaqRedirect() {
+  await redirectLocalized('/faq?tab=technical');
 }

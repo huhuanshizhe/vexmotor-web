@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { LocalizedLink as Link } from '@/components/i18n/localized-link';
 import { useEffect } from 'react';
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {

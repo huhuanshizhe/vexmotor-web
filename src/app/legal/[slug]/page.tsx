@@ -69,7 +69,7 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
       description={page.description}
       actions={
         <>
-          <a href={`/legal/${page.slug}/history`} className="button-primary">
+          <a href={withLocalePath(`/legal/${page.slug}/history`, locale)} className="button-primary">
             Download Version History
           </a>
           <Link href={withLocalePath('/support/contact?topic=legal', locale)} className="button-secondary page-button-secondary-dark">
@@ -177,7 +177,7 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
                   </div>
                 ))}
               </div>
-              <a href={`/legal/${page.slug}/history`} className="button-secondary">
+              <a href={withLocalePath(`/legal/${page.slug}/history`, locale)} className="button-secondary">
                 Download version history (PDF)
               </a>
             </article>

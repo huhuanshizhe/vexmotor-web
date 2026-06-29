@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { withLocalePath } from '@/lib/i18n';
+import { getServerSitePreferences } from '@/lib/i18n-server';
 import { accountQuoteRecords } from '@/lib/account-portal';
 
 export default async function AccountQuotesPage({
@@ -7,7 +9,7 @@ export default async function AccountQuotesPage({
 }: {
   searchParams: Promise<{ status?: string; q?: string }>;
 }) {
-  const params = await searchParams;
+  const [{ locale }, params] = await Promise.all([getServerSitePreferences(), searchParams]);
   const query = params.q?.trim().toLowerCase() ?? '';
   const status = params.status ?? 'all';
   const quotes = accountQuoteRecords.filter((quote) => {
@@ -26,7 +28,7 @@ export default async function AccountQuotesPage({
       </div>
 
       <article className="info-card">
-        <form action="/account/quotes" className="account-toolbar">
+        <form action={withLocalePath('/account/quotes', locale)} className="account-toolbar">
           <label className="knowledge-search-field">
             <span>Search project or quote</span>
             <input name="q" defaultValue={params.q} className="newsletter-input" placeholder="Search quote number or project" />
@@ -72,9 +74,9 @@ export default async function AccountQuotesPage({
             <span>{quote.expiresAt}</span>
             <span className="product-badge">{quote.status}</span>
             <div className="account-inline-actions">
-              <Link href={`/account/quotes/${quote.quoteNumber}`} className="nav-link">View</Link>
-              <Link href={`/checkout?quote=${quote.quoteNumber}`} className="nav-link">Convert</Link>
-              <Link href="/support/contact?topic=sales" className="nav-link">Message</Link>
+              <Link href={withLocalePath(`/account/quotes/${quote.quoteNumber}`, locale)} className="nav-link">View</Link>
+              <Link href={withLocalePath(`/checkout?quote=${quote.quoteNumber}`, locale)} className="nav-link">Convert</Link>
+              <Link href={withLocalePath('/support/contact?topic=sales', locale)} className="nav-link">Message</Link>
             </div>
           </div>
         ))}

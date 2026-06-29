@@ -1,2 +1,5 @@
-import { redirect } from 'next/navigation';
-export default function TermsRedirect() { redirect('/legal/terms'); }
+import { redirectLocalized } from '@/lib/i18n-server';
+
+export default async function TermsRedirect() {
+  await redirectLocalized('/legal/terms');
+}

@@ -1,6 +1,6 @@
-﻿import { redirect } from 'next/navigation';
+﻿import { redirectLocalized } from '@/lib/i18n-server';
 
-export default function AboutRedirectPage() {
-  redirect('/company/about');
+export default async function AboutRedirectPage() {
+  await redirectLocalized('/company/about');
 }
 

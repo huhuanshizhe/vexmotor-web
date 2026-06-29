@@ -1,6 +1,8 @@
 import Link from 'next/link';
 
 import { AddToCartButton } from '@/components/storefront/add-to-cart-button';
+import { withLocalePath } from '@/lib/i18n';
+import { getServerSitePreferences } from '@/lib/i18n-server';
 import { accountReorderCandidates, accountSavedLists } from '@/lib/account-portal';
 import { getProductBySlug, getProductList } from '@/lib/storefront-api';
 
@@ -9,7 +11,7 @@ export default async function AccountReorderPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  const params = await searchParams;
+  const [{ locale }, params] = await Promise.all([getServerSitePreferences(), searchParams]);
   const query = params.q?.trim() ?? '';
   const quickResults = query ? await getProductList({ keyword: query, page: 1, pageSize: 6 }) : null;
   const reorderProducts = await Promise.all(accountReorderCandidates.map((candidate) => getProductBySlug(candidate.productSlug)));
@@ -25,7 +27,7 @@ export default async function AccountReorderPage({
       </div>
 
       <article className="info-card">
-        <form action="/account/reorder" className="account-toolbar">
+        <form action={withLocalePath('/account/reorder', locale)} className="account-toolbar">
           <label className="knowledge-search-field">
             <span>Quick reorder by SKU</span>
             <input name="q" defaultValue={query} className="newsletter-input" placeholder="Search SKU or product name" />
@@ -41,7 +43,7 @@ export default async function AccountReorderPage({
                 <strong>{product.name}</strong>
                 <span className="section-description compact-copy">{product.shortDescription}</span>
                 <div className="account-inline-actions">
-                  {product.purchaseMode === 'buy' ? <AddToCartButton productId={product.id} redirectToCart={false} /> : <Link href={`/products/${product.slug}`} className="nav-link">Open RFQ</Link>}
+                  {product.purchaseMode === 'buy' ? <AddToCartButton productId={product.id} redirectToCart={false} /> : <Link href={withLocalePath(`/products/${product.slug}`, locale)} className="nav-link">Open RFQ</Link>}
                 </div>
               </article>
             ))}
@@ -83,7 +85,7 @@ export default async function AccountReorderPage({
               <span>{candidate.availability}</span>
               <div className="account-inline-actions">
                 {product ? <AddToCartButton productId={product.id} redirectToCart={false} /> : null}
-                <Link href={`/products/${candidate.productSlug}`} className="nav-link">Open</Link>
+                <Link href={withLocalePath(`/products/${candidate.productSlug}`, locale)} className="nav-link">Open</Link>
               </div>
             </div>
           );
@@ -104,8 +106,8 @@ export default async function AccountReorderPage({
               <strong>{list.name}</strong>
               <span className="section-description compact-copy">{list.itemCount} items · updated {list.updatedAt}</span>
               <div className="account-inline-actions">
-                <Link href={`/account/lists/${list.id}`} className="nav-link">Open BOM</Link>
-                <Link href="/cart" className="nav-link">Add all to cart</Link>
+                <Link href={withLocalePath(`/account/lists/${list.id}`, locale)} className="nav-link">Open BOM</Link>
+                <Link href={withLocalePath('/cart', locale)} className="nav-link">Add all to cart</Link>
               </div>
             </article>
           ))}

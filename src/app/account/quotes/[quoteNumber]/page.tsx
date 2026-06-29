@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { withLocalePath } from '@/lib/i18n';
+import { getServerSitePreferences } from '@/lib/i18n-server';
 import { getAccountQuoteByNumber } from '@/lib/account-portal';
 
 type AccountQuoteDetailPageProps = {
@@ -8,7 +10,7 @@ type AccountQuoteDetailPageProps = {
 };
 
 export default async function AccountQuoteDetailPage({ params }: AccountQuoteDetailPageProps) {
-  const { quoteNumber } = await params;
+  const [{ locale }, { quoteNumber }] = await Promise.all([getServerSitePreferences(), params]);
   const quote = getAccountQuoteByNumber(quoteNumber);
 
   if (!quote) {
@@ -54,8 +56,8 @@ export default async function AccountQuoteDetailPage({ params }: AccountQuoteDet
             <h2 className="cart-section-title">Line-by-line review</h2>
           </div>
           <div className="account-inline-actions">
-            <Link href={`/checkout?quote=${quote.quoteNumber}`} className="button-primary">Convert to order</Link>
-            <Link href="/support/contact?topic=sales" className="button-secondary">Counter / message</Link>
+            <Link href={withLocalePath(`/checkout?quote=${quote.quoteNumber}`, locale)} className="button-primary">Convert to order</Link>
+            <Link href={withLocalePath('/support/contact?topic=sales', locale)} className="button-secondary">Counter / message</Link>
           </div>
         </div>
         <div className="account-table-head">
@@ -76,8 +78,8 @@ export default async function AccountQuoteDetailPage({ params }: AccountQuoteDet
             <span>{line.leadTime}</span>
             <span>{line.note}</span>
             <div className="account-inline-actions">
-              <Link href="/support/contact?topic=sales" className="nav-link">Accept</Link>
-              <Link href="/support/contact?topic=sales" className="nav-link">Counter</Link>
+              <Link href={withLocalePath('/support/contact?topic=sales', locale)} className="nav-link">Accept</Link>
+              <Link href={withLocalePath('/support/contact?topic=sales', locale)} className="nav-link">Counter</Link>
             </div>
           </div>
         ))}
@@ -101,8 +103,8 @@ export default async function AccountQuoteDetailPage({ params }: AccountQuoteDet
           <h2 className="cart-section-title">Next commercial step</h2>
           <p className="section-description">Use convert-to-order for accepted lines, or keep the thread active when the buyer needs a revised price, quantity, or ship split.</p>
           <div className="trade-empty-actions">
-            <Link href={`/checkout?quote=${quote.quoteNumber}`} className="button-primary">Convert to order</Link>
-            <Link href="/support/contact?topic=sales" className="button-secondary">Share lost reason / counter</Link>
+            <Link href={withLocalePath(`/checkout?quote=${quote.quoteNumber}`, locale)} className="button-primary">Convert to order</Link>
+            <Link href={withLocalePath('/support/contact?topic=sales', locale)} className="button-secondary">Share lost reason / counter</Link>
           </div>
         </article>
       </div>

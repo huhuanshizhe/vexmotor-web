@@ -44,6 +44,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'diiospp53gsun.cloudfront.net',
       },
+      {
+        protocol: 'https',
+        hostname: 'machrio.oss-us-west-1.aliyuncs.com',
+      },
     ],
   },
 };

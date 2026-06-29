@@ -1,8 +1,12 @@
 import Link from 'next/link';
 
+import { withLocalePath } from '@/lib/i18n';
+import { getServerSitePreferences } from '@/lib/i18n-server';
 import { accountSavedLists } from '@/lib/account-portal';
 
 export default async function AccountListsPage() {
+  const { locale } = await getServerSitePreferences();
+
   return (
     <div className="account-panel-stack">
       <div className="section-header">
@@ -10,7 +14,7 @@ export default async function AccountListsPage() {
           <h1 className="section-title">Saved lists</h1>
           <p className="section-description">Manage reusable BOMs, service kits, and reorder bundles that can move into cart, sample, or quote workflows without rebuilding the line items each time.</p>
         </div>
-        <Link href="/products" className="button-primary">New list from catalog</Link>
+        <Link href={withLocalePath('/products', locale)} className="button-primary">New list from catalog</Link>
       </div>
 
       <div className="account-company-grid">
@@ -29,7 +33,7 @@ export default async function AccountListsPage() {
             </div>
             <div className="account-inline-actions">
               <span className="product-meta">{list.itemCount} items</span>
-              <Link href={`/account/lists/${list.id}`} className="section-link">Open list</Link>
+              <Link href={withLocalePath(`/account/lists/${list.id}`, locale)} className="section-link">Open list</Link>
             </div>
           </article>
         ))}

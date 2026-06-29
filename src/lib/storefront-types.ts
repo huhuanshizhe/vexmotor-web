@@ -31,6 +31,7 @@ export type StorefrontProductCard = {
   id: string;
   name: string;
   slug: string;
+  spu: string;
   sku: string;
   shortDescription?: string | null;
   coverImage?: StorefrontImage | null;

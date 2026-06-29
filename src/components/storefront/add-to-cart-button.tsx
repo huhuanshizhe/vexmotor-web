@@ -14,6 +14,8 @@ type AddToCartButtonProps = {
   showQuantitySelector?: boolean;
   redirectToCart?: boolean;
   showBuyNow?: boolean;
+  compact?: boolean;
+  bar?: boolean;
 };
 
 /** Dispatched after a successful add-to-cart so header cart count can update. */
@@ -23,7 +25,7 @@ function notifyCartUpdated() {
   window.dispatchEvent(new CustomEvent(CART_UPDATED_EVENT));
 }
 
-export function AddToCartButton({ productId, moq = 1, showQuantitySelector = false, redirectToCart = false, showBuyNow = false }: AddToCartButtonProps) {
+export function AddToCartButton({ productId, moq = 1, showQuantitySelector = false, redirectToCart = false, showBuyNow = false, compact = false, bar = false }: AddToCartButtonProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { pushToast } = useToast();
@@ -83,6 +85,22 @@ export function AddToCartButton({ productId, moq = 1, showQuantitySelector = fal
       const locale = parseLocaleFromPathname(pathname).locale;
       router.push(withLocalePath('/checkout', locale));
     });
+  }
+
+  if (bar) {
+    return (
+      <button type="button" className="catalog-add-to-cart-bar" onClick={handleAddToCart} disabled={isPending}>
+        {isPending ? t('common.loading') : t('product.addToCart')}
+      </button>
+    );
+  }
+
+  if (compact) {
+    return (
+      <button type="button" className="catalog-action-btn catalog-action-btn-primary" onClick={handleAddToCart} disabled={isPending}>
+        {isPending ? t('common.loading') : t('product.addToCart')}
+      </button>
+    );
   }
 
   return (

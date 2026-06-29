@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import { redirectLocalized } from '@/lib/i18n-server';
 
 export default async function CertificationPage() {
-  redirect('/company/certifications');
+  await redirectLocalized('/company/certifications');
 }

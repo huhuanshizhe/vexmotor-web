@@ -1,11 +1,14 @@
 import { cookies, headers } from 'next/headers';
 
+import { redirect } from 'next/navigation';
+
 import {
   DEFAULT_LOCALE,
   LOCALE_COOKIE_NAME,
   LOCALE_REQUEST_HEADER,
   getMarketDefaults,
   normalizeLocale,
+  withLocalePath,
   type Locale,
   type SitePreferences,
 } from '@/lib/i18n';
@@ -64,4 +67,10 @@ export async function getServerSitePreferences(): Promise<SitePreferences> {
     currency: defaults.currency,
     unitSystem: defaults.unitSystem,
   };
+}
+
+/** Server redirect that preserves the active locale in the target path. */
+export async function redirectLocalized(path: string): Promise<never> {
+  const { locale } = await getServerSitePreferences();
+  redirect(withLocalePath(path, locale));
 }

@@ -1,6 +1,10 @@
+import { withLocalePath } from '@/lib/i18n';
+import { getServerSitePreferences } from '@/lib/i18n-server';
 import { accountSettingsSections } from '@/lib/account-portal';
 
 export default async function AccountSettingsPage() {
+  const { locale } = await getServerSitePreferences();
+
   return (
     <div className="account-panel-stack">
       <div className="section-header">
@@ -31,8 +35,8 @@ export default async function AccountSettingsPage() {
           <h2 className="cart-section-title">High-risk actions</h2>
           <p className="section-description">Email change, password reset, API key rotation, and account deletion still require password confirmation before the change is committed.</p>
           <div className="trade-empty-actions">
-            <a href="/support/contact?topic=sales" className="button-secondary">Rotate API key</a>
-            <a href="/support/contact?topic=sales" className="button-primary">Delete account workflow</a>
+            <a href={withLocalePath('/support/contact?topic=sales', locale)} className="button-secondary">Rotate API key</a>
+            <a href={withLocalePath('/support/contact?topic=sales', locale)} className="button-primary">Delete account workflow</a>
           </div>
         </article>
       </div>

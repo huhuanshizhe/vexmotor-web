@@ -1,48 +1,51 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-import { type Locale, CURRENCY_COOKIE_NAME, DEFAULT_LOCALE, LOCALE_COOKIE_NAME, LOCALE_REQUEST_HEADER, SUPPORTED_LOCALES, UNIT_SYSTEM_COOKIE_NAME, getMarketDefaults, parseLocaleFromPathname } from '@/lib/i18n';
+import {
+  type Locale,
+  CURRENCY_COOKIE_NAME,
+  DEFAULT_LOCALE,
+  LOCALE_COOKIE_NAME,
+  LOCALE_REQUEST_HEADER,
+  UNIT_SYSTEM_COOKIE_NAME,
+  getMarketDefaults,
+  parseLocaleFromPathname,
+  resolveRequestLocale,
+} from '@/lib/i18n';
 
-function parseAcceptLanguage(header: string | null): string | null {
-  if (!header) return null;
-  try {
-    const locales = header
-      .split(',')
-      .map((part) => {
-        const [code, q = '1'] = part.trim().split(';q=');
-        return { code: code.split('-')[0].toLowerCase(), q: parseFloat(q) };
-      })
-      .sort((a, b) => b.q - a.q);
-    for (const { code } of locales) {
-      if ((SUPPORTED_LOCALES as readonly string[]).includes(code)) return code;
-    }
-    return null;
-  } catch {
-    return null;
-  }
+function attachPreferenceCookies(response: NextResponse, locale: Locale) {
+  const localeDefaults = getMarketDefaults(locale);
+
+  response.cookies.set(LOCALE_COOKIE_NAME, locale, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
+  response.cookies.set(CURRENCY_COOKIE_NAME, localeDefaults.currency, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
+  response.cookies.set(UNIT_SYSTEM_COOKIE_NAME, localeDefaults.unitSystem, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
 }
 
 export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const { locale: urlLocale, pathname: normalizedPathname, hadPrefix } = parseLocaleFromPathname(pathname);
+  const parsed = parseLocaleFromPathname(pathname);
 
-  const hasCookie = Boolean(request.cookies.get(LOCALE_COOKIE_NAME)?.value);
-  const detectedLocale = (!hadPrefix && !hasCookie) ? parseAcceptLanguage(request.headers.get('accept-language')) : null;
-  const locale = (detectedLocale ?? urlLocale) as Locale;
+  // /en or /en/* → canonical default-locale URL without prefix (/xxx).
+  if (parsed.hadPrefix && parsed.locale === DEFAULT_LOCALE) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = parsed.pathname;
+    const response = NextResponse.redirect(redirectUrl, 308);
+    attachPreferenceCookies(response, DEFAULT_LOCALE);
+    return response;
+  }
+
+  const cookieLocale = request.cookies.get(LOCALE_COOKIE_NAME)?.value;
+  const locale = resolveRequestLocale({
+    pathname,
+    cookieLocale,
+    acceptLanguage: request.headers.get('accept-language'),
+  });
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(LOCALE_REQUEST_HEADER, locale);
 
-  const syncPreferenceCookies = (response: NextResponse) => {
-    const localeDefaults = getMarketDefaults(locale);
-
-    response.cookies.set(LOCALE_COOKIE_NAME, locale, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
-    response.cookies.set(CURRENCY_COOKIE_NAME, localeDefaults.currency, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
-    response.cookies.set(UNIT_SYSTEM_COOKIE_NAME, localeDefaults.unitSystem, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
-  };
-
-  const response = hadPrefix
-    ? NextResponse.rewrite(new URL(normalizedPathname === '/' ? '/' : normalizedPathname, request.url), {
+  const response = parsed.hadPrefix
+    ? NextResponse.rewrite(new URL(parsed.pathname === '/' ? '/' : parsed.pathname, request.url), {
         request: {
           headers: requestHeaders,
         },
@@ -53,11 +56,7 @@ export default async function middleware(request: NextRequest) {
         },
       });
 
-  if (!request.cookies.get(LOCALE_COOKIE_NAME)?.value && DEFAULT_LOCALE === locale) {
-    response.cookies.set(LOCALE_COOKIE_NAME, DEFAULT_LOCALE, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
-  }
-
-  syncPreferenceCookies(response);
+  attachPreferenceCookies(response, locale);
   return response;
 }
 

@@ -2,12 +2,9 @@ import { serverFetch } from '@/lib/api-client';
 import type { CommerceConfig } from '@/lib/commerce-config';
 import type { GlossaryTerm, StorefrontFaq, TechFaqCategory, TechFaqEntry } from '@/lib/knowledge';
 import type { PressRelease } from '@/lib/press';
-import { homeShell, getStorefrontNavigation } from '@/lib/site-shell';
-import { getLocalSupportCatalog, getSupportPageBySlug as getLocalSupportPageBySlug } from '@/lib/support-content';
 
 import type {
   HomeData,
-  HomeDynamicData,
   NavigationData,
   ProductListResult,
   ProductListSort,
@@ -79,22 +76,11 @@ function buildProductListQuery(params: ProductListParams) {
 }
 
 export async function getHomeData(): Promise<HomeData> {
-  try {
-    const response = await serverFetch<HomeDynamicData & { locale?: string }>('/api/front/home');
-    const { locale: _locale, ...dynamic } = response;
-    return {
-      ...homeShell,
-      ...dynamic,
-      heroBanners: dynamic.heroBanners?.length ? dynamic.heroBanners : homeShell.heroBanners,
-    };
-  } catch {
-    return homeShell;
-  }
+  return serverFetch<HomeData>('/api/front/home');
 }
 
-/** Navigation links are static in web; no admin API call. */
-export function getNavigationData(): NavigationData {
-  return getStorefrontNavigation();
+export async function getNavigationData(): Promise<NavigationData> {
+  return serverFetch<NavigationData>('/api/front/navigation');
 }
 
 export async function getCategories(): Promise<StorefrontCategory[]> {
@@ -124,11 +110,16 @@ export async function getCommerceConfig(): Promise<CommerceConfig> {
 }
 
 export async function getSupportCatalog(): Promise<SupportCatalog> {
-  return getLocalSupportCatalog();
+  return serverFetch<SupportCatalog>('/api/front/support');
 }
 
 export async function getSupportPageBySlug(slug: string): Promise<SupportPage | null> {
-  return getLocalSupportPageBySlug(slug);
+  try {
+    return await serverFetch<SupportPage>(`/api/front/support/${encodeURIComponent(slug)}`);
+  } catch {
+    const catalog = await getSupportCatalog();
+    return catalog.pages.find((page) => page.slug === slug) ?? null;
+  }
 }
 
 export async function getKnowledgeCatalog(): Promise<KnowledgeCatalog> {

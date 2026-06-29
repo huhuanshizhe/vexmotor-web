@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { withLocalePath } from '@/lib/i18n';
+import { getServerSitePreferences } from '@/lib/i18n-server';
 import { accountInvoiceRecords } from '@/lib/account-portal';
 
 export default async function AccountInvoicesPage({
@@ -7,7 +9,7 @@ export default async function AccountInvoicesPage({
 }: {
   searchParams: Promise<{ status?: string; currency?: string }>;
 }) {
-  const params = await searchParams;
+  const [{ locale }, params] = await Promise.all([getServerSitePreferences(), searchParams]);
   const status = params.status ?? 'all';
   const currency = params.currency ?? 'all';
   const invoices = accountInvoiceRecords.filter((invoice) => {
@@ -50,7 +52,7 @@ export default async function AccountInvoicesPage({
       </div>
 
       <article className="info-card">
-        <form action="/account/invoices" className="account-toolbar">
+        <form action={withLocalePath('/account/invoices', locale)} className="account-toolbar">
           <label className="knowledge-search-field">
             <span>Status</span>
             <select name="status" defaultValue={status} className="form-input">
@@ -93,8 +95,8 @@ export default async function AccountInvoicesPage({
             <span>{invoice.currency}</span>
             <span>{invoice.dueDate}</span>
             <div className="account-inline-actions">
-              <a href={`/account/invoices/download/${invoice.invoiceNumber}`} className="nav-link">Download PDF</a>
-              {invoice.status === 'Due' || invoice.status === 'Overdue' ? <Link href={`/checkout?invoice=${invoice.invoiceNumber}`} className="nav-link">Pay now</Link> : null}
+              <a href={withLocalePath(`/account/invoices/download/${invoice.invoiceNumber}`, locale)} className="nav-link">Download PDF</a>
+              {invoice.status === 'Due' || invoice.status === 'Overdue' ? <Link href={withLocalePath(`/checkout?invoice=${invoice.invoiceNumber}`, locale)} className="nav-link">Pay now</Link> : null}
             </div>
           </div>
         ))}
