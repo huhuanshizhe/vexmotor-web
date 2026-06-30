@@ -19,12 +19,14 @@ import {
 } from '@/lib/compare-items';
 
 import { AddToCartButton } from './add-to-cart-button';
+import { resolveProductSku } from '@/lib/product-sku';
 
 type CatalogProduct = {
   id: string;
   name: string;
   slug: string;
-  sku: string;
+  spu: string;
+  sku?: string | null;
   shortDescription?: string | null;
   price: {
     currency: string;
@@ -34,6 +36,21 @@ type CatalogProduct = {
   purchaseMode: 'buy' | 'inquiry';
   inStock: boolean;
 };
+
+function toCompareItem(product: CatalogProduct, categories: string[] = []): CompareItem {
+  const sku = resolveProductSku(product);
+  return {
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    sku,
+    priceLabel: product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote',
+    purchaseMode: product.purchaseMode,
+    inStock: product.inStock,
+    shortDescription: product.shortDescription,
+    categories,
+  };
+}
 
 type CompareClientProps = {
   locale: Locale;
@@ -158,7 +175,7 @@ export function CompareClient({ locale, catalogProducts }: CompareClientProps) {
       return pool.slice(0, 6);
     }
 
-    return pool.filter((product) => `${product.name} ${product.sku}`.toLowerCase().includes(query)).slice(0, 6);
+    return pool.filter((product) => `${product.name} ${resolveProductSku(product)}`.toLowerCase().includes(query)).slice(0, 6);
   }, [catalogProducts, items, searchTerm]);
 
   const compareGroups = useMemo(() => buildCompareGroups(items), [items]);
@@ -189,19 +206,9 @@ export function CompareClient({ locale, catalogProducts }: CompareClientProps) {
     }
 
     const seededItems = urlSkus
-      .map((sku) => catalogProducts.find((product) => product.sku.toLowerCase() === sku.toLowerCase()))
+      .map((sku) => catalogProducts.find((product) => resolveProductSku(product).toLowerCase() === sku.toLowerCase()))
       .filter((product): product is CatalogProduct => Boolean(product))
-      .map((product) => ({
-        id: product.id,
-        name: product.name,
-        slug: product.slug,
-        sku: product.sku,
-        priceLabel: product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote',
-        purchaseMode: product.purchaseMode,
-        inStock: product.inStock,
-        shortDescription: product.shortDescription,
-        categories: [],
-      }));
+      .map((product) => toCompareItem(product));
 
     if (!seededItems.length) {
       return;
@@ -254,7 +261,7 @@ export function CompareClient({ locale, catalogProducts }: CompareClientProps) {
 
   function addAnother(product: CatalogProduct) {
     if (items.some((item) => item.id === product.id)) {
-      pushToast({ title: 'Already in compare', description: `${product.sku} is already in the compare table.`, tone: 'success' });
+      pushToast({ title: 'Already in compare', description: `${resolveProductSku(product)} is already in the compare table.`, tone: 'success' });
       return;
     }
     if (items.length >= 4) {
@@ -262,19 +269,9 @@ export function CompareClient({ locale, catalogProducts }: CompareClientProps) {
       return;
     }
 
-    upsertCompareItem({
-      id: product.id,
-      name: product.name,
-      slug: product.slug,
-      sku: product.sku,
-      priceLabel: product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote',
-      purchaseMode: product.purchaseMode,
-      inStock: product.inStock,
-      shortDescription: product.shortDescription,
-      categories: [],
-    });
+    upsertCompareItem(toCompareItem(product));
     setItems(readCompareItems());
-    pushToast({ title: 'Added to compare', description: `${product.sku} was added to the compare list.`, tone: 'success' });
+    pushToast({ title: 'Added to compare', description: `${resolveProductSku(product)} was added to the compare list.`, tone: 'success' });
   }
 
   function addAllToCart() {
@@ -372,7 +369,7 @@ export function CompareClient({ locale, catalogProducts }: CompareClientProps) {
           {filteredCatalogProducts.map((product) => (
             <article key={product.id} className="compare-add-card">
               <strong>{product.name}</strong>
-              <span className="product-meta">{product.sku}</span>
+              <span className="product-meta">{resolveProductSku(product) || '—'}</span>
               <span className="section-description compact-copy">{product.shortDescription ?? 'Catalog product ready for shortlist comparison.'}</span>
               <button type="button" className="button-secondary cart-action-button" onClick={() => addAnother(product)} disabled={items.length >= 4}>
                 Add to compare
@@ -394,7 +391,7 @@ export function CompareClient({ locale, catalogProducts }: CompareClientProps) {
             <h3>
               <Link href={withLocalePath(`/products/${item.slug}`, locale)}>{item.name}</Link>
             </h3>
-            <p className="product-meta">{item.sku}</p>
+            <p className="product-meta">{item.sku || '—'}</p>
             <p className="product-price">{item.priceLabel}</p>
             <span className="product-status">{item.inStock ? 'In stock' : 'Lead time on request'}</span>
             <p className="section-description compact-copy">{item.shortDescription ?? 'No short description available.'}</p>

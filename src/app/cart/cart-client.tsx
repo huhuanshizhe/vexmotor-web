@@ -13,21 +13,14 @@ import { withLocalePath } from '@/lib/i18n';
 import { useTranslation } from '@/lib/i18n-context';
 import { buildShippingOptions, getShippingCountryOptions } from '@/lib/shipping';
 import { getNextVolumeTier } from '@/lib/volume-pricing';
+import { productSpuBadge } from '@/lib/product-sku';
+import type { StorefrontProductCard } from '@/lib/storefront-types';
 
 type Money = {
   currency: string;
   amount: number;
   formatted: string;
 };
-
-function resolveProductSku(product: { sku?: string | null; spu?: string | null }) {
-  return product.sku?.trim() || product.spu?.trim() || '';
-}
-
-function productSkuBadge(product: { sku?: string | null; spu?: string | null }) {
-  const code = resolveProductSku(product);
-  return code.slice(0, 3).toUpperCase() || '—';
-}
 
 type CartDetail = {
   id: string;
@@ -77,21 +70,6 @@ type CartDetail = {
   remainingForFreeShipping: Money;
 } | null;
 
-type CrossSellProduct = {
-  id: string;
-  name: string;
-  slug: string;
-  sku: string;
-  shortDescription?: string | null;
-  coverImage?: {
-    id: string;
-    url: string;
-    alt: string;
-  } | null;
-  price: Money;
-  purchaseMode: 'buy' | 'inquiry';
-};
-
 type EmptyStateCategory = {
   id: string;
   name: string;
@@ -102,7 +80,7 @@ type CartClientProps = {
   initialCart: CartDetail;
   locale: Locale;
   hasAccountContext: boolean;
-  crossSellProducts: CrossSellProduct[];
+  crossSellProducts: StorefrontProductCard[];
   emptyStateCategories: EmptyStateCategory[];
   commerceConfig: CommerceConfig;
 };
@@ -298,7 +276,9 @@ export function CartClient({ initialCart, locale, hasAccountContext, crossSellPr
                         sizes="120px"
                       />
                     ) : (
-                      <span className="cart-item-image-fallback">{productSkuBadge(item.product)}</span>
+                      <span className="cart-item-image-fallback" title={`SPU ${item.product.spu || '—'}`}>
+                        {productSpuBadge(item.product)}
+                      </span>
                     )}
                   </Link>
 
@@ -306,7 +286,7 @@ export function CartClient({ initialCart, locale, hasAccountContext, crossSellPr
                     <div className="cart-item-head">
                       <div>
                         <h3 className="cart-item-title">{item.product.name}</h3>
-                        <p className="product-meta">Model {resolveProductSku(item.product) || '—'}</p>
+                        <p className="product-meta">SPU {item.product.spu || '—'}</p>
                         <p className="section-description">{item.product.shortDescription}</p>
                       </div>
                       <div className="cart-line-price-block">
@@ -498,13 +478,15 @@ export function CartClient({ initialCart, locale, hasAccountContext, crossSellPr
                         {item.coverImage ? (
                           <Image src={item.coverImage.url} alt={item.coverImage.alt || item.name} fill sizes="100px" unoptimized className="cart-item-image" />
                         ) : (
-                          <span className="cart-item-image-fallback">{productSkuBadge(item)}</span>
+                          <span className="cart-item-image-fallback" title={`SPU ${item.spu || '—'}`}>
+                            {productSpuBadge(item)}
+                          </span>
                         )}
                       </Link>
                       <Link href={withLocalePath(`/products/${item.slug}`, locale)}>
                         <strong>{item.name}</strong>
                       </Link>
-                      <span className="product-meta">SKU {resolveProductSku(item) || '—'}</span>
+                      <span className="product-meta">SPU {item.spu || '—'}</span>
                       <span className="card-kicker">{item.purchaseMode === 'buy' ? item.price.formatted : t('product.requestQuote')}</span>
                       {item.purchaseMode === 'buy' ? (
                         <AddToCartButton productId={item.id} redirectToCart={false} />
@@ -525,27 +507,27 @@ export function CartClient({ initialCart, locale, hasAccountContext, crossSellPr
               <h2 className="cart-section-title">{t('checkout.orderSummary')}</h2>
               <div className="cart-summary-list">
                 <div className="cart-summary-row">
-                  <span className="section-description">{t('cart.subtotal')}</span>
+                  <span className="cart-summary-label">{t('cart.subtotal')}</span>
                   <strong>{cart.subtotal.formatted}</strong>
                 </div>
                 {cart.volumeDiscount && cart.volumeDiscount.amount > 0 ? (
-                  <div className="cart-summary-row">
-                    <span className="section-description">Volume discount</span>
+                  <div className="cart-summary-row is-discount">
+                    <span className="cart-summary-label">Volume discount</span>
                     <strong>-{cart.volumeDiscount.formatted}</strong>
                   </div>
                 ) : null}
                 {cart.discount.amount > 0 || cart.couponCode ? (
-                  <div className="cart-summary-row">
-                    <span className="section-description">Discount</span>
+                  <div className="cart-summary-row is-discount">
+                    <span className="cart-summary-label">Discount</span>
                     <strong>{cart.discount.amount > 0 ? `-${cart.discount.formatted}` : '$0.00'}</strong>
                   </div>
                 ) : null}
                 <div className="cart-summary-row">
-                  <span className="section-description">{t('cart.shipping')}</span>
+                  <span className="cart-summary-label">{t('cart.shipping')}</span>
                   <strong>{selectedShippingOption ? (selectedShippingOption.price === 0 ? 'Free' : formatMoney(selectedShippingOption.price, cart.shipping.currency)) : cart.shipping.formatted}</strong>
                 </div>
                 <div className="cart-summary-row">
-                  <span className="section-description">{t('cart.tax')}</span>
+                  <span className="cart-summary-label">{t('cart.tax')}</span>
                   <strong>{formatMoney(estimatedTax, cart.tax.currency)}</strong>
                 </div>
                 <div className="cart-summary-row is-total">
@@ -554,19 +536,28 @@ export function CartClient({ initialCart, locale, hasAccountContext, crossSellPr
                 </div>
               </div>
 
-              <Link href={checkoutPath} className="button-primary">
-                {t('cart.proceedToCheckout')}
-              </Link>
-              <Link href={quotePath} className="button-secondary product-back-link">
-                Convert Cart to RFQ
-              </Link>
-              <Link href={productsPath} className="nav-link">
-                {t('cart.continueShopping')}
-              </Link>
-              <Link href={contactPath} className="nav-link">
-                Need quote support?
-              </Link>
-              {message ? <p className="section-description">{message}</p> : null}
+              <div className="cart-summary-actions">
+                <Link href={checkoutPath} className="button-primary cart-summary-cta">
+                  {t('cart.proceedToCheckout')}
+                </Link>
+                <Link href={quotePath} className="button-secondary cart-summary-cta cart-summary-cta-secondary">
+                  Convert Cart to RFQ
+                </Link>
+              </div>
+
+              <div className="cart-summary-links">
+                <Link href={productsPath} className="cart-summary-link">
+                  {t('cart.continueShopping')}
+                </Link>
+                <span className="cart-summary-link-sep" aria-hidden="true">
+                  ·
+                </span>
+                <Link href={contactPath} className="cart-summary-link">
+                  Need quote support?
+                </Link>
+              </div>
+
+              {message ? <p className="cart-summary-message">{message}</p> : null}
             </article>
           </aside>
         </div>

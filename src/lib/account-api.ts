@@ -41,7 +41,34 @@ export async function fetchAddresses() {
 }
 
 export async function fetchWishlist() {
-  return apiFetch('/api/front/wishlist');
+  return apiFetch<{ items: WishlistItem[] }>('/api/front/wishlist');
+}
+
+export type WishlistItem = {
+  id: string;
+  productId: string;
+  name: string;
+  slug: string;
+  spu: string;
+  shortDescription?: string | null;
+  purchaseMode: 'buy' | 'inquiry';
+  price: {
+    currency: string;
+    amount: number;
+    formatted: string;
+  };
+  inStock: boolean;
+  coverImage?: {
+    id: string;
+    url: string;
+    alt: string;
+    width?: number | null;
+    height?: number | null;
+  } | null;
+};
+
+export async function removeWishlistItem(productId: string) {
+  return apiFetch<void>(`/api/front/wishlist/${encodeURIComponent(productId)}`, { method: 'DELETE' });
 }
 
 export async function fetchInquiries() {

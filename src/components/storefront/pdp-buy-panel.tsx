@@ -21,6 +21,7 @@ import {
 type PdpBuyContextValue = {
   productId: string;
   moq: number;
+  inStock: boolean;
   quantity: number;
   qtyInput: string;
   isQtyEditing: boolean;
@@ -67,6 +68,7 @@ function normalizeQuantity(value: number, moq: number) {
 type PdpBuyProviderProps = {
   productId: string;
   moq: number;
+  inStock: boolean;
   basePriceAmount: number;
   currency: string;
   volumePricingRules: VolumePricingRuleConfig[];
@@ -76,6 +78,7 @@ type PdpBuyProviderProps = {
 export function PdpBuyProvider({
   productId,
   moq,
+  inStock,
   basePriceAmount,
   currency,
   volumePricingRules,
@@ -209,6 +212,7 @@ export function PdpBuyProvider({
   const value: PdpBuyContextValue = {
     productId,
     moq,
+    inStock,
     quantity,
     qtyInput,
     isQtyEditing,
@@ -351,6 +355,7 @@ export function PdpPricePanel({ priceHeadline, compareAtPrice, volumePricingHref
 export function PdpPurchaseActions() {
   const {
     moq,
+    inStock,
     quantity,
     qtyInput,
     updateQuantity,
@@ -365,6 +370,17 @@ export function PdpPurchaseActions() {
     handleBuyNow,
   } = usePdpBuy();
   const { t } = useTranslation();
+
+  if (!inStock) {
+    return (
+      <div className="pdp-out-of-stock-card" role="status">
+        <span className="pdp-stock-status is-unavailable">Out of stock</span>
+        <p className="section-description compact-copy">
+          This item is not available for immediate purchase. Use Add to Quote or contact engineering for lead-time and restock options.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="product-action-stack pdp-action-cluster pdp-buy-actions">

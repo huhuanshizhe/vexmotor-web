@@ -2,6 +2,7 @@ import { serverFetch } from '@/lib/api-client';
 import type { CommerceConfig } from '@/lib/commerce-config';
 import type { GlossaryTerm, StorefrontFaq, TechFaqCategory, TechFaqEntry } from '@/lib/knowledge';
 import type { PressRelease } from '@/lib/press';
+import { getLocalSupportCatalog, getSupportPageBySlug as getLocalSupportPageBySlug } from '@/lib/support-content';
 
 import type {
   HomeData,
@@ -94,7 +95,10 @@ export async function getProductList(params: ProductListParams = {}): Promise<Pr
     const path = `/api/front/categories/${encodeURIComponent(params.categorySlug)}/products${query ? `?${query}` : ''}`;
     return serverFetch<ProductListResult>(path);
   }
-  return serverFetch<ProductListResult>(`/api/front/search${query ? `?${query}` : ''}`);
+  if (params.keyword) {
+    return serverFetch<ProductListResult>(`/api/front/search${query ? `?${query}` : ''}`);
+  }
+  return serverFetch<ProductListResult>(`/api/front/products${query ? `?${query}` : ''}`);
 }
 
 export async function getProductBySlug(slug: string): Promise<StorefrontProductDetail | null> {
@@ -110,16 +114,11 @@ export async function getCommerceConfig(): Promise<CommerceConfig> {
 }
 
 export async function getSupportCatalog(): Promise<SupportCatalog> {
-  return serverFetch<SupportCatalog>('/api/front/support');
+  return getLocalSupportCatalog();
 }
 
 export async function getSupportPageBySlug(slug: string): Promise<SupportPage | null> {
-  try {
-    return await serverFetch<SupportPage>(`/api/front/support/${encodeURIComponent(slug)}`);
-  } catch {
-    const catalog = await getSupportCatalog();
-    return catalog.pages.find((page) => page.slug === slug) ?? null;
-  }
+  return getLocalSupportPageBySlug(slug);
 }
 
 export async function getKnowledgeCatalog(): Promise<KnowledgeCatalog> {

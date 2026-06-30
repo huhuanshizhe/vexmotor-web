@@ -22,6 +22,7 @@ import { buildSpecGroups, formatSpecValue, type DetailSpecGroup } from '@/lib/pr
 import { buildBreadcrumbJsonLd, buildMetadata } from '@/lib/seo';
 import { SITE_NAME, SITE_URL } from '@/lib/site-config';
 import { buildVolumePricingTiers } from '@/lib/volume-pricing';
+import { resolveProductSku } from '@/lib/product-sku';
 import { getCommerceConfig } from '@/lib/storefront-api';
 import { getHomeData, getProductBySlug, type StorefrontProductCard } from '@/lib/storefront-api';
 
@@ -102,9 +103,10 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   // Build derived data
   const specGroups = buildSpecGroups(product);
   const topSpecs = specGroups.flatMap((g) => g.rows).slice(0, 5);
-  const heroSpecs = topSpecs.filter((item) => item.label !== 'SKU').slice(0, 4);
+  const heroSpecs = topSpecs.filter((item) => item.label !== 'SKU' && item.label !== 'SPU').slice(0, 4);
 
   const priceHeadline = p.purchaseMode === 'buy' ? p.price.formatted : 'Request Quote';
+  const productCode = resolveProductSku(p);
 
   const lifecycleBadge = (() => {
     if (!p.lifecycleStatus || p.lifecycleStatus === 'active') return null;
@@ -127,12 +129,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   // URLs
   const queryForQuote = new URLSearchParams({
-    addSku: p.sku,
+    addSku: productCode,
     productId: p.id,
   }).toString();
-  const queryForSample = new URLSearchParams({ topic: 'sample', product: p.sku }).toString();
-  const queryForVolume = new URLSearchParams({ sku: p.sku }).toString();
-  const queryForCustom = new URLSearchParams({ sourceSku: p.sku, sourceProduct: p.name }).toString();
+  const queryForSample = new URLSearchParams({ topic: 'sample', product: productCode }).toString();
+  const queryForVolume = new URLSearchParams({ sku: productCode }).toString();
+  const queryForCustom = new URLSearchParams({ sourceSku: productCode, sourceProduct: p.name }).toString();
   const quoteHref = `${withLocalePath('/quote', locale)}?${queryForQuote}`;
   const sampleHref = `${contactPath}?${queryForSample}`;
   const volumePricingHref = `${withLocalePath('/volume-pricing', locale)}?${queryForVolume}`;
@@ -216,7 +218,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 ) : (
                   <span className="pdp-top-eyebrow">Catalog product</span>
                 )}
-                <span className="pdp-top-sku">SKU {p.sku}</span>
+                <span className="pdp-top-sku">SPU {p.spu}</span>
               </div>
               <h1 className="pdp-top-title">{p.name}</h1>
               {lifecycleBadge ? (
@@ -245,19 +247,25 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 <PdpBuyProvider
                   productId={p.id}
                   moq={p.moq}
+                  inStock={p.inStock}
                   basePriceAmount={p.price.amount}
                   currency={p.price.currency}
                   volumePricingRules={commerceConfig.volumePricingRules}
                 >
               <div className="pdp-header-stack">
                 <div className="pdp-sku-row">
-                  <p className="product-meta">SKU {p.sku}</p>
+                  <p className="product-meta">SPU {p.spu}</p>
                   <div className="pdp-sku-actions">
-                    <CopyActionButton value={p.sku} idleLabel="Copy SKU" copiedLabel="SKU copied" toastTitle="SKU copied" className="button-secondary" />
+                    <CopyActionButton value={p.spu} idleLabel="Copy SPU" copiedLabel="SPU copied" toastTitle="SPU copied" className="button-secondary" />
                     {datasheetAttachment ? (
                       <a href={datasheetAttachment.url} target="_blank" rel="noreferrer" className="button-secondary">View datasheet</a>
                     ) : null}
                   </div>
+                </div>
+                <div className="pdp-stock-row">
+                  <span className={`pdp-stock-status${p.inStock ? ' is-available' : ' is-unavailable'}`}>
+                    {p.inStock ? `In stock · ${p.stockQuantity} available` : 'Out of stock'}
+                  </span>
                 </div>
               </div>
 
@@ -314,7 +322,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                     id: p.id,
                     name: p.name,
                     slug: p.slug,
-                    sku: p.sku,
+                    sku: productCode,
                     priceLabel: p.price.formatted,
                     purchaseMode: p.purchaseMode,
                     inStock: p.inStock,
@@ -329,13 +337,18 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 <>
               <div className="pdp-header-stack">
                 <div className="pdp-sku-row">
-                  <p className="product-meta">SKU {p.sku}</p>
+                  <p className="product-meta">SPU {p.spu}</p>
                   <div className="pdp-sku-actions">
-                    <CopyActionButton value={p.sku} idleLabel="Copy SKU" copiedLabel="SKU copied" toastTitle="SKU copied" className="button-secondary" />
+                    <CopyActionButton value={p.spu} idleLabel="Copy SPU" copiedLabel="SPU copied" toastTitle="SPU copied" className="button-secondary" />
                     {datasheetAttachment ? (
                       <a href={datasheetAttachment.url} target="_blank" rel="noreferrer" className="button-secondary">View datasheet</a>
                     ) : null}
                   </div>
+                </div>
+                <div className="pdp-stock-row">
+                  <span className={`pdp-stock-status${p.inStock ? ' is-available' : ' is-unavailable'}`}>
+                    {p.inStock ? `In stock · ${p.stockQuantity} available` : 'Out of stock'}
+                  </span>
                 </div>
               </div>
 
@@ -388,7 +401,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                       id: p.id,
                       name: p.name,
                       slug: p.slug,
-                      sku: p.sku,
+                      sku: productCode,
                       priceLabel: 'Request Quote',
                       purchaseMode: p.purchaseMode,
                       inStock: p.inStock,
