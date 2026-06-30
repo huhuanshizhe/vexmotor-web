@@ -7,7 +7,6 @@ import { Pagination } from '@C/pagination';
 import { StorefrontFrame } from '@/components/layout/storefront-frame';
 import { JsonLdScript } from '@/components/seo/json-ld';
 import { CatalogProductCard } from '@/components/storefront/catalog-product-card';
-import { CompareDrawer } from '@/components/storefront/compare-drawer';
 import { AddToCartButton } from '@/components/storefront/add-to-cart-button';
 import { AddToCompareButton } from '@/components/storefront/add-to-compare-button';
 import { AddToWishlistButton } from '@/components/storefront/add-to-wishlist-button';
@@ -461,7 +460,6 @@ export default async function CategoryPage({
         </div>
       </section>
 
-      <CompareDrawer locale={locale} expanded={compareMode} />
     </StorefrontFrame>
   );
 }

@@ -1,5 +1,6 @@
 import { StorefrontFrame } from '@/components/layout/storefront-frame';
 import { getServerSitePreferences } from '@/lib/i18n-server';
+import { resolveProductSku } from '@/lib/product-sku';
 import { buildMetadata } from '@/lib/seo';
 import { getProductList } from '@/lib/storefront-api';
 
@@ -29,11 +30,11 @@ export default async function QuotePage({ searchParams }: QuotePageProps) {
 
   let intakeProduct =
     (params.productId ? catalog.items.find((item) => item.id === params.productId) : undefined)
-    ?? (params.addSku ? catalog.items.find((item) => item.sku.toLowerCase() === params.addSku!.toLowerCase()) : undefined);
+    ?? (params.addSku ? catalog.items.find((item) => resolveProductSku(item).toLowerCase() === params.addSku!.toLowerCase()) : undefined);
 
   if (!intakeProduct && params.addSku) {
     const searchResult = await getProductList({ keyword: params.addSku, pageSize: 8 });
-    intakeProduct = searchResult.items.find((item) => item.sku.toLowerCase() === params.addSku!.toLowerCase()) ?? searchResult.items[0];
+    intakeProduct = searchResult.items.find((item) => resolveProductSku(item).toLowerCase() === params.addSku!.toLowerCase()) ?? searchResult.items[0];
   }
 
   return (
@@ -44,6 +45,7 @@ export default async function QuotePage({ searchParams }: QuotePageProps) {
             locale={locale}
             intakeProductId={intakeProduct?.id ?? ''}
             intakeProductName={intakeProduct?.name ?? ''}
+            intakeProduct={intakeProduct ?? null}
             cart={null}
             catalogProducts={catalog.items}
           />

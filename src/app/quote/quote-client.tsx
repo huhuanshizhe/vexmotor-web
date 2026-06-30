@@ -8,6 +8,7 @@ import { useToast } from '@C/toast';
 import { apiFetch } from '@/lib/api-client';
 import type { Locale } from '@/lib/i18n';
 import { withLocalePath } from '@/lib/i18n';
+import { resolveProductSku } from '@/lib/product-sku';
 
 type Money = {
   currency: string;
@@ -36,7 +37,8 @@ type CatalogProduct = {
   id: string;
   name: string;
   slug: string;
-  sku: string;
+  sku?: string | null;
+  spu?: string | null;
   shortDescription?: string | null;
   price: Money;
   purchaseMode: 'buy' | 'inquiry';
@@ -78,6 +80,7 @@ type QuoteClientProps = {
   locale: Locale;
   intakeProductId: string;
   intakeProductName: string;
+  intakeProduct: CatalogProduct | null;
   cart: CartDetail;
   catalogProducts: CatalogProduct[];
 };
@@ -106,6 +109,59 @@ const EMPTY_PROJECT: QuoteProject = {
 const INDUSTRIES = ['Factory Automation', 'Robotics', 'Medical Devices', 'Packaging', 'CNC & Tooling', 'Lab Automation'];
 const INCOTERMS = ['EXW', 'FOB', 'DAP', 'DDP'];
 
+function catalogProductCode(product: { sku?: string | null; spu?: string | null }) {
+  return resolveProductSku(product);
+}
+
+function matchesCatalogCode(product: { sku?: string | null; spu?: string | null }, code: string) {
+  const normalized = code.trim().toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+  return catalogProductCode(product).toLowerCase() === normalized;
+}
+
+function resolveProductsFromIntake(
+  catalogProducts: CatalogProduct[],
+  intakeProduct: CatalogProduct | null,
+  addSku: string | null,
+  productId: string | null,
+) {
+  const results: CatalogProduct[] = [];
+  const seen = new Set<string>();
+
+  const push = (product?: CatalogProduct | null) => {
+    if (!product) {
+      return;
+    }
+    const code = catalogProductCode(product);
+    if (!code) {
+      return;
+    }
+    const key = product.id || code.toLowerCase();
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    results.push(product);
+  };
+
+  if (productId) {
+    push(catalogProducts.find((product) => product.id === productId) ?? intakeProduct);
+  }
+
+  if (addSku) {
+    for (const sku of addSku.split(',').map((item) => item.trim()).filter(Boolean)) {
+      push(catalogProducts.find((product) => matchesCatalogCode(product, sku)));
+      if (intakeProduct && matchesCatalogCode(intakeProduct, sku)) {
+        push(intakeProduct);
+      }
+    }
+  }
+
+  return results;
+}
+
 function buildLineId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -114,7 +170,7 @@ function buildLineFromCatalog(product: CatalogProduct, source: QuoteLine['source
   return {
     id: buildLineId(),
     productId: product.id,
-    sku: product.sku,
+    sku: catalogProductCode(product),
     name: product.name,
     quantity: '1',
     targetUnitPrice: product.purchaseMode === 'buy' ? product.price.amount.toFixed(2) : '',
@@ -181,7 +237,7 @@ function toDraftPayload(project: QuoteProject, lines: QuoteLine[], projectAttach
   return JSON.stringify({ project, lines, projectAttachments });
 }
 
-export function QuoteClient({ locale, intakeProductId, intakeProductName, cart, catalogProducts }: QuoteClientProps) {
+export function QuoteClient({ locale, intakeProductId, intakeProductName, intakeProduct, cart, catalogProducts }: QuoteClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { pushToast } = useToast();
@@ -204,7 +260,9 @@ export function QuoteClient({ locale, intakeProductId, intakeProductName, cart, 
       return catalogProducts.slice(0, 8);
     }
 
-    return catalogProducts.filter((product) => `${product.name} ${product.sku}`.toLowerCase().includes(query)).slice(0, 8);
+    return catalogProducts
+      .filter((product) => `${product.name} ${catalogProductCode(product)}`.toLowerCase().includes(query))
+      .slice(0, 8);
   }, [catalogProducts, skuSearch]);
 
   useEffect(() => {
@@ -233,27 +291,29 @@ export function QuoteClient({ locale, intakeProductId, intakeProductName, cart, 
 
   useEffect(() => {
     const addSku = searchParams.get('addSku');
-    if (!addSku) {
+    const productId = searchParams.get('productId');
+    if (!addSku && !productId) {
       return;
     }
 
-    const incomingSkus = addSku.split(',').map((item) => item.trim()).filter(Boolean);
-    if (!incomingSkus.length) {
+    const incomingProducts = resolveProductsFromIntake(catalogProducts, intakeProduct, addSku, productId);
+    if (!incomingProducts.length) {
       return;
     }
 
     setLines((current) => {
-      const existingSkus = new Set(current.map((line) => line.sku.toLowerCase()));
-      const nextLines = incomingSkus
-        .map((sku) => catalogProducts.find((product) => product.sku.toLowerCase() === sku.toLowerCase()))
-        .filter((product): product is CatalogProduct => Boolean(product))
-        .filter((product) => !existingSkus.has(product.sku.toLowerCase()))
+      const existingCodes = new Set(current.map((line) => line.sku.toLowerCase()));
+      const nextLines = incomingProducts
+        .filter((product) => {
+          const code = catalogProductCode(product).toLowerCase();
+          return code && !existingCodes.has(code);
+        })
         .map((product) => buildLineFromCatalog(product, 'manual'));
 
       return nextLines.length ? [...current, ...nextLines] : current;
     });
     setActiveSource('manual');
-  }, [catalogProducts, searchParams]);
+  }, [catalogProducts, intakeProduct, searchParams]);
 
   function updateProject<K extends keyof QuoteProject>(key: K, value: QuoteProject[K]) {
     setProject((current) => ({ ...current, [key]: value }));
@@ -265,7 +325,7 @@ export function QuoteClient({ locale, intakeProductId, intakeProductName, cart, 
 
   function addCatalogLine(product: CatalogProduct, source: QuoteLine['source']) {
     setLines((current) => {
-      if (current.some((line) => line.sku.toLowerCase() === product.sku.toLowerCase())) {
+      if (current.some((line) => line.sku.toLowerCase() === catalogProductCode(product).toLowerCase())) {
         return current;
       }
       return [...current, buildLineFromCatalog(product, source)];
@@ -323,7 +383,7 @@ export function QuoteClient({ locale, intakeProductId, intakeProductName, cart, 
       const targetUnitPrice = headerMap.targetUnitPrice >= 0 ? cells[headerMap.targetUnitPrice] ?? '' : '';
       const notes = headerMap.notes >= 0 ? cells[headerMap.notes] ?? '' : '';
 
-      const matched = catalogProducts.find((product) => product.sku.toLowerCase() === sku.toLowerCase())
+      const matched = catalogProducts.find((product) => matchesCatalogCode(product, sku))
         ?? catalogProducts.find((product) => product.name.toLowerCase() === name.toLowerCase());
 
       if (matched) {
@@ -544,7 +604,7 @@ export function QuoteClient({ locale, intakeProductId, intakeProductName, cart, 
                     <article key={product.id} className="quote-search-result-card">
                       <div>
                         <strong>{product.name}</strong>
-                        <p className="product-meta">{product.sku} · {product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote'}</p>
+                        <p className="product-meta">{catalogProductCode(product)} · {product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote'}</p>
                         <p className="section-description compact-copy">{product.shortDescription ?? 'Catalog product available for quote intake.'}</p>
                       </div>
                       <button type="button" className="button-secondary cart-action-button" onClick={() => addCatalogLine(product, 'manual')}>
