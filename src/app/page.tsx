@@ -4,9 +4,6 @@ import Link from 'next/link';
 import { StorefrontFrame } from '@/components/layout/storefront-frame';
 import { JsonLdScript } from '@/components/seo/json-ld';
 import { AddToCartButton } from '@/components/storefront/add-to-cart-button';
-import { AddToCompareButton } from '@/components/storefront/add-to-compare-button';
-import { AddToWishlistButton } from '@/components/storefront/add-to-wishlist-button';
-import { CatalogProductCardTitle } from '@/components/storefront/catalog-product-card-title';
 import { NewsletterSignupForm } from '@/components/storefront/newsletter-signup-form';
 import { withLocalePath } from '@/lib/i18n';
 import { getServerSitePreferences } from '@/lib/i18n-server';
@@ -14,8 +11,7 @@ import { buildMetadata, buildWebsiteJsonLd } from '@/lib/seo';
 import { solutionIndustries } from '@/lib/solutions';
 import { getBoardBlogs } from '@/lib/storefront-api';
 import { getRecentBoardBlogPosts } from '@/lib/board-blog-helpers';
-import { homeShopByCategories } from '@/lib/site-shell';
-import { getHomeData, getProductList } from '@/lib/storefront-api';
+import { getCategories, getHomeData, getProductList } from '@/lib/storefront-api';
 
 export async function generateMetadata() {
   const { locale } = await getServerSitePreferences();
@@ -74,13 +70,24 @@ export default async function HomePage() {
   const preferences = await getServerSitePreferences();
   const locale = preferences.locale;
 
-  const [homeData, featuredResult, blogBoard] = await Promise.all([
+  const [homeData, categories, featuredResult, blogBoard] = await Promise.all([
     getHomeData(),
+    getCategories(),
     getProductList({ purchaseMode: 'buy', pageSize: 8, sort: 'featured' }),
     getBoardBlogs('blog', locale),
   ]);
 
-  const categoryTiles = homeShopByCategories;
+  const categoryTiles = [
+    ...categories
+      .filter((category) => category.isFeatured && (category.productCount ?? 0) > 0)
+      .sort((left, right) => (left.featuredOrder ?? 0) - (right.featuredOrder ?? 0)),
+    ...homeData.featuredCategories,
+    ...categories
+      .filter((category) => (category.productCount ?? 0) > 0)
+      .sort((left, right) => (right.productCount ?? 0) - (left.productCount ?? 0)),
+  ]
+    .filter((category, index, allCategories) => allCategories.findIndex((item) => item.slug === category.slug) === index)
+    .slice(0, 15); // 3 排 x 5 列 = 15 个
   const featuredIndustries = solutionIndustries.slice(0, 6);
   const featuredProducts = featuredResult.items.slice(0, 8);
   const latestArticles = getRecentBoardBlogPosts(blogBoard.items, 4);
@@ -149,12 +156,12 @@ export default async function HomePage() {
 
           <ul className="home-category-grid-18">
             {categoryTiles.map((category) => (
-              <li key={category.slug}>
+              <li key={category.id}>
                 <Link href={withLocalePath(`/c/${category.slug}`, locale)} className="home-category-card">
                   <div className="home-category-image">
                     <Image
-                      src={`/categories/${category.slug}.png`}
-                      alt={category.name}
+                      src={category.image?.url ?? `/categories/${category.slug}.png`}
+                      alt={category.image?.alt ?? category.name}
                       width={200}
                       height={200}
                       sizes="(max-width: 768px) 150px, 200px"
@@ -162,6 +169,9 @@ export default async function HomePage() {
                     />
                   </div>
                   <span className="home-category-name">{category.name}</span>
+                  {typeof category.productCount === 'number' ? (
+                    <span className="home-category-count">{category.productCount} products</span>
+                  ) : null}
                 </Link>
               </li>
             ))}
@@ -223,66 +233,27 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div className="home-featured-grid catalog-product-grid">
-            {featuredProducts.map((product) => {
-              const productHref = withLocalePath(`/products/${product.slug}`, locale);
-              const cardDescription = product.shortDescription?.trim();
-              const showCardDescription = Boolean(cardDescription && cardDescription !== product.name.trim());
-
-              return (
-              <article key={product.id} className="product-card catalog-grid-card home-featured-card">
-                <div className="product-card-top catalog-grid-card-top">
-                  <span className="product-badge">{product.inStock ? 'In Stock' : 'Lead time on request'}</span>
-                  <div className="catalog-card-icon-actions">
-                    <AddToWishlistButton productId={product.id} icon />
-                    <AddToCompareButton
-                      icon
-                      item={{
-                        id: product.id,
-                        name: product.name,
-                        slug: product.slug,
-                        sku: product.sku,
-                        priceLabel: product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote',
-                        purchaseMode: product.purchaseMode,
-                        inStock: product.inStock,
-                        shortDescription: product.shortDescription,
-                        categories: [],
-                      }}
-                    />
-                  </div>
+          <div className="home-featured-grid">
+            {featuredProducts.map((product) => (
+              <article key={product.id} className="product-card home-featured-card">
+                <div className="product-card-top">
+                  <span className="product-badge">{product.inStock ? 'In stock' : 'Lead time on request'}</span>
                 </div>
-                <div className="catalog-grid-media-shell">
-                  {product.coverImage ? (
-                    <Link href={productHref} className="product-card-media catalog-grid-media">
-                      <Image src={product.coverImage.url} alt={product.coverImage.alt || product.name} fill sizes="320px" unoptimized className="catalog-grid-image" />
-                    </Link>
-                  ) : (
-                    <span className="catalog-grid-media-placeholder" aria-hidden="true" />
-                  )}
+                {product.coverImage ? (
+                  <Link href={withLocalePath(`/products/${product.slug}`, locale)} className="product-card-media">
+                    <Image src={product.coverImage.url} alt={product.coverImage.alt || product.name} fill sizes="320px" unoptimized className="footer-product-image" />
+                  </Link>
+                ) : null}
+                <h3>
+                  <Link href={withLocalePath(`/products/${product.slug}`, locale)}>{product.name}</Link>
+                </h3>
+                <p className="product-meta">{product.sku}</p>
+                <div className="product-card-footer">
+                  <p className="product-price">{product.price.formatted}</p>
                 </div>
-                <div className="catalog-grid-card-body">
-                  <CatalogProductCardTitle href={productHref} name={product.name} />
-                  <p className="catalog-grid-spu">
-                    <span className="catalog-grid-spu-label">SPU</span>
-                    {product.spu}
-                  </p>
-                  {showCardDescription ? (
-                    <p className="section-description compact-copy catalog-grid-card-description">{cardDescription}</p>
-                  ) : null}
-                  <p className="product-price catalog-grid-price">{product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote'}</p>
-                  <div className="catalog-grid-footer">
-                    {product.purchaseMode === 'buy' ? (
-                      <AddToCartButton productId={product.id} redirectToCart={false} bar />
-                    ) : (
-                      <Link href={productHref} className="catalog-add-to-cart-bar catalog-add-to-cart-bar-secondary">
-                        Request Quote
-                      </Link>
-                    )}
-                  </div>
-                </div>
+                <AddToCartButton productId={product.id} redirectToCart={false} />
               </article>
-              );
-            })}
+            ))}
           </div>
         </div>
       </section>

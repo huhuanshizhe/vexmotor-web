@@ -1,10 +1,7 @@
 import { serverFetch } from '@/lib/api-client';
-import { mergeCategoriesWithShell } from '@/lib/catalog-categories';
 import type { CommerceConfig } from '@/lib/commerce-config';
 import type { GlossaryTerm, StorefrontFaq, TechFaqCategory, TechFaqEntry } from '@/lib/knowledge';
 import type { PressRelease } from '@/lib/press';
-import { getStorefrontNavigation, homeShell } from '@/lib/site-shell';
-import { getLocalSupportCatalog, getSupportPageBySlug as getLocalSupportPageBySlug } from '@/lib/support-content';
 
 import type {
   HomeData,
@@ -78,61 +75,31 @@ function buildProductListQuery(params: ProductListParams) {
   return search.toString();
 }
 
-function normalizeProductCode<T extends { spu?: string; sku?: string }>(product: T): T & { spu: string; sku: string } {
-  const code = product.sku?.trim() || product.spu?.trim() || '';
-  return { ...product, spu: product.spu?.trim() || code, sku: code };
-}
-
-function normalizeProductList(result: ProductListResult): ProductListResult {
-  return { ...result, items: result.items.map(normalizeProductCode) };
-}
-
 export async function getHomeData(): Promise<HomeData> {
-  try {
-    const dynamic = await serverFetch<HomeData>('/api/front/home');
-    return { ...homeShell, ...dynamic };
-  } catch {
-    return homeShell;
-  }
+  return serverFetch<HomeData>('/api/front/home');
 }
 
-export function getNavigationData(): NavigationData {
-  return getStorefrontNavigation();
+export async function getNavigationData(): Promise<NavigationData> {
+  return serverFetch<NavigationData>('/api/front/navigation');
 }
 
 export async function getCategories(): Promise<StorefrontCategory[]> {
-  try {
-    const response = await serverFetch<StorefrontCategory[] | { categories?: StorefrontCategory[] }>('/api/front/categories');
-    const apiCategories = Array.isArray(response) ? response : response.categories ?? [];
-    return mergeCategoriesWithShell(apiCategories);
-  } catch {
-    return mergeCategoriesWithShell([]);
-  }
+  const response = await serverFetch<StorefrontCategory[] | { categories?: StorefrontCategory[] }>('/api/front/categories');
+  return Array.isArray(response) ? response : response.categories ?? [];
 }
 
 export async function getProductList(params: ProductListParams = {}): Promise<ProductListResult> {
   const query = buildProductListQuery(params);
   if (params.categorySlug) {
     const path = `/api/front/categories/${encodeURIComponent(params.categorySlug)}/products${query ? `?${query}` : ''}`;
-    return normalizeProductList(await serverFetch<ProductListResult>(path));
+    return serverFetch<ProductListResult>(path);
   }
-  if (params.keyword) {
-    return normalizeProductList(await serverFetch<ProductListResult>(`/api/front/search${query ? `?${query}` : ''}`));
-  }
-  return normalizeProductList(await serverFetch<ProductListResult>(`/api/front/products${query ? `?${query}` : ''}`));
+  return serverFetch<ProductListResult>(`/api/front/search${query ? `?${query}` : ''}`);
 }
 
 export async function getProductBySlug(slug: string): Promise<StorefrontProductDetail | null> {
   try {
-    const product = await serverFetch<StorefrontProductDetail>(`/api/front/products/${encodeURIComponent(slug)}`);
-    return {
-      ...normalizeProductCode(product),
-      relatedProducts: product.relatedProducts.map(normalizeProductCode),
-      compatibleGroups: product.compatibleGroups.map((group) => ({
-        ...group,
-        items: group.items.map(normalizeProductCode),
-      })),
-    };
+    return await serverFetch<StorefrontProductDetail>(`/api/front/products/${encodeURIComponent(slug)}`);
   } catch {
     return null;
   }
@@ -143,11 +110,16 @@ export async function getCommerceConfig(): Promise<CommerceConfig> {
 }
 
 export async function getSupportCatalog(): Promise<SupportCatalog> {
-  return getLocalSupportCatalog();
+  return serverFetch<SupportCatalog>('/api/front/support');
 }
 
 export async function getSupportPageBySlug(slug: string): Promise<SupportPage | null> {
-  return getLocalSupportPageBySlug(slug);
+  try {
+    return await serverFetch<SupportPage>(`/api/front/support/${encodeURIComponent(slug)}`);
+  } catch {
+    const catalog = await getSupportCatalog();
+    return catalog.pages.find((page) => page.slug === slug) ?? null;
+  }
 }
 
 export async function getKnowledgeCatalog(): Promise<KnowledgeCatalog> {
