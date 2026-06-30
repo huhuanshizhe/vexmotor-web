@@ -76,8 +76,9 @@ export function ShippingEstimatorClient({ currency = 'USD', defaultSubtotal = 18
 
         <div className="cart-shipping-option-list">
           {shippingOptions.map((option) => (
-            <label key={option.id} className={`option-choice-card ${selectedShippingOptionId === option.id ? 'is-selected' : ''}`}>
-              <input type="radio" name="support-shipping-estimator" checked={selectedShippingOptionId === option.id} onChange={() => setSelectedShippingOptionId(option.id)} />
+            <label key={option.id} className={`option-choice-card trade-choice-card ${selectedShippingOptionId === option.id ? 'is-selected' : ''}`}>
+              <input type="radio" className="trade-choice-input" name="support-shipping-estimator" checked={selectedShippingOptionId === option.id} onChange={() => setSelectedShippingOptionId(option.id)} />
+              <span className="trade-choice-mark" aria-hidden="true" />
               <div className="option-choice-body">
                 <div className="cart-item-meta-row">
                   <strong>{option.carrier}</strong>

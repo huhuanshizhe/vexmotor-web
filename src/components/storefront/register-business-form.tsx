@@ -18,6 +18,8 @@ import { withLocalePath } from '@/lib/i18n';
 type RegisterBusinessFormProps = {
   locale: Locale;
   initialEmail?: string;
+  variant?: 'page' | 'checkout';
+  onSuccess?: () => void | Promise<void>;
 };
 
 type RegisterFormState = {
@@ -135,7 +137,8 @@ function validateStep(stepIndex: number, form: RegisterFormState) {
   return null;
 }
 
-export function RegisterBusinessForm({ locale, initialEmail }: RegisterBusinessFormProps) {
+export function RegisterBusinessForm({ locale, initialEmail, variant = 'page', onSuccess }: RegisterBusinessFormProps) {
+  const isCheckout = variant === 'checkout';
   const router = useRouter();
   const { refreshProfile } = useAuth();
   const normalizedInitialEmail = initialEmail?.trim().toLowerCase() ?? '';
@@ -148,6 +151,10 @@ export function RegisterBusinessForm({ locale, initialEmail }: RegisterBusinessF
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
+    if (isCheckout) {
+      return;
+    }
+
     const draft = readDraft();
     if (draft) {
       setForm({
@@ -158,12 +165,16 @@ export function RegisterBusinessForm({ locale, initialEmail }: RegisterBusinessF
         documents: [],
       });
     }
-  }, [normalizedInitialEmail]);
+  }, [normalizedInitialEmail, isCheckout]);
 
   useEffect(() => {
+    if (isCheckout) {
+      return;
+    }
+
     const { documents: _documents, password: _password, ...draft } = form;
     window.localStorage.setItem(REGISTRATION_DRAFT_STORAGE_KEY, JSON.stringify(draft));
-  }, [form]);
+  }, [form, isCheckout]);
 
   const taxIdLabel = useMemo(() => getTaxIdLabel(form.country), [form.country]);
 
@@ -286,10 +297,14 @@ export function RegisterBusinessForm({ locale, initialEmail }: RegisterBusinessF
       setSavedMessage(null);
 
       try {
-        const session = await authRegister(buildRegisterPayload(form));
+        await authRegister(buildRegisterPayload(form));
         window.localStorage.removeItem(REGISTRATION_DRAFT_STORAGE_KEY);
         await refreshProfile();
-        const redirectPath = session.redirectPath ?? '/account';
+        if (onSuccess) {
+          await onSuccess();
+          return;
+        }
+        const redirectPath = '/account';
         router.push(withLocalePath(redirectPath, locale));
         router.refresh();
       } catch (error) {
@@ -298,14 +313,19 @@ export function RegisterBusinessForm({ locale, initialEmail }: RegisterBusinessF
     });
   }
 
+  const formClassName = isCheckout ? 'auth-form checkout-auth-form' : 'auth-form';
+  const stepTabClass = isCheckout ? 'checkout-auth-step' : 'auth-step-tab';
+  const gridClassName = isCheckout ? 'checkout-auth-form-grid' : 'auth-form-grid';
+  const gridSpanClass = isCheckout ? 'checkout-auth-grid-span' : 'auth-form-grid-span';
+
   return (
-    <form className="auth-form" onSubmit={handleSubmit}>
-      <div className="auth-step-tabs" role="tablist" aria-label="Registration steps">
+    <form className={formClassName} onSubmit={handleSubmit}>
+      <div className={isCheckout ? 'checkout-auth-step-tabs' : 'auth-step-tabs'} role="tablist" aria-label="Registration steps">
         {REGISTRATION_STEPS.map((step, index) => (
           <button
             key={step}
             type="button"
-            className={`auth-step-tab${index === stepIndex ? ' is-active' : ''}${index < stepIndex ? ' is-complete' : ''}`}
+            className={`${stepTabClass}${index === stepIndex ? ' is-active' : ''}${index < stepIndex ? ' is-complete' : ''}`}
             onClick={() => setStepIndex(index)}
           >
             <span>{index + 1}</span>
@@ -315,7 +335,7 @@ export function RegisterBusinessForm({ locale, initialEmail }: RegisterBusinessF
       </div>
 
       {stepIndex === 0 ? (
-        <div className="auth-form-grid">
+        <div className={gridClassName}>
           <label className="form-field">
             <span>Work email</span>
             <input className="form-input" type="email" value={form.email} onChange={(event) => updateForm('email', event.target.value)} placeholder="name@company.com" required disabled={isPending} />
@@ -336,7 +356,7 @@ export function RegisterBusinessForm({ locale, initialEmail }: RegisterBusinessF
             <span>Last name</span>
             <input className="form-input" value={form.lastName} onChange={(event) => updateForm('lastName', event.target.value)} required disabled={isPending} />
           </label>
-          <label className="form-field auth-form-grid-span">
+          <label className={`form-field ${gridSpanClass}`}>
             <span>Password</span>
             <input className="form-input" type="password" value={form.password} onChange={(event) => updateForm('password', event.target.value)} placeholder="Use at least 8 characters" required disabled={isPending} />
           </label>
@@ -344,8 +364,8 @@ export function RegisterBusinessForm({ locale, initialEmail }: RegisterBusinessF
       ) : null}
 
       {stepIndex === 1 ? (
-        <div className="auth-form-grid">
-          <label className="form-field auth-form-grid-span">
+        <div className={gridClassName}>
+          <label className={`form-field ${gridSpanClass}`}>
             <span>Company name</span>
             <input className="form-input" value={form.companyName} onChange={(event) => updateForm('companyName', event.target.value)} required disabled={isPending} />
           </label>
@@ -433,9 +453,11 @@ export function RegisterBusinessForm({ locale, initialEmail }: RegisterBusinessF
       ) : null}
 
       <div className="auth-inline-row">
-        <button type="button" className="button-secondary" onClick={saveDraft} disabled={isPending}>
-          Save draft
-        </button>
+        {!isCheckout ? (
+          <button type="button" className="button-secondary" onClick={saveDraft} disabled={isPending}>
+            Save draft
+          </button>
+        ) : null}
         <div className="auth-inline-actions">
           {stepIndex > 0 ? (
             <button type="button" className="button-secondary" onClick={goPrevious} disabled={isPending}>
@@ -454,11 +476,13 @@ export function RegisterBusinessForm({ locale, initialEmail }: RegisterBusinessF
         </div>
       </div>
 
-      <div className="auth-link-row">
-        <Link href={withLocalePath('/login', locale)} className="section-link">
-          Already registered? Sign in
-        </Link>
-      </div>
+      {!isCheckout ? (
+        <div className="auth-link-row">
+          <Link href={withLocalePath('/login', locale)} className="section-link">
+            Already registered? Sign in
+          </Link>
+        </div>
+      ) : null}
 
       {savedMessage ? <p className="form-feedback form-feedback-success" role="status">{savedMessage}</p> : null}
       {feedback ? <p className="form-feedback form-feedback-error" role="alert">{feedback}</p> : null}

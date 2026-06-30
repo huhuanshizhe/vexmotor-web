@@ -1,0 +1,156 @@
+'use client';
+
+import { useTranslation } from '@/lib/i18n-context';
+import type { CheckoutPricingResult } from '@/lib/use-checkout-pricing';
+import type { CartDetail } from '@/lib/storefront-types';
+
+type StepItem = {
+  label: string;
+  complete: boolean;
+};
+
+type CheckoutOrderSummaryProps = {
+  cart: NonNullable<CartDetail>;
+  pricing: CheckoutPricingResult;
+  stepItems: StepItem[];
+  shippingComplete: boolean;
+  paymentComplete: boolean;
+  shippingMethodLabel: string;
+  shippingEta?: string;
+  shippingFreightLabel?: string;
+  paymentMethod: string;
+  tradeTerm: string;
+  canPlaceOrder: boolean;
+  isPending: boolean;
+  message: string | null;
+  locale?: string;
+  onPlaceOrder: () => void;
+};
+
+function formatMoney(amount: number, currency = 'USD', locale = 'en') {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(amount);
+}
+
+function stepAnchorId(label: string) {
+  return `#checkout-${label.toLowerCase()}`;
+}
+
+function isSummaryStep(label: string) {
+  return label === 'Review';
+}
+
+export function CheckoutOrderSummary({
+  cart,
+  pricing,
+  stepItems,
+  shippingComplete,
+  paymentComplete,
+  shippingMethodLabel,
+  shippingEta,
+  shippingFreightLabel,
+  paymentMethod,
+  tradeTerm,
+  canPlaceOrder,
+  isPending,
+  message,
+  locale = 'en',
+  onPlaceOrder,
+}: CheckoutOrderSummaryProps) {
+  const { t } = useTranslation();
+  const currency = cart.subtotal.currency;
+
+  return (
+    <article className="info-card checkout-summary-card" id="checkout-summary">
+      <h2 className="cart-section-title">{t('checkout.orderSummary')}</h2>
+
+      <nav className="checkout-progress-nav" aria-label="Checkout progress">
+        {stepItems.map((step) => {
+          const className = `checkout-progress-link${step.complete ? ' is-complete' : ''}${isSummaryStep(step.label) ? ' is-summary-step' : ''}`;
+
+          if (isSummaryStep(step.label)) {
+            return (
+              <span key={step.label} className={className} aria-current="step" title="Review totals and place your order in this panel">
+                {step.label}
+              </span>
+            );
+          }
+
+          return (
+            <a key={step.label} href={stepAnchorId(step.label)} className={className}>
+              {step.label}
+            </a>
+          );
+        })}
+      </nav>
+
+      {cart.coupon?.isApplied ? (
+        <div className="cart-coupon-status is-applied">
+          <strong>{cart.coupon.code}</strong>
+          <span>{cart.coupon.description}</span>
+        </div>
+      ) : null}
+
+      <div className="cart-summary-list">
+        <div className="cart-summary-row">
+          <span className="section-description">{t('cart.subtotal')}</span>
+          <strong>{cart.subtotal.formatted}</strong>
+        </div>
+        {cart.discount.amount > 0 ? (
+          <div className="cart-summary-row is-discount">
+            <span className="section-description">Discount</span>
+            <strong>-{cart.discount.formatted}</strong>
+          </div>
+        ) : null}
+        <div className="cart-summary-row">
+          <span className="section-description">{t('cart.shipping')}</span>
+          <strong>
+            {!pricing.isShippingAddressReady
+              ? '—'
+              : pricing.shippingAmount === 0
+                ? 'Free'
+                : formatMoney(pricing.shippingAmount, currency, locale)}
+          </strong>
+        </div>
+        <div className="cart-summary-row">
+          <span className="section-description">{t('cart.tax')}</span>
+          <strong>
+            {!pricing.isShippingAddressReady ? '—' : formatMoney(pricing.taxAmount, currency, locale)}
+          </strong>
+        </div>
+        <div className="cart-summary-row is-total">
+          <span>{t('cart.total')}</span>
+          <strong>{formatMoney(pricing.totalAmount, currency, locale)}</strong>
+        </div>
+      </div>
+
+      {shippingComplete ? (
+        <div className="checkout-selection-summary">
+          <div className="checkout-selection-block">
+            <span className="checkout-selection-label">Shipping</span>
+            <strong>{shippingMethodLabel}</strong>
+            {shippingEta || shippingFreightLabel ? (
+              <span className="section-description">
+                {[shippingEta, shippingFreightLabel].filter(Boolean).join(' · ')}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {paymentComplete ? (
+        <div className="checkout-selection-summary">
+          <div className="checkout-selection-block">
+            <span className="checkout-selection-label">Payment</span>
+            <strong>{paymentMethod}</strong>
+            <span className="section-description">{tradeTerm}</span>
+          </div>
+        </div>
+      ) : null}
+
+      <button type="button" className="button-primary" onClick={onPlaceOrder} disabled={isPending || !canPlaceOrder}>
+        {isPending ? t('common.loading') : `${t('checkout.placeOrder')} ${formatMoney(pricing.totalAmount, currency, locale)}`}
+      </button>
+      {message ? <p className="form-feedback form-feedback-error">{message}</p> : null}
+    </article>
+  );
+}

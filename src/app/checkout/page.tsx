@@ -16,14 +16,28 @@ export async function generateMetadata() {
   });
 }
 
-export default async function CheckoutPage() {
+export default async function CheckoutPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ buyNow?: string; productId?: string; qty?: string }>;
+}) {
   const commerceConfig = await getCommerceConfig();
+  const params = await searchParams;
+  const buyNowProductId = params.buyNow === '1' && params.productId ? params.productId : undefined;
+  const buyNowQuantity = buyNowProductId ? Math.max(1, Number(params.qty) || 1) : undefined;
 
   return (
     <StorefrontFrame>
       <section className="section">
         <div className="section-inner">
-          <CheckoutClient cart={null} addresses={[]} guestMode={true} commerceConfig={commerceConfig} />
+          <CheckoutClient
+            cart={null}
+            addresses={[]}
+            guestMode={true}
+            commerceConfig={commerceConfig}
+            buyNowProductId={buyNowProductId}
+            buyNowQuantity={buyNowQuantity}
+          />
         </div>
       </section>
     </StorefrontFrame>

@@ -18,11 +18,11 @@ export async function generateMetadata() {
 }
 
 const authHighlights = [
-  'Track orders, inquiries, addresses, and quote history from one account center.',
-  'Use remembered email and a safer next-path redirect into checkout or account pages.',
-  'SSO buttons are staged as enterprise placeholders while credentials login stays primary.',
-  'Local development still supports the seeded admin credentials for validation.',
-  'Business accounts are active immediately after registration.',
+  'View orders, quotes, invoices, and saved addresses from your member center.',
+  'Resume checkout and account tasks without re-entering your details.',
+  'Track quote requests and inquiry history in one place.',
+  'Company accounts are ready to use right after registration.',
+  'Update company profile, shipping addresses, and preferences anytime.',
 ];
 
 function resolveCallbackUrl(input?: string) {
@@ -63,8 +63,10 @@ export default async function LoginPage({
           </article>
           <article className="info-card auth-card">
             <div className="card-kicker">Why sign in</div>
-            <h2 style={{ margin: 0 }}>Built for repeat buyers and RFQ follow-up</h2>
-            <p className="section-description">This auth surface now matches the B2B motion workflow more closely: quick return access, protected sourcing pages, and a clear path into registration or password recovery.</p>
+            <h2 style={{ margin: 0 }}>One account for orders, quotes, and company details</h2>
+            <p className="section-description">
+              Your STEPMOTECH member account keeps purchasing activity, quote follow-up, and company information in one place so your team can buy faster and stay organized.
+            </p>
             <div className="support-list">
               {authHighlights.map((item) => (
                 <div key={item} className="support-item">
@@ -72,11 +74,6 @@ export default async function LoginPage({
                   <span>{item}</span>
                 </div>
               ))}
-            </div>
-            <div className="auth-seed-box">
-              <span className="card-kicker">Developer seed access</span>
-              <strong>admin@lianchuan.local</strong>
-              <strong>Admin123456</strong>
             </div>
             <div className="inline-link-list">
               <Link href={withLocalePath('/register', preferences.locale)} className="section-link">

@@ -27,7 +27,6 @@ export default async function CartPage() {
           <CartClient
             initialCart={null}
             locale={locale}
-            hasAccountContext={false}
             crossSellProducts={homeData.mostViewedProducts.slice(0, 3)}
             emptyStateCategories={homeData.featuredCategories.slice(0, 3)}
             commerceConfig={commerceConfig}

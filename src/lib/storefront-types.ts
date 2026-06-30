@@ -260,3 +260,54 @@ export type HomeDynamicData = {
   featuredShelves: HomeProductShelf[];
   mostViewedProducts: StorefrontProductCard[];
 };
+
+export type StorefrontMoney = {
+  currency: string;
+  amount: number;
+  formatted: string;
+};
+
+export type CartCouponSummary = {
+  code: string;
+  description: string;
+  discountType: 'direct_amount' | 'percent' | 'fixed_amount' | 'special_price';
+  isApplied: boolean;
+  message: string | null;
+};
+
+export type CartDetail = {
+  id: string;
+  couponCode?: string | null;
+  coupon?: CartCouponSummary | null;
+  items: Array<{
+    id: string;
+    productId: string;
+    quantity: number;
+    listUnitPrice?: StorefrontMoney;
+    unitPrice: StorefrontMoney;
+    subtotal: StorefrontMoney;
+    tierApplied?: boolean;
+    product: {
+      id: string;
+      name: string;
+      slug: string;
+      sku?: string;
+      spu?: string;
+      shortDescription?: string | null;
+      purchaseMode: 'buy' | 'inquiry';
+      inStock: boolean;
+      price: StorefrontMoney;
+      compareAtPrice?: StorefrontMoney | null;
+      coverImage?: StorefrontImage | null;
+    };
+  }>;
+  itemCount: number;
+  subtotal: StorefrontMoney;
+  volumeDiscount?: StorefrontMoney;
+  discount: StorefrontMoney;
+  shipping: StorefrontMoney;
+  tax: StorefrontMoney;
+  total: StorefrontMoney;
+  freeShippingThreshold: StorefrontMoney;
+  remainingForFreeShipping: StorefrontMoney;
+} | null;

@@ -12,6 +12,8 @@ type LoginFormProps = {
   callbackUrl: string;
   initialEmail?: string;
   initialNotice?: string | null;
+  variant?: 'page' | 'checkout';
+  onSuccess?: () => void | Promise<void>;
 };
 
 const REMEMBERED_EMAIL_STORAGE_KEY = 'vexmotor-login-remembered-email';
@@ -75,7 +77,8 @@ function clearFailureState() {
   window.sessionStorage.removeItem(LOGIN_FAILURE_STORAGE_KEY);
 }
 
-export function LoginForm({ callbackUrl, initialEmail, initialNotice = null }: LoginFormProps) {
+export function LoginForm({ callbackUrl, initialEmail, initialNotice = null, variant = 'page', onSuccess }: LoginFormProps) {
+  const isCheckout = variant === 'checkout';
   const router = useRouter();
   const pathname = usePathname();
   const { refreshProfile } = useAuth();
@@ -129,13 +132,18 @@ export function LoginForm({ callbackUrl, initialEmail, initialNotice = null }: L
         window.localStorage.removeItem(REMEMBERED_EMAIL_STORAGE_KEY);
       }
 
+      if (onSuccess) {
+        await onSuccess();
+        return;
+      }
+
       router.push(callbackUrl);
       router.refresh();
     });
   }
 
   return (
-    <form className="auth-form" onSubmit={handleSubmit}>
+    <form className={isCheckout ? 'auth-form checkout-auth-form' : 'auth-form'} onSubmit={handleSubmit}>
       <label className="form-field">
         <span>Email</span>
         <input
@@ -174,27 +182,31 @@ export function LoginForm({ callbackUrl, initialEmail, initialNotice = null }: L
       <button type="submit" className="button-primary" disabled={isPending}>
         {isPending ? 'Signing in...' : 'Sign In'}
       </button>
-      <div className="auth-or-divider" aria-hidden="true">
-        <span />
-        <strong>or</strong>
-        <span />
-      </div>
-      <div className="auth-social-grid">
-        <button type="button" className="button-secondary" disabled>
-          Continue with Google
-        </button>
-        <button type="button" className="button-secondary" disabled>
-          Continue with Microsoft
-        </button>
-      </div>
-      <div className="auth-link-row">
-        <Link href={withLocalePath('/password-reset', locale)} className="section-link">
-          Forgot password?
-        </Link>
-        <Link href={withLocalePath('/register', locale)} className="section-link">
-          Register your company
-        </Link>
-      </div>
+      {!isCheckout ? (
+        <>
+          <div className="auth-or-divider" aria-hidden="true">
+            <span />
+            <strong>or</strong>
+            <span />
+          </div>
+          <div className="auth-social-grid">
+            <button type="button" className="button-secondary" disabled>
+              Continue with Google
+            </button>
+            <button type="button" className="button-secondary" disabled>
+              Continue with Microsoft
+            </button>
+          </div>
+          <div className="auth-link-row">
+            <Link href={withLocalePath('/password-reset', locale)} className="section-link">
+              Forgot password?
+            </Link>
+            <Link href={withLocalePath('/register', locale)} className="section-link">
+              Register your company
+            </Link>
+          </div>
+        </>
+      ) : null}
       {notice ? <p className="form-feedback form-feedback-success" role="status" aria-live="polite">{notice}</p> : null}
       {message ? <p className="form-feedback form-feedback-error" role="alert" aria-live="polite">{message}</p> : null}
     </form>

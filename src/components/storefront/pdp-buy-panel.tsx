@@ -193,19 +193,13 @@ export function PdpBuyProvider({
 
     startTransition(async () => {
       setMessage(null);
-      try {
-        const cart = await apiFetch<CartApiSnapshot>('/api/front/cart', {
-          method: 'POST',
-          body: JSON.stringify({ productId, quantity: checkoutQty }),
-        });
-        notifyCartUpdatedFromResponse(cart);
-      } catch {
-        setMessage(t('common.error'));
-        return;
-      }
-
       const locale = parseLocaleFromPathname(pathname).locale;
-      router.push(withLocalePath('/checkout', locale));
+      const params = new URLSearchParams({
+        buyNow: '1',
+        productId,
+        qty: String(checkoutQty),
+      });
+      router.push(`${withLocalePath('/checkout', locale)}?${params.toString()}`);
     });
   }
 

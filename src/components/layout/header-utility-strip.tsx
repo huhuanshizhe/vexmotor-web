@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { useAuth } from '@/components/providers/auth-provider';
-import { apiFetch, getAccessToken } from '@/lib/api-client';
+import { apiFetch, AUTH_TOKEN_CHANGED_EVENT, getAccessToken } from '@/lib/api-client';
+import type { UserProfile } from '@/lib/auth-client';
 import { CART_UPDATED_EVENT, getCartLineItemCount, type CartApiSnapshot, type CartUpdatedDetail } from '@/lib/cart-session';
 import { COMPARE_ITEMS_UPDATED_EVENT, readCompareItems } from '@/lib/compare-items';
 import { withLocalePath } from '@/lib/i18n';
@@ -56,11 +57,20 @@ function LoginIcon({ className }: { className?: string }) {
 
 function AccountIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 20c0-3.314 3.582-6 8-6s8 2.686 8 6v1H4v-1z" />
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
     </svg>
   );
+}
+
+function getAccountInitials(user: UserProfile) {
+  const first = user.firstName.trim()[0] ?? '';
+  const last = user.lastName.trim()[0] ?? '';
+  if (first || last) {
+    return `${first}${last}`.toUpperCase();
+  }
+  return (user.email[0] ?? 'U').toUpperCase();
 }
 
 const UTILITY_ICONS: Record<string, (props: { className?: string }) => React.JSX.Element> = {
@@ -100,13 +110,38 @@ function resolveUtilityBadgeCount(label: string, cartCount: number, compareCount
   return null;
 }
 
+function subscribeAccessToken(onStoreChange: () => void) {
+  if (typeof window === 'undefined') {
+    return () => {};
+  }
+  window.addEventListener('storage', onStoreChange);
+  window.addEventListener(AUTH_TOKEN_CHANGED_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener('storage', onStoreChange);
+    window.removeEventListener(AUTH_TOKEN_CHANGED_EVENT, onStoreChange);
+  };
+}
+
+function getAccessTokenSnapshot() {
+  return Boolean(getAccessToken());
+}
+
+function getServerAccessTokenSnapshot() {
+  return false;
+}
+
 export function HeaderUtilityStrip({ links, initialCartCount }: HeaderUtilityStripProps) {
   const { locale, t } = useTranslation();
   const { user, isLoading } = useAuth();
+  const hasStoredToken = useSyncExternalStore(
+    subscribeAccessToken,
+    getAccessTokenSnapshot,
+    getServerAccessTokenSnapshot,
+  );
   const [compareCount, setCompareCount] = useState(0);
   const [cartCount, setCartCount] = useState(initialCartCount);
 
-  const showAccount = Boolean(user) || (isLoading && Boolean(getAccessToken()));
+  const showAccount = Boolean(user) || (isLoading && hasStoredToken);
   const resolvedLinks = useMemo(() => resolveUtilityLinks(links, showAccount), [links, showAccount]);
 
   useEffect(() => {
@@ -160,7 +195,19 @@ export function HeaderUtilityStrip({ links, initialCartCount }: HeaderUtilityStr
 
           const linkContent = (
             <span className="header-icon-link-inner">
-              {IconComponent ? <IconComponent className="header-icon-svg" /> : <span>{item.label}</span>}
+              {isAccountLink && showAccount ? (
+                user ? (
+                  <span className="header-account-avatar" aria-hidden="true">
+                    {getAccountInitials(user)}
+                  </span>
+                ) : (
+                  <span className="header-account-avatar header-account-avatar--loading" aria-hidden="true" />
+                )
+              ) : IconComponent ? (
+                <IconComponent className="header-icon-svg" />
+              ) : (
+                <span>{item.label}</span>
+              )}
               {badgeLabel ? (
                 <span className="header-icon-badge" aria-hidden="true">
                   {badgeLabel}

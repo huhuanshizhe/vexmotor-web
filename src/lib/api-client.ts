@@ -1,6 +1,15 @@
 const ACCESS_TOKEN_KEY = 'vex_front_token';
 const CART_TOKEN_KEY = 'vex_cart_token';
 
+export const AUTH_TOKEN_CHANGED_EVENT = 'vex-auth-token-changed';
+
+function notifyAuthTokenChanged(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  window.dispatchEvent(new Event(AUTH_TOKEN_CHANGED_EVENT));
+}
+
 export function getApiBaseUrl(): string {
   return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5100';
 }
@@ -23,6 +32,7 @@ export function setAccessToken(token: string): void {
     return;
   }
   window.localStorage.setItem(ACCESS_TOKEN_KEY, token);
+  notifyAuthTokenChanged();
 }
 
 export function clearAccessToken(): void {
@@ -30,6 +40,7 @@ export function clearAccessToken(): void {
     return;
   }
   window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+  notifyAuthTokenChanged();
 }
 
 export function getCartToken(): string | null {
