@@ -43,7 +43,7 @@ export function CartClient({ initialCart, locale, crossSellProducts, emptyStateC
   }, [initialCart]);
 
   const productsPath = withLocalePath('/products', locale);
-  const quotePath = withLocalePath('/quote', locale);
+  const quotePath = withLocalePath('/quote?cartOverlay=1', locale);
   const volumePricingPath = withLocalePath('/volume-pricing', locale);
   const contactPath = withLocalePath('/contact', locale);
   const checkoutPath = withLocalePath('/checkout', locale);

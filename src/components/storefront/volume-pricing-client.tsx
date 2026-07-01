@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
+import { IndustrySelect } from '@/components/storefront/industry-select';
+import { useIndustries } from '@/hooks/use-industries';
+
 import type { VolumePricingRuleConfig } from '@/lib/commerce-config';
 import { apiFetch } from '@/lib/api-client';
 import type { Locale } from '@/lib/i18n';
@@ -49,11 +52,17 @@ const INITIAL_CONTRACT_FORM: ContractPricingState = {
   notes: '',
 };
 
-function buildContractPricingMessage(form: ContractPricingState, product: StorefrontProductCard | null, quantity: number, publishedSavingsLine: string) {
+function buildContractPricingMessage(
+  form: ContractPricingState,
+  product: StorefrontProductCard | null,
+  quantity: number,
+  publishedSavingsLine: string,
+  industryLabel: string,
+) {
   return [
     'CONTRACT PRICING REQUEST',
     `Company: ${form.company || 'Not specified'}`,
-    `Industry: ${form.industry || 'Not specified'}`,
+    `Industry: ${industryLabel || 'Not specified'}`,
     `Annual purchase estimate: ${form.annualPurchase || 'Not specified'}`,
     `Interested SKU: ${form.interestedSku || product?.sku || 'Not specified'}`,
     `Selected product: ${product ? `${product.name} (${product.sku})` : 'Not specified'}`,
@@ -68,6 +77,7 @@ function buildContractPricingMessage(form: ContractPricingState, product: Storef
 
 export function VolumePricingClient({ locale, intakeProductId, products, initialSku, volumePricingRules }: VolumePricingClientProps) {
   const router = useRouter();
+  const { getLabel } = useIndustries();
   const defaultSku = products.some((product) => product.sku === initialSku) ? initialSku ?? '' : products[0]?.sku ?? '';
   const [selectedSku, setSelectedSku] = useState(defaultSku);
   const [quantityInput, setQuantityInput] = useState('50');
@@ -138,7 +148,13 @@ export function VolumePricingClient({ locale, intakeProductId, products, initial
             email: form.email,
             phone: form.phone,
             company: form.company,
-            message: buildContractPricingMessage(form, selectedProduct, quantity, publishedSavingsLine),
+            message: buildContractPricingMessage(
+              form,
+              selectedProduct,
+              quantity,
+              publishedSavingsLine,
+              getLabel(form.industry),
+            ),
           }),
         });
 
@@ -302,7 +318,11 @@ export function VolumePricingClient({ locale, intakeProductId, products, initial
           </label>
           <label className="form-field">
             <span>Industry</span>
-            <input className="form-input" value={form.industry} onChange={(event) => updateForm('industry', event.target.value)} placeholder="Automation, CNC, packaging..." />
+            <IndustrySelect
+              className="form-input"
+              value={form.industry}
+              onChange={(value) => updateForm('industry', value)}
+            />
           </label>
           <label className="form-field">
             <span>Annual purchase estimate</span>

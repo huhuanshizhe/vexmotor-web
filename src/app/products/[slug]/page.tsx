@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 
 import { StorefrontFrame } from '@/components/layout/storefront-frame';
 import { JsonLdScript } from '@/components/seo/json-ld';
+import { AddToQuoteButton } from '@/components/storefront/add-to-quote-button';
 import { PdpBuyProvider, PdpPricePanel, PdpPurchaseActions } from '@/components/storefront/pdp-buy-panel';
 import { AddToCompareButton } from '@/components/storefront/add-to-compare-button';
 import { AddToWishlistButton } from '@/components/storefront/add-to-wishlist-button';
@@ -309,7 +310,14 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               <PdpPurchaseActions />
 
               <div className="pdp-primary-cta">
-                <Link href={quoteHref} className="button-secondary pdp-quote-button">Add to Quote</Link>
+                <AddToQuoteButton
+                  productId={p.id}
+                  name={p.name}
+                  slug={p.slug}
+                  spu={productCode}
+                  coverImage={p.coverImage ? { url: p.coverImage.url, alt: p.coverImage.alt || p.name } : null}
+                  listUnitPrice={{ amount: p.price.amount, currency: p.price.currency, formatted: p.price.formatted }}
+                />
                 <div className="pdp-support-links">
                   <Link href={customHref} className="detail-inline-link">Discuss a custom variant</Link>
                   <Link href={contactPath} className="detail-inline-link">Talk to engineering support</Link>

@@ -13,3 +13,9 @@ export async function fetchBuyNowPreview(payload: BuyNowPayload) {
     body: JSON.stringify(payload),
   });
 }
+
+export async function fetchQuoteCheckoutPreview(quoteNumber: string) {
+  return apiFetch<CartDetail & { quoteNumber?: string; readOnlyQuantities?: boolean }>(
+    `/api/front/checkout/quote-preview?quoteNumber=${encodeURIComponent(quoteNumber)}`,
+  );
+}

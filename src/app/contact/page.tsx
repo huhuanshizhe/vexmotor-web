@@ -107,8 +107,8 @@ export default async function ContactPage() {
                 <Link href={withLocalePath('/support/after-sales', locale)} className="section-link">
                   After-sales support
                 </Link>
-                <Link href={withLocalePath('/account/inquiries', locale)} className="section-link">
-                  Review submitted inquiries
+                <Link href={withLocalePath('/account/quotes', locale)} className="section-link">
+                  Review submitted quotes
                 </Link>
               </div>
             </article>

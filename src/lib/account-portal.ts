@@ -7,7 +7,6 @@ export const accountNavLinks = [
   { href: '/account/invoices', label: 'Invoices' },
   { href: '/account/downloads', label: 'Downloads' },
   { href: '/account/settings', label: 'Settings' },
-  { href: '/account/inquiries', label: 'Inquiries' },
 ] as const;
 
 export type AccountQuoteStatus = 'Submitted' | 'Quoted' | 'Negotiating' | 'Won' | 'Expired';

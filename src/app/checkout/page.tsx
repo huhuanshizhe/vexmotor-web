@@ -19,12 +19,13 @@ export async function generateMetadata() {
 export default async function CheckoutPage({
   searchParams,
 }: {
-  searchParams: Promise<{ buyNow?: string; productId?: string; qty?: string }>;
+  searchParams: Promise<{ buyNow?: string; productId?: string; qty?: string; fromQuote?: string }>;
 }) {
   const commerceConfig = await getCommerceConfig();
   const params = await searchParams;
   const buyNowProductId = params.buyNow === '1' && params.productId ? params.productId : undefined;
   const buyNowQuantity = buyNowProductId ? Math.max(1, Number(params.qty) || 1) : undefined;
+  const fromQuoteNumber = params.fromQuote?.trim() || undefined;
 
   return (
     <StorefrontFrame>
@@ -37,6 +38,7 @@ export default async function CheckoutPage({
             commerceConfig={commerceConfig}
             buyNowProductId={buyNowProductId}
             buyNowQuantity={buyNowQuantity}
+            fromQuoteNumber={fromQuoteNumber}
           />
         </div>
       </section>

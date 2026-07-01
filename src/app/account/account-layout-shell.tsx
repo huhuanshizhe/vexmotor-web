@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 
 import { useAuth } from '@/components/providers/auth-provider';
 import { accountNavLinks } from '@/lib/account-portal';
@@ -11,6 +11,22 @@ import { useTranslation } from '@/lib/i18n-context';
 export function AccountLayoutShell({ children }: { children: ReactNode }) {
   const { user, isLoading, logout } = useAuth();
   const { locale, t } = useTranslation();
+  const signInPanelRef = useRef<HTMLElement>(null);
+  const hadUserRef = useRef(false);
+
+  useEffect(() => {
+    if (user) {
+      hadUserRef.current = true;
+      return;
+    }
+
+    if (!isLoading && hadUserRef.current) {
+      hadUserRef.current = false;
+      requestAnimationFrame(() => {
+        signInPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
+  }, [user, isLoading]);
 
   function handleSignOut() {
     logout();
@@ -22,7 +38,7 @@ export function AccountLayoutShell({ children }: { children: ReactNode }) {
 
   if (!user) {
     return (
-      <article className="info-card">
+      <article ref={signInPanelRef} className="info-card account-sign-in-panel">
         <h2 style={{ marginTop: 0 }}>Sign in to access your member center</h2>
         <p className="section-description">Orders, addresses, wishlist items, and inquiry history are tied to an authenticated account.</p>
         <div className="account-inline-actions">

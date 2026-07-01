@@ -8,6 +8,7 @@ import { apiFetch, AUTH_TOKEN_CHANGED_EVENT, getAccessToken } from '@/lib/api-cl
 import type { UserProfile } from '@/lib/auth-client';
 import { CART_UPDATED_EVENT, getCartLineItemCount, type CartApiSnapshot, type CartUpdatedDetail } from '@/lib/cart-session';
 import { COMPARE_ITEMS_UPDATED_EVENT, readCompareItems } from '@/lib/compare-items';
+import { QUOTE_ITEMS_UPDATED_EVENT, readQuoteItems } from '@/lib/quote-live-items';
 import { withLocalePath } from '@/lib/i18n';
 import { useTranslation } from '@/lib/i18n-context';
 import { LanguageSwitcher } from '@/components/storefront/language-switcher';
@@ -34,6 +35,17 @@ function CompareIcon({ className }: { className?: string }) {
       <path d="M3 3v18h18" />
       <rect x="7" y="10" width="3" height="8" rx="0.5" />
       <rect x="14" y="6" width="3" height="12" rx="0.5" />
+    </svg>
+  );
+}
+
+function QuoteIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M8 13h8" />
+      <path d="M8 17h5" />
     </svg>
   );
 }
@@ -75,6 +87,7 @@ function getAccountInitials(user: UserProfile) {
 
 const UTILITY_ICONS: Record<string, (props: { className?: string }) => React.JSX.Element> = {
   cart: CartIcon,
+  Quotes: QuoteIcon,
   Compare: CompareIcon,
   Wishlist: WishlistIcon,
   Login: LoginIcon,
@@ -99,10 +112,13 @@ function resolveUtilityLinks(links: StorefrontUtilityLink[], showAccount: boolea
   });
 }
 
-function resolveUtilityBadgeCount(label: string, cartCount: number, compareCount: number) {
+function resolveUtilityBadgeCount(label: string, cartCount: number, compareCount: number, quoteCount: number) {
   const normalized = label.toLowerCase();
   if (normalized === 'cart') {
     return cartCount;
+  }
+  if (normalized === 'quotes') {
+    return quoteCount;
   }
   if (normalized === 'compare') {
     return compareCount;
@@ -139,6 +155,7 @@ export function HeaderUtilityStrip({ links, initialCartCount }: HeaderUtilityStr
     getServerAccessTokenSnapshot,
   );
   const [compareCount, setCompareCount] = useState(0);
+  const [quoteCount, setQuoteCount] = useState(0);
   const [cartCount, setCartCount] = useState(initialCartCount);
 
   const showAccount = Boolean(user) || (isLoading && hasStoredToken);
@@ -147,6 +164,10 @@ export function HeaderUtilityStrip({ links, initialCartCount }: HeaderUtilityStr
   useEffect(() => {
     const syncCompareCount = () => {
       setCompareCount(readCompareItems().length);
+    };
+
+    const syncQuoteCount = () => {
+      setQuoteCount(readQuoteItems().length);
     };
 
     const syncCartCount = () => {
@@ -169,14 +190,19 @@ export function HeaderUtilityStrip({ links, initialCartCount }: HeaderUtilityStr
     };
 
     syncCompareCount();
+    syncQuoteCount();
     syncCartCount();
     window.addEventListener('storage', syncCompareCount);
+    window.addEventListener('storage', syncQuoteCount);
     window.addEventListener(COMPARE_ITEMS_UPDATED_EVENT, syncCompareCount);
+    window.addEventListener(QUOTE_ITEMS_UPDATED_EVENT, syncQuoteCount);
     window.addEventListener(CART_UPDATED_EVENT, handleCartUpdated);
 
     return () => {
       window.removeEventListener('storage', syncCompareCount);
+      window.removeEventListener('storage', syncQuoteCount);
       window.removeEventListener(COMPARE_ITEMS_UPDATED_EVENT, syncCompareCount);
+      window.removeEventListener(QUOTE_ITEMS_UPDATED_EVENT, syncQuoteCount);
       window.removeEventListener(CART_UPDATED_EVENT, handleCartUpdated);
     };
   }, []);
@@ -188,7 +214,7 @@ export function HeaderUtilityStrip({ links, initialCartCount }: HeaderUtilityStr
       <div className="header-icon-links">
         {resolvedLinks.map((item) => {
           const IconComponent = UTILITY_ICONS[item.label];
-          const count = resolveUtilityBadgeCount(item.label, cartCount, compareCount);
+          const count = resolveUtilityBadgeCount(item.label, cartCount, compareCount, quoteCount);
           const isAccountLink = item.label === 'Account';
           const linkTitle = isAccountLink ? t('header.myAccount') : item.label === 'Login' ? t('header.login') : item.label;
           const badgeLabel = count !== null && count > 0 ? String(count) : null;

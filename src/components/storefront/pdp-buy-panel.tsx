@@ -56,6 +56,10 @@ function usePdpBuy() {
   return context;
 }
 
+export function usePdpBuyOptional() {
+  return useContext(PdpBuyContext);
+}
+
 function parseQtyInput(value: string) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : null;

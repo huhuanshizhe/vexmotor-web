@@ -18,7 +18,7 @@ import { CouponSection } from '@/components/checkout/coupon-section';
 import { useAuth } from '@/components/providers/auth-provider';
 import { apiFetch } from '@/lib/api-client';
 import { fetchAddresses, fetchCart, type AccountAddress } from '@/lib/account-api';
-import { fetchBuyNowPreview } from '@/lib/checkout-api';
+import { fetchBuyNowPreview, fetchQuoteCheckoutPreview } from '@/lib/checkout-api';
 import { syncCartResponse } from '@/lib/cart-api';
 import type { CommerceConfig } from '@/lib/commerce-config';
 import { parseLocaleFromPathname, withLocalePath } from '@/lib/i18n';
@@ -36,6 +36,7 @@ export function CheckoutClient({
   commerceConfig,
   buyNowProductId,
   buyNowQuantity = 1,
+  fromQuoteNumber,
 }: {
   cart: CartDetail | null;
   addresses: AccountAddress[];
@@ -43,8 +44,10 @@ export function CheckoutClient({
   commerceConfig: CommerceConfig;
   buyNowProductId?: string;
   buyNowQuantity?: number;
+  fromQuoteNumber?: string;
 }) {
   const isBuyNowMode = Boolean(buyNowProductId);
+  const isQuoteMode = Boolean(fromQuoteNumber);
   const { user, refreshProfile, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -85,6 +88,11 @@ export function CheckoutClient({
     return fetchBuyNowPreview({ productId: buyNowProductId, quantity });
   }, [buyNowProductId]);
 
+  const loadQuoteCart = useCallback(async () => {
+    if (!fromQuoteNumber) return null;
+    return fetchQuoteCheckoutPreview(fromQuoteNumber);
+  }, [fromQuoteNumber]);
+
   useEffect(() => {
     if (isLoggedIn) {
       setAuthMode('logged-in');
@@ -101,6 +109,20 @@ export function CheckoutClient({
   useEffect(() => {
     void (async () => {
       try {
+        if (isQuoteMode && fromQuoteNumber) {
+          if (!user) {
+            setCart(null);
+            return;
+          }
+          const [nextCart, nextAddresses] = await Promise.all([
+            loadQuoteCart(),
+            initialAddresses.length ? Promise.resolve(initialAddresses) : fetchAddresses(),
+          ]);
+          setCart(nextCart);
+          setAddresses(nextAddresses);
+          return;
+        }
+
         if (isBuyNowMode && buyNowProductId) {
           const [nextCart, nextAddresses] = await Promise.all([
             loadBuyNowCart(buyNowQty),
@@ -123,7 +145,7 @@ export function CheckoutClient({
         setIsBootstrapping(false);
       }
     })();
-  }, [initialCart, initialAddresses, user, isBuyNowMode, buyNowProductId, buyNowQty, loadBuyNowCart]);
+  }, [initialCart, initialAddresses, user, isBuyNowMode, buyNowProductId, buyNowQty, loadBuyNowCart, isQuoteMode, fromQuoteNumber, loadQuoteCart]);
 
   const selectedShippingAddress = addresses.find((item) => item.id === shippingAddressId) ?? null;
   const resolvedShippingCountryCode = isGuestCheckout
@@ -280,6 +302,7 @@ export function CheckoutClient({
             subscribeToUpdates,
             exportComplianceConfirmed,
             buyNow: buyNowPayload,
+            fromQuote: isQuoteMode ? fromQuoteNumber : undefined,
           }),
         });
       } catch (error) {
@@ -318,6 +341,15 @@ export function CheckoutClient({
     return <p className="section-description">Loading checkout…</p>;
   }
 
+  if (isQuoteMode && !user) {
+    return (
+      <article className="info-card">
+        <h2 style={{ marginTop: 0 }}>Sign in to complete quote checkout</h2>
+        <p className="section-description">Negotiated quote checkout requires an authenticated account.</p>
+      </article>
+    );
+  }
+
   if (!cart || !cart.items.length) {
     return (
       <article className="info-card">
@@ -345,6 +377,15 @@ export function CheckoutClient({
   return (
     <div className="trade-flow-grid checkout-flow-grid">
       <div className="trade-main-stack">
+        {isQuoteMode && fromQuoteNumber ? (
+          <article className="checkout-quote-banner account-quote-checkout-banner">
+            <p className="account-quote-checkout-banner__eyebrow">Quote checkout</p>
+            <p className="account-quote-checkout-banner__title">
+              Converting quote <span className="account-quote-mono">{fromQuoteNumber}</span> · quantities locked
+            </p>
+            <p className="account-quote-checkout-banner__desc">Line items use your negotiated quote pricing. Catalog list prices are shown for reference where available.</p>
+          </article>
+        ) : null}
         <CheckoutFreeShippingBanner
           freeShippingThresholdAmount={freeShippingThresholdAmount}
           remainingForFreeShippingAmount={remainingForFreeShippingAmount}
@@ -362,7 +403,8 @@ export function CheckoutClient({
             onCartChange={(nextCart) => setCart(syncCartResponse(nextCart))}
             onMessage={setMessage}
             compact
-            mode={isBuyNowMode ? 'buyNow' : 'cart'}
+            mode={isQuoteMode ? 'quote' : isBuyNowMode ? 'buyNow' : 'cart'}
+            readOnlyQuantities={isQuoteMode}
             onBuyNowQuantityChange={handleBuyNowQuantityChange}
             onBuyNowRemove={handleBuyNowRemove}
           />
@@ -383,7 +425,7 @@ export function CheckoutClient({
           onSignOut={() => logout()}
         />
 
-        {!isBuyNowMode ? (
+        {!isBuyNowMode && !isQuoteMode ? (
           <CouponSection cart={cart} onCartChange={(nextCart) => setCart(syncCartResponse(nextCart))} onMessage={setMessage} />
         ) : null}
 

@@ -51,6 +51,7 @@ export const homeShopByCategories = [
 export const storefrontNavigationBase: Omit<NavigationData, 'categories'> = {
   utilityLinks: [
     { label: 'cart', href: '/cart' },
+    { label: 'Quotes', href: '/quote' },
     { label: 'Compare', href: '/compare' },
     { label: 'Wishlist', href: '/account/wishlist' },
     { label: 'Login', href: '/login' },

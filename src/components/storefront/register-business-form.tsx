@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 
+import { CountrySelect } from '@/components/storefront/country-select';
+import { IndustrySelect } from '@/components/storefront/industry-select';
+
 import { useAuth } from '@/components/providers/auth-provider';
 import {
   buildRegisterPayload,
@@ -14,6 +17,8 @@ import {
 
 import type { Locale } from '@/lib/i18n';
 import { withLocalePath } from '@/lib/i18n';
+import { fetchGeoCountries, resolveCountryCode } from '@/lib/geo-api';
+import { fetchIndustries, resolveIndustrySlug } from '@/lib/industries-api';
 
 type RegisterBusinessFormProps = {
   locale: Locale;
@@ -45,8 +50,6 @@ const REGISTRATION_DRAFT_STORAGE_KEY = 'vexmotor-register-draft';
 const REGISTRATION_STEPS = ['Account', 'Company', 'Verification'];
 const MAX_REGISTRATION_DOCUMENTS = 5;
 const ROLE_OPTIONS = ['Purchasing', 'Engineering', 'Operations', 'Founder / Owner', 'Other'];
-const COUNTRY_OPTIONS = ['United States', 'Germany', 'France', 'Spain', 'United Kingdom', 'Canada', 'Mexico', 'China', 'Japan', 'Other'];
-const INDUSTRY_OPTIONS = ['Factory Automation', 'Robotics', 'Medical Devices', 'Packaging', 'CNC & Tooling', 'Energy', 'University / Lab'];
 const COMPANY_SIZE_OPTIONS = ['1-10', '11-50', '51-200', '201-1000', '1000+'];
 
 const EMPTY_FORM: RegisterFormState = {
@@ -56,8 +59,8 @@ const EMPTY_FORM: RegisterFormState = {
   password: '',
   role: 'Purchasing',
   companyName: '',
-  country: 'United States',
-  industry: 'Factory Automation',
+  country: 'US',
+  industry: 'factory-automation',
   companySize: '11-50',
   website: '',
   taxId: '',
@@ -157,12 +160,16 @@ export function RegisterBusinessForm({ locale, initialEmail, variant = 'page', o
 
     const draft = readDraft();
     if (draft) {
-      setForm({
-        ...EMPTY_FORM,
-        ...draft,
-        email: normalizedInitialEmail || draft.email,
-        password: '',
-        documents: [],
+      void Promise.all([fetchIndustries(), fetchGeoCountries()]).then(([industries, countries]) => {
+        setForm({
+          ...EMPTY_FORM,
+          ...draft,
+          industry: resolveIndustrySlug(industries, draft.industry) || EMPTY_FORM.industry,
+          country: resolveCountryCode(countries, draft.country) || EMPTY_FORM.country,
+          email: normalizedInitialEmail || draft.email,
+          password: '',
+          documents: [],
+        });
       });
     }
   }, [normalizedInitialEmail, isCheckout]);
@@ -371,19 +378,23 @@ export function RegisterBusinessForm({ locale, initialEmail, variant = 'page', o
           </label>
           <label className="form-field">
             <span>Country</span>
-            <select className="form-input" value={form.country} onChange={(event) => updateForm('country', event.target.value)} disabled={isPending}>
-              {COUNTRY_OPTIONS.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
+            <CountrySelect
+              className="form-input"
+              value={form.country}
+              onChange={(value) => updateForm('country', value)}
+              disabled={isPending}
+              required
+            />
           </label>
           <label className="form-field">
             <span>Industry</span>
-            <select className="form-input" value={form.industry} onChange={(event) => updateForm('industry', event.target.value)} disabled={isPending}>
-              {INDUSTRY_OPTIONS.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
+            <IndustrySelect
+              className="form-input"
+              value={form.industry}
+              onChange={(value) => updateForm('industry', value)}
+              disabled={isPending}
+              required
+            />
           </label>
           <label className="form-field">
             <span>Company size</span>

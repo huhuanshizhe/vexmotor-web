@@ -60,6 +60,7 @@
   "product": {
     "addToCart": "Add to Cart",
     "buyNow": "Buy Now",
+    "addToQuote": "Add to Quote",
     "requestQuote": "Request Quote",
     "addToWishlist": "Add to Wishlist",
     "inWishlist": "In wishlist",

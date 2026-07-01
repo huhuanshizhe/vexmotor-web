@@ -1,86 +1,63 @@
-import Link from 'next/link';
+'use client';
 
-import { withLocalePath } from '@/lib/i18n';
-import { getServerSitePreferences } from '@/lib/i18n-server';
-import { accountQuoteRecords } from '@/lib/account-portal';
+import { useEffect, useState } from 'react';
 
-export default async function AccountQuotesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ status?: string; q?: string }>;
-}) {
-  const [{ locale }, params] = await Promise.all([getServerSitePreferences(), searchParams]);
-  const query = params.q?.trim().toLowerCase() ?? '';
-  const status = params.status ?? 'all';
-  const quotes = accountQuoteRecords.filter((quote) => {
-    const matchesStatus = status === 'all' || quote.status === status;
-    const matchesQuery = !query || `${quote.quoteNumber} ${quote.projectName} ${quote.projectSummary}`.toLowerCase().includes(query);
-    return matchesStatus && matchesQuery;
-  });
+import { AccountQuotesClient } from '@/components/account/account-quotes-client';
+import { useAuth } from '@/components/providers/auth-provider';
+import { fetchInquiries, type AccountInquiryListItem } from '@/lib/inquiry-api';
+import { useTranslation } from '@/lib/i18n-context';
+
+export default function AccountQuotesPage() {
+  const { user } = useAuth();
+  const { locale } = useTranslation();
+  const [quotes, setQuotes] = useState<AccountInquiryListItem[]>([]);
+  const [query, setQuery] = useState('');
+  const [status, setStatus] = useState('all');
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    void fetchInquiries()
+      .then(setQuotes)
+      .catch(() => setQuotes([]));
+  }, [user]);
 
   return (
-    <div className="account-panel-stack">
-      <div className="section-header">
+      <div className="account-quote-page">
+      <div className="account-quote-page__header">
         <div>
-          <h1 className="section-title">Quotes</h1>
-          <p className="section-description">Search project quotes, filter by status, and jump into a detail view that keeps the quoted lines, attachments, and message thread together.</p>
+          <p className="account-quote-kicker">Account</p>
+          <h1 className="account-quote-page__title">Quotes</h1>
+          <p className="account-quote-page__desc">Search project quotes, filter by status, and open detail views with quoted lines and attachments.</p>
         </div>
       </div>
 
-      <article className="info-card">
-        <form action={withLocalePath('/account/quotes', locale)} className="account-toolbar">
-          <label className="knowledge-search-field">
+      <article className="account-quote-filters">
+        <div className="account-toolbar">
+          <label className="account-quote-filter-field">
             <span>Search project or quote</span>
-            <input name="q" defaultValue={params.q} className="newsletter-input" placeholder="Search quote number or project" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              className="account-quote-input"
+              placeholder="Search quote number or project"
+            />
           </label>
-          <label className="knowledge-search-field">
+          <label className="account-quote-filter-field">
             <span>Status</span>
-            <select name="status" defaultValue={status} className="form-input">
+            <select value={status} onChange={(event) => setStatus(event.target.value)} className="account-quote-input">
               <option value="all">All</option>
-              <option value="Submitted">Submitted</option>
-              <option value="Quoted">Quoted</option>
-              <option value="Negotiating">Negotiating</option>
-              <option value="Won">Won</option>
-              <option value="Expired">Expired</option>
+              <option value="new">New</option>
+              <option value="contacted">Contacted</option>
+              <option value="quoted">Quoted</option>
+              <option value="closed">Closed</option>
             </select>
           </label>
-          <button type="submit" className="button-primary">Apply</button>
-        </form>
-      </article>
-
-      <article className="info-card account-table-card">
-        <div className="account-table-head">
-          <span>Quote</span>
-          <span>Project</span>
-          <span>Lines</span>
-          <span>Value</span>
-          <span>Expires</span>
-          <span>Status</span>
-          <span>Actions</span>
         </div>
-
-        {quotes.map((quote) => (
-          <div key={quote.quoteNumber} className="account-table-row">
-            <div>
-              <strong>{quote.quoteNumber}</strong>
-              <div className="product-meta">Owner: {quote.contactOwner}</div>
-            </div>
-            <div>
-              <strong>{quote.projectName}</strong>
-              <div className="section-description compact-copy">{quote.projectSummary}</div>
-            </div>
-            <span>{quote.lineCount}</span>
-            <span>{quote.valueLabel}</span>
-            <span>{quote.expiresAt}</span>
-            <span className="product-badge">{quote.status}</span>
-            <div className="account-inline-actions">
-              <Link href={withLocalePath(`/account/quotes/${quote.quoteNumber}`, locale)} className="nav-link">View</Link>
-              <Link href={withLocalePath(`/checkout?quote=${quote.quoteNumber}`, locale)} className="nav-link">Convert</Link>
-              <Link href={withLocalePath('/support/contact?topic=sales', locale)} className="nav-link">Message</Link>
-            </div>
-          </div>
-        ))}
       </article>
+
+      <AccountQuotesClient locale={locale} initialQuotes={quotes} initialQuery={query} initialStatus={status} />
     </div>
   );
 }

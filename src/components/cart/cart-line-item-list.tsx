@@ -19,7 +19,8 @@ type CartLineItemListProps = {
   onCartChange: (cart: CartDetail) => void;
   onMessage?: (message: string | null) => void;
   compact?: boolean;
-  mode?: 'cart' | 'buyNow';
+  mode?: 'cart' | 'buyNow' | 'quote';
+  readOnlyQuantities?: boolean;
   onBuyNowQuantityChange?: (quantity: number) => void;
   onBuyNowRemove?: () => void;
   showStockStatus?: boolean;
@@ -33,12 +34,14 @@ export function CartLineItemList({
   onMessage,
   compact = false,
   mode = 'cart',
+  readOnlyQuantities = false,
   onBuyNowQuantityChange,
   onBuyNowRemove,
   showStockStatus = false,
 }: CartLineItemListProps) {
   const [isPending, startTransition] = useTransition();
   const isBuyNow = mode === 'buyNow';
+  const isReadOnly = readOnlyQuantities || mode === 'quote';
 
   function handleCartUpdate(nextCart: CartDetail) {
     onCartChange(syncCartResponse(nextCart));
@@ -124,6 +127,8 @@ export function CartLineItemList({
                       <span className="cart-item-pricing-strip__unit">/ unit</span>
                       {item.tierApplied && item.listUnitPrice ? (
                         <span className="cart-item-pricing-strip__ref">Tier · list {item.listUnitPrice.formatted}</span>
+                      ) : item.listUnitPrice && item.unitPrice.amount < item.listUnitPrice.amount ? (
+                        <span className="cart-item-pricing-strip__ref cart-item-pricing-strip__ref--struck">List {item.listUnitPrice.formatted}</span>
                       ) : item.product.compareAtPrice ? (
                         <span className="cart-item-pricing-strip__ref">Ref {item.product.compareAtPrice.formatted}</span>
                       ) : null}
@@ -145,6 +150,8 @@ export function CartLineItemList({
                           <span className="cart-item-pricing-strip__unit">/ unit</span>
                           {item.tierApplied && item.listUnitPrice ? (
                             <span className="cart-item-pricing-strip__ref">Tier · list {item.listUnitPrice.formatted}</span>
+                          ) : item.listUnitPrice && item.unitPrice.amount < item.listUnitPrice.amount ? (
+                            <span className="cart-item-pricing-strip__ref cart-item-pricing-strip__ref--struck">List {item.listUnitPrice.formatted}</span>
                           ) : item.product.compareAtPrice ? (
                             <span className="cart-item-pricing-strip__ref">Ref {item.product.compareAtPrice.formatted}</span>
                           ) : null}
@@ -175,6 +182,8 @@ export function CartLineItemList({
                       <strong>{item.unitPrice.formatted}</strong>
                       {item.tierApplied && item.listUnitPrice ? (
                         <span className="comparison-note">Tier price · list {item.listUnitPrice.formatted}</span>
+                      ) : item.listUnitPrice && item.unitPrice.amount < item.listUnitPrice.amount ? (
+                        <span className="comparison-note comparison-note--struck">List {item.listUnitPrice.formatted}</span>
                       ) : item.product.compareAtPrice ? (
                         <span className="comparison-note">Reference {item.product.compareAtPrice.formatted}</span>
                       ) : null}
@@ -192,6 +201,25 @@ export function CartLineItemList({
                 </>
               )}
 
+              {isReadOnly ? (
+                <div className="cart-item-meta-row">
+                  <div className="cart-unit-price">
+                    <span className="summary-label">Qty</span>
+                    <strong>{item.quantity}</strong>
+                  </div>
+                  <div className="cart-unit-price">
+                    <span className="summary-label">Unit price</span>
+                    <strong>{item.unitPrice.formatted}</strong>
+                    {item.listUnitPrice && item.unitPrice.amount < item.listUnitPrice.amount ? (
+                      <span className="comparison-note">List {item.listUnitPrice.formatted}</span>
+                    ) : item.product.compareAtPrice ? (
+                      <span className="comparison-note">Catalogue {item.product.compareAtPrice.formatted}</span>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
+              {!isReadOnly ? (
               <div className="cart-item-actions">
                 <div className="quantity-stepper cart-quantity-stepper">
                   <button type="button" className="quantity-stepper-button" onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))} disabled={isPending || item.quantity <= 1}>
@@ -227,6 +255,7 @@ export function CartLineItemList({
                   Remove
                 </button>
               </div>
+              ) : null}
             </div>
           </div>
         );
