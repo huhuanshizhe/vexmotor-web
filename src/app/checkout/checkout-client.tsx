@@ -19,15 +19,12 @@ import { useAuth } from '@/components/providers/auth-provider';
 import { apiFetch } from '@/lib/api-client';
 import { fetchAddresses, fetchCart, type AccountAddress } from '@/lib/account-api';
 import { fetchBuyNowPreview, fetchQuoteCheckoutPreview } from '@/lib/checkout-api';
+import { buildCheckoutPayPath } from '@/lib/checkout-pay-path';
 import { syncCartResponse } from '@/lib/cart-api';
 import type { CommerceConfig } from '@/lib/commerce-config';
 import { parseLocaleFromPathname, withLocalePath } from '@/lib/i18n';
 import { useCheckoutPricing } from '@/lib/use-checkout-pricing';
 import type { CartDetail } from '@/lib/storefront-types';
-
-function isEuCountry(countryCode: string) {
-  return ['AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GR', 'HR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK'].includes(countryCode.trim().toUpperCase());
-}
 
 export function CheckoutClient({
   cart: initialCart,
@@ -76,10 +73,7 @@ export function CheckoutClient({
   const [paymentMethod, setPaymentMethod] = useState('Credit Card');
   const [purchaseOrderNumber, setPurchaseOrderNumber] = useState('');
   const [taxId, setTaxId] = useState('');
-  const [requestedShipDate, setRequestedShipDate] = useState('');
-  const [tradeTerm, setTradeTerm] = useState('DDP');
   const [orderComment, setOrderComment] = useState('');
-  const [exportComplianceConfirmed, setExportComplianceConfirmed] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -175,7 +169,6 @@ export function CheckoutClient({
   }, [checkoutPricing.availableShippingOptions, checkoutPricing.selectedShippingOption?.methodCode, isShippingAddressReady, shippingMethod]);
 
   const effectiveBillingAddressId = billingSameAsShipping ? shippingAddressId : billingAddressId;
-  const taxIdRequired = isShippingAddressReady && resolvedShippingCountryCode ? isEuCountry(resolvedShippingCountryCode) && tradeTerm !== 'EXW' : false;
 
   const contactComplete = isGuestCheckout ? Boolean(contactEmail.trim()) : true;
   const addressComplete = isGuestCheckout
@@ -194,11 +187,7 @@ export function CheckoutClient({
           : 'Select or enter a shipping address first.'
         : !paymentComplete
           ? 'Select a payment method.'
-          : taxIdRequired && !taxId.trim()
-            ? 'VAT / Tax ID is required for EU shipments under the selected incoterm.'
-            : !exportComplianceConfirmed
-              ? 'Confirm restricted end-use compliance before placing the order.'
-              : null;
+          : null;
 
   const canPlaceOrder = !reviewBlockingMessage && shippingComplete && paymentComplete;
 
@@ -208,7 +197,6 @@ export function CheckoutClient({
     { label: 'Address', complete: addressComplete },
     { label: 'Shipping', complete: shippingComplete },
     { label: 'Payment', complete: paymentComplete },
-    { label: 'Review', complete: canPlaceOrder },
   ];
 
   const paymentOptions = [
@@ -251,20 +239,46 @@ export function CheckoutClient({
     router.push(slug ? withLocalePath(`/products/${slug}`, locale) : withLocalePath('/products', locale));
   }
 
+  function redirectAfterOrder(order: { orderNumber: string; redirectPath?: string; guestAccessToken?: string }) {
+    if (paymentMethod === 'Credit Card') {
+      router.push(withLocalePath(buildCheckoutPayPath(order.orderNumber, order.guestAccessToken), locale));
+      router.refresh();
+      return;
+    }
+
+    const destination = order.guestAccessToken
+      ? `/checkout/confirmation/${order.orderNumber}?guestToken=${encodeURIComponent(order.guestAccessToken)}`
+      : (order.redirectPath ?? `/account/orders/${order.orderNumber}`);
+    router.push(withLocalePath(destination, locale));
+    router.refresh();
+  }
+
+  function scrollToCheckoutBlocker(blocker: string) {
+    const anchorByBlocker: Record<string, string> = {
+      'Add a contact email for guest checkout.': '#checkout-account',
+      'Complete shipping and billing details before placing the order.': '#checkout-address',
+      'Select a shipping method.': '#checkout-shipping',
+      'Select or enter a shipping address first.': '#checkout-address',
+      'Select a payment method.': '#checkout-payment',
+    };
+
+    const anchor = anchorByBlocker[blocker];
+    if (!anchor) {
+      return;
+    }
+
+    document.querySelector(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   function placeOrder() {
     if (reviewBlockingMessage) {
       setMessage(reviewBlockingMessage);
+      scrollToCheckoutBlocker(reviewBlockingMessage);
       return;
     }
 
     startTransition(async () => {
       setMessage(null);
-      const customerNoteParts = [
-        orderComment.trim() || null,
-        purchaseOrderNumber.trim() ? `PO Number: ${purchaseOrderNumber.trim()}` : null,
-        taxId.trim() ? `Tax ID / VAT: ${taxId.trim()}` : null,
-        requestedShipDate ? `Requested Ship Date: ${requestedShipDate}` : null,
-      ].filter(Boolean);
 
       const buyNowPayload = isBuyNowMode && buyNowProductId
         ? { productId: buyNowProductId, quantity: buyNowQty }
@@ -295,12 +309,8 @@ export function CheckoutClient({
             paymentMethod,
             purchaseOrderNumber: purchaseOrderNumber.trim() || undefined,
             taxId: taxId.trim() || undefined,
-            requestedShipDate: requestedShipDate || undefined,
-            tradeTerm,
-            customerNote: customerNoteParts.join('\n'),
             orderComment: orderComment.trim() || undefined,
             subscribeToUpdates,
-            exportComplianceConfirmed,
             buyNow: buyNowPayload,
             fromQuote: isQuoteMode ? fromQuoteNumber : undefined,
           }),
@@ -310,30 +320,7 @@ export function CheckoutClient({
         return;
       }
 
-      const stripePaymentMethods = ['Credit Card', 'PayPal'];
-      if (stripePaymentMethods.includes(paymentMethod)) {
-        try {
-          const stripeData = await apiFetch<{ sessionUrl?: string }>('/api/front/checkout/stripe-session', {
-            method: 'POST',
-            body: JSON.stringify({
-              orderNumber: order.orderNumber,
-              customerEmail: isGuestCheckout ? contactEmail.trim().toLowerCase() : undefined,
-            }),
-          });
-          if (stripeData.sessionUrl) {
-            window.location.href = stripeData.sessionUrl;
-            return;
-          }
-        } catch {
-          // fall through to confirmation
-        }
-      }
-
-      const destination = order.guestAccessToken
-        ? `/checkout/confirmation/${order.orderNumber}?guestToken=${encodeURIComponent(order.guestAccessToken)}`
-        : (order.redirectPath ?? `/account/orders/${order.orderNumber}`);
-      router.push(destination);
-      router.refresh();
+      redirectAfterOrder(order);
     });
   }
 
@@ -528,40 +515,26 @@ export function CheckoutClient({
           </article>
         ) : null}
 
-        <article className="info-card checkout-step-card checkout-section-anchor" id="checkout-customs">
-          <h2 className="cart-section-title">Customs &amp; compliance</h2>
-          <div className="inquiry-form-grid checkout-reference-grid">
-            <label className="form-field">
-              <span>Incoterm</span>
-              <select className="form-input" value={tradeTerm} onChange={(e) => setTradeTerm(e.target.value)}>
-                <option value="DDP">DDP</option>
-                <option value="DAP">DAP</option>
-                <option value="EXW">EXW</option>
-                <option value="FOB Hong Kong">FOB Hong Kong</option>
-              </select>
-            </label>
-          </div>
-          <label className="checkout-toggle-row checkout-toggle-card">
-            <input type="checkbox" checked={exportComplianceConfirmed} onChange={(e) => setExportComplianceConfirmed(e.target.checked)} />
-            <span>I confirm these goods are not for restricted end use and my organization is responsible for local import compliance.</span>
-          </label>
-          {taxIdRequired ? <p className="form-feedback form-feedback-error">VAT / Tax ID is required for EU shipments unless incoterm is EXW.</p> : null}
-        </article>
-
         <article className="info-card checkout-step-card checkout-section-anchor" id="checkout-buyer-refs">
           <h2 className="cart-section-title">Buyer references</h2>
           <div className="inquiry-form-grid checkout-reference-grid">
             <label className="form-field">
               <span>PO Number</span>
-              <input className="form-input" value={purchaseOrderNumber} onChange={(e) => setPurchaseOrderNumber(e.target.value)} placeholder="Optional purchase order reference" />
+              <input
+                className="form-input"
+                value={purchaseOrderNumber}
+                onChange={(e) => setPurchaseOrderNumber(e.target.value)}
+                placeholder="Optional purchase order reference"
+              />
             </label>
             <label className="form-field">
               <span>Tax ID / VAT</span>
-              <input className="form-input" value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="Optional tax identifier" />
-            </label>
-            <label className="form-field">
-              <span>Requested ship date</span>
-              <input className="form-input" type="date" value={requestedShipDate} onChange={(e) => setRequestedShipDate(e.target.value)} />
+              <input
+                className="form-input"
+                value={taxId}
+                onChange={(e) => setTaxId(e.target.value)}
+                placeholder="Optional tax identifier"
+              />
             </label>
           </div>
         </article>
@@ -586,8 +559,8 @@ export function CheckoutClient({
           shippingEta={shippingEta}
           shippingFreightLabel={shippingFreightLabel}
           paymentMethod={paymentMethod}
-          tradeTerm={tradeTerm}
           canPlaceOrder={canPlaceOrder}
+          reviewBlockingMessage={reviewBlockingMessage}
           isPending={isPending}
           message={message}
           locale={locale}

@@ -19,9 +19,11 @@ type CheckoutOrderSummaryProps = {
   shippingEta?: string;
   shippingFreightLabel?: string;
   paymentMethod: string;
-  tradeTerm: string;
   canPlaceOrder: boolean;
+  reviewBlockingMessage?: string | null;
   isPending: boolean;
+  placeOrderHidden?: boolean;
+  placeOrderLabel?: string;
   message: string | null;
   locale?: string;
   onPlaceOrder: () => void;
@@ -35,10 +37,6 @@ function stepAnchorId(label: string) {
   return `#checkout-${label.toLowerCase()}`;
 }
 
-function isSummaryStep(label: string) {
-  return label === 'Review';
-}
-
 export function CheckoutOrderSummary({
   cart,
   pricing,
@@ -49,9 +47,11 @@ export function CheckoutOrderSummary({
   shippingEta,
   shippingFreightLabel,
   paymentMethod,
-  tradeTerm,
   canPlaceOrder,
+  reviewBlockingMessage = null,
   isPending,
+  placeOrderHidden = false,
+  placeOrderLabel,
   message,
   locale = 'en',
   onPlaceOrder,
@@ -64,23 +64,15 @@ export function CheckoutOrderSummary({
       <h2 className="cart-section-title">{t('checkout.orderSummary')}</h2>
 
       <nav className="checkout-progress-nav" aria-label="Checkout progress">
-        {stepItems.map((step) => {
-          const className = `checkout-progress-link${step.complete ? ' is-complete' : ''}${isSummaryStep(step.label) ? ' is-summary-step' : ''}`;
-
-          if (isSummaryStep(step.label)) {
-            return (
-              <span key={step.label} className={className} aria-current="step" title="Review totals and place your order in this panel">
-                {step.label}
-              </span>
-            );
-          }
-
-          return (
-            <a key={step.label} href={stepAnchorId(step.label)} className={className}>
-              {step.label}
-            </a>
-          );
-        })}
+        {stepItems.map((step) => (
+          <a
+            key={step.label}
+            href={stepAnchorId(step.label)}
+            className={`checkout-progress-link${step.complete ? ' is-complete' : ''}`}
+          >
+            {step.label}
+          </a>
+        ))}
       </nav>
 
       {cart.coupon?.isApplied ? (
@@ -142,14 +134,30 @@ export function CheckoutOrderSummary({
           <div className="checkout-selection-block">
             <span className="checkout-selection-label">Payment</span>
             <strong>{paymentMethod}</strong>
-            <span className="section-description">{tradeTerm}</span>
           </div>
         </div>
       ) : null}
 
-      <button type="button" className="button-primary" onClick={onPlaceOrder} disabled={isPending || !canPlaceOrder}>
-        {isPending ? t('common.loading') : `${t('checkout.placeOrder')} ${formatMoney(pricing.totalAmount, currency, locale)}`}
-      </button>
+      {placeOrderHidden ? (
+        placeOrderLabel ? <p className="section-description">{placeOrderLabel}</p> : null
+      ) : (
+        <>
+          {!canPlaceOrder && reviewBlockingMessage ? (
+            <p className="form-feedback form-feedback-error checkout-place-order-hint">{reviewBlockingMessage}</p>
+          ) : null}
+          <button
+            type="button"
+            className={`button-primary${canPlaceOrder ? '' : ' is-muted'}`}
+            onClick={onPlaceOrder}
+            disabled={isPending}
+            aria-disabled={!canPlaceOrder || isPending}
+          >
+            {isPending
+              ? t('common.loading')
+              : (placeOrderLabel ?? `${t('checkout.placeOrder')} ${formatMoney(pricing.totalAmount, currency, locale)}`)}
+          </button>
+        </>
+      )}
       {message ? <p className="form-feedback form-feedback-error">{message}</p> : null}
     </article>
   );

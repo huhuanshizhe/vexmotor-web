@@ -7,6 +7,7 @@ import { parseOrderNote } from '@/lib/order-note';
 import { getProductList } from '@/lib/storefront-api';
 
 import { ConfirmationActions } from './confirmation-actions';
+import { CompletePaymentLink } from '@/components/checkout/complete-payment-link';
 
 export const metadata = {
   robots: {
@@ -36,16 +37,16 @@ function getShippingTiming(shippingMethod: string) {
   };
 }
 
-function getPaymentStatus(paymentMethod: string) {
+function formatPaymentStatusLabel(paymentStatus: string, paymentMethod: string) {
+  if (paymentStatus === 'paid') {
+    return 'Paid';
+  }
+
   if (paymentMethod === 'Wire transfer') {
     return 'Awaiting remittance';
   }
 
-  if (paymentMethod === 'PayPal') {
-    return 'Payment authorization received';
-  }
-
-  return 'Authorization pending capture';
+  return 'Awaiting payment';
 }
 
 function formatAmount(amount: string) {
@@ -66,6 +67,7 @@ export default async function CheckoutConfirmationPage({
     orderNumber: string;
     shippingMethod: string;
     paymentMethod: string;
+    paymentStatus: string;
     customerNote: string | null;
     subtotal: string;
     discountAmount: string;
@@ -111,7 +113,7 @@ export default async function CheckoutConfirmationPage({
   const billingAddress = order.billingAddressSnapshot;
   const parsedNote = parseOrderNote(order.customerNote);
   const timing = getShippingTiming(order.shippingMethod);
-  const paymentStatus = getPaymentStatus(order.paymentMethod);
+  const paymentStatus = formatPaymentStatusLabel(order.paymentStatus, order.paymentMethod);
   const nextSteps = [
     { title: 'Confirmed', body: 'The order snapshot is stored and ready for buyer cross-check before fulfillment starts.' },
     { title: 'Processing', body: 'Operations verifies stock, buyer references, and freight routing against the chosen incoterm.' },
@@ -159,6 +161,12 @@ export default async function CheckoutConfirmationPage({
                 </div>
 
                 <ConfirmationActions continueShoppingHref="/products" createAccountHref={createAccountHref} />
+                <CompletePaymentLink
+                  orderNumber={order.orderNumber}
+                  paymentStatus={order.paymentStatus}
+                  paymentMethod={order.paymentMethod}
+                  guestToken={guestToken}
+                />
               </article>
 
               <article className="info-card checkout-step-card">
@@ -304,7 +312,6 @@ export default async function CheckoutConfirmationPage({
                   </div>
                   <div className="checkout-summary-note">
                     <strong>{order.shippingMethod}</strong>
-                    <span className="section-description">{parsedNote.tradeTerm ?? 'Incoterm confirmed during order review'}</span>
                   </div>
                 </div>
 
@@ -335,9 +342,9 @@ export default async function CheckoutConfirmationPage({
                   <div className="cart-summary-row is-total"><span>Total</span><strong>{formatAmount(order.totalAmount)}</strong></div>
                 </div>
 
-                {parsedNote.requestedShipDate || parsedNote.taxId || parsedNote.contactEmail ? (
+                {(parsedNote.poNumber || parsedNote.taxId || parsedNote.contactEmail) ? (
                   <div className="checkout-summary-note">
-                    {parsedNote.requestedShipDate ? <span className="section-description">Requested ship date: {parsedNote.requestedShipDate}</span> : null}
+                    {parsedNote.poNumber ? <span className="section-description">PO Number: {parsedNote.poNumber}</span> : null}
                     {parsedNote.taxId ? <span className="section-description">Tax ID / VAT: {parsedNote.taxId}</span> : null}
                     {parsedNote.contactEmail ? <span className="section-description">Contact email: {parsedNote.contactEmail}</span> : null}
                   </div>

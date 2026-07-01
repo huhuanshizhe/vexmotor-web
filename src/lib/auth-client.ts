@@ -183,10 +183,53 @@ export async function getProfile(): Promise<UserProfile | null> {
   }
 }
 
+export type ProfileUpdateInput = Partial<{
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  jobTitle: string | null;
+}>;
+
+export async function updateProfile(payload: ProfileUpdateInput) {
+  return apiFetch<UserProfile>('/api/front/profile', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function changePassword(currentPassword: string, newPassword: string) {
+  return apiFetch<{ ok: true }>('/api/front/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
 export async function getCompanyProfile(): Promise<CompanyProfile | null> {
   try {
     return await apiFetch<CompanyProfile>('/api/front/profile/company');
   } catch {
     return null;
   }
+}
+
+export type CompanyProfileUpdateInput = Partial<{
+  company: string | null;
+  industry: string | null;
+  companyCountryCode: string | null;
+  companyState: string | null;
+  companyCity: string | null;
+  companyAddressLine1: string | null;
+  companyAddressLine2: string | null;
+  companyPostalCode: string | null;
+  website: string | null;
+  taxId: string | null;
+  companySize: string | null;
+  annualVolumeEstimate: string | null;
+}>;
+
+export async function updateCompanyProfile(payload: CompanyProfileUpdateInput) {
+  return apiFetch<CompanyProfile>('/api/front/profile/company', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
 }

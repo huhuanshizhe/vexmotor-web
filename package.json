@@ -12,6 +12,7 @@
     "check": "eslint . && tsc --noEmit"
   },
   "dependencies": {
+    "@airwallex/components-sdk": "^1.32.0",
     "@ant-design/icons": "^6.2.5",
     "antd": "^6.4.4",
     "next": "^16.2.6",

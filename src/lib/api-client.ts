@@ -20,6 +20,26 @@ function joinUrl(path: string): string {
   return `${base}${normalizedPath}`;
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchFromApi(path: string, init?: RequestInit): Promise<Response> {
+  const url = joinUrl(path);
+  const maxAttempts = process.env.NODE_ENV === 'development' ? 3 : 1;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const response = await fetch(url, init);
+    if (response.ok || response.status < 500 || attempt === maxAttempts) {
+      return response;
+    }
+
+    await sleep(attempt * 750);
+  }
+
+  throw new Error(`Request failed after ${maxAttempts} attempts: ${url}`);
+}
+
 export function getAccessToken(): string | null {
   if (typeof window === 'undefined') {
     return null;
@@ -61,11 +81,12 @@ type FetchOptions = RequestInit & {
   locale?: string;
 };
 
-async function parseJsonResponse<T>(response: Response): Promise<T> {
+async function parseJsonResponse<T>(response: Response, requestUrl?: string): Promise<T> {
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
     const message = payload && typeof payload === 'object' && 'message' in payload ? String(payload.message) : response.statusText;
-    throw new Error(message || `Request failed (${response.status})`);
+    const target = requestUrl ? ` ${requestUrl}` : '';
+    throw new Error(message ? `${message} (${response.status})${target}` : `Request failed (${response.status})${target}`);
   }
 
   if (response.status === 204) {
@@ -115,15 +136,16 @@ export async function serverFetch<T>(path: string, init?: FetchOptions): Promise
     }
   }
 
-  const response = await fetch(joinUrl(path), {
+  const url = joinUrl(path);
+  const response = await fetchFromApi(path, {
     ...requestInit,
     headers,
     next: process.env.NODE_ENV === 'development' ? undefined : { revalidate: 60 },
     cache: process.env.NODE_ENV === 'development' ? 'no-store' : undefined,
-    signal: process.env.NODE_ENV === 'development' ? AbortSignal.timeout(15_000) : requestInit.signal,
+    signal: process.env.NODE_ENV === 'development' ? AbortSignal.timeout(45_000) : requestInit.signal,
   });
 
-  return parseJsonResponse<T>(response);
+  return parseJsonResponse<T>(response, url);
 }
 
 function applyCartApiPayload(payload: unknown) {
@@ -139,13 +161,14 @@ function applyCartApiPayload(payload: unknown) {
 
 export async function apiFetch<T>(path: string, init?: FetchOptions): Promise<T> {
   const { locale, ...requestInit } = init ?? {};
-  const response = await fetch(joinUrl(path), {
+  const url = joinUrl(path);
+  const response = await fetch(url, {
     ...requestInit,
     headers: buildHeaders({ ...requestInit, locale }, true),
     cache: requestInit.cache ?? 'no-store',
   });
 
-  const data = await parseJsonResponse<T>(response);
+  const data = await parseJsonResponse<T>(response, url);
   if (path.includes('/api/front/cart')) {
     applyCartApiPayload(data);
   }
@@ -160,7 +183,8 @@ export async function apiUploadForm<T>(path: string, formData: FormData, init?: 
     headers.set('x-vex-locale', locale);
   }
 
-  const response = await fetch(joinUrl(path), {
+  const url = joinUrl(path);
+  const response = await fetch(url, {
     ...requestInit,
     method: requestInit.method ?? 'POST',
     body: formData,
@@ -168,5 +192,5 @@ export async function apiUploadForm<T>(path: string, formData: FormData, init?: 
     cache: 'no-store',
   });
 
-  return parseJsonResponse<T>(response);
+  return parseJsonResponse<T>(response, url);
 }

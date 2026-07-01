@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 
 import type { Locale } from '@/lib/i18n';
 import { withLocalePath } from '@/lib/i18n';
@@ -13,6 +13,8 @@ type CookieConsentBarProps = {
   locale: Locale;
   initiallyAccepted: boolean;
 };
+
+type ConsentVisibility = 'pending' | 'hidden' | 'visible';
 
 function hasAcceptedCookieInDocument() {
   if (typeof document === 'undefined') {
@@ -42,17 +44,23 @@ function buildConsentCookieValue() {
   return `${COOKIE_CONSENT_COOKIE_NAME}=accepted; Path=/; Max-Age=${COOKIE_CONSENT_COOKIE_MAX_AGE}; SameSite=Lax${domainAttribute}${secureAttribute}`;
 }
 
+function resolveConsentVisibility(initiallyAccepted: boolean): ConsentVisibility {
+  if (initiallyAccepted || hasAcceptedCookieInDocument()) {
+    return 'hidden';
+  }
+
+  return 'visible';
+}
+
 export function CookieConsentBar({ locale, initiallyAccepted }: CookieConsentBarProps) {
-  const [accepted, setAccepted] = useState(initiallyAccepted);
+  const [visibility, setVisibility] = useState<ConsentVisibility>('pending');
   const privacyHref = useMemo(() => withLocalePath('/legal/privacy', locale), [locale]);
 
-  useEffect(() => {
-    if (!accepted && hasAcceptedCookieInDocument()) {
-      setAccepted(true);
-    }
-  }, [accepted]);
+  useLayoutEffect(() => {
+    setVisibility(resolveConsentVisibility(initiallyAccepted));
+  }, [initiallyAccepted]);
 
-  if (accepted) {
+  if (visibility !== 'visible') {
     return null;
   }
 
@@ -73,7 +81,7 @@ export function CookieConsentBar({ locale, initiallyAccepted }: CookieConsentBar
           className="ui-button is-brand is-sm"
           onClick={() => {
             document.cookie = buildConsentCookieValue();
-            setAccepted(true);
+            setVisibility('hidden');
           }}
         >
           Accept cookies
