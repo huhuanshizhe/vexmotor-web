@@ -101,9 +101,9 @@ export default function AccountPage() {
           <span className="section-description compact-copy">Open cart and checkout draft</span>
         </Link>
         <Link href="/account/company" className="summary-stat knowledge-product-card">
-          <span className="summary-label">Credit available</span>
-          <strong>$18,400</strong>
-          <span className="section-description compact-copy">Net30 account headroom</span>
+          <span className="summary-label">Company profile</span>
+          <strong>{companyProfile?.company?.trim() || '—'}</strong>
+          <span className="section-description compact-copy">Registered business details</span>
         </Link>
       </div>
 

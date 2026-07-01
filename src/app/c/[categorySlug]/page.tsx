@@ -14,6 +14,7 @@ import { withLocalePath } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { getServerSitePreferences } from '@/lib/i18n-server';
 import { buildBreadcrumbJsonLd, buildMetadata } from '@/lib/seo';
+import { SITE_URL } from '@/lib/site-config';
 import { listShellCatalogCategories, mergeCategoriesWithShell, resolveStorefrontCategory } from '@/lib/catalog-categories';
 import { getCategories, getProductList, type ProductListSort } from '@/lib/storefront-api';
 
@@ -198,7 +199,7 @@ export default async function CategoryPage({
       itemListElement: listing.items.slice(0, 24).map((item, index) => ({
         '@type': 'ListItem',
         position: index + 1,
-        url: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:4000'}${normalizeLocalePath(`/products/${item.slug}`, locale)}`,
+        url: `${SITE_URL}${normalizeLocalePath(`/products/${item.slug}`, locale)}`,
       })),
     },
   };

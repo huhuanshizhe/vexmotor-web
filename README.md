@@ -18,8 +18,8 @@ pnpm dev   # http://localhost:5000
 
 | 变量 | 说明 |
 |------|------|
-| `NEXT_PUBLIC_API_URL` | Admin API 根地址，默认 `http://localhost:5100` |
-| `NEXT_PUBLIC_SITE_URL` | 本站 URL，默认 `http://localhost:5000` |
+| `API_URL` | Admin API 根地址（必填） |
+| `SITE_URL` | 本站 URL（必填，用于 SEO / sitemap / JSON-LD） |
 
 ## 数据获取
 

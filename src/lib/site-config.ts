@@ -3,17 +3,12 @@ function normalizeSiteUrl(value: string | undefined) {
 }
 
 function resolveSiteUrl() {
-  const explicitSiteUrl = normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
-  if (explicitSiteUrl) {
-    return explicitSiteUrl;
+  const siteUrl = normalizeSiteUrl(process.env.SITE_URL);
+  if (!siteUrl) {
+    throw new Error('SITE_URL is not configured');
   }
 
-  const vercelProductionUrl = normalizeSiteUrl(process.env.VERCEL_PROJECT_PRODUCTION_URL);
-  if (vercelProductionUrl) {
-    return vercelProductionUrl.startsWith('http') ? vercelProductionUrl : `https://${vercelProductionUrl}`;
-  }
-
-  return process.env.NODE_ENV === 'production' ? 'https://www.stepmotech.online' : 'http://localhost:4000';
+  return siteUrl;
 }
 
 export const SITE_NAME = 'STEPMOTECH';

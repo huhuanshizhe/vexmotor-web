@@ -11,7 +11,12 @@ function notifyAuthTokenChanged(): void {
 }
 
 export function getApiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5100';
+  const url = process.env.API_URL?.trim();
+  if (!url) {
+    throw new Error('API_URL is not configured');
+  }
+
+  return url;
 }
 
 function joinUrl(path: string): string {
