@@ -90,6 +90,7 @@
   },
   "cart": {
     "title": "Carrito de Compras",
+    "loadingDescription": "Cargando su carrito…",
     "emptyTitle": "Su carrito está vacío",
     "emptyDescription": "Explore nuestro catálogo de productos para comenzar",
     "continueShopping": "Continuar Comprando",

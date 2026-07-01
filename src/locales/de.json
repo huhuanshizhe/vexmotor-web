@@ -90,6 +90,7 @@
   },
   "cart": {
     "title": "Warenkorb",
+    "loadingDescription": "Warenkorb wird geladen…",
     "emptyTitle": "Ihr Warenkorb ist leer",
     "emptyDescription": "Durchsuchen Sie unseren Produktkatalog, um zu beginnen",
     "continueShopping": "Weiter Einkaufen",

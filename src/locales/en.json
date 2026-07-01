@@ -91,6 +91,7 @@
   },
   "cart": {
     "title": "Shopping Cart",
+    "loadingDescription": "Loading your cart…",
     "emptyTitle": "Your cart is empty",
     "emptyDescription": "Browse our product catalog to get started",
     "continueShopping": "Continue Shopping",

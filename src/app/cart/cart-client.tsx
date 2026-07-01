@@ -20,7 +20,7 @@ type EmptyStateCategory = {
 };
 
 type CartClientProps = {
-  initialCart: CartDetail;
+  initialCart: CartDetail | null;
   locale: Locale;
   crossSellProducts: StorefrontProductCard[];
   emptyStateCategories: EmptyStateCategory[];
@@ -29,17 +29,37 @@ type CartClientProps = {
 
 export function CartClient({ initialCart, locale, crossSellProducts, emptyStateCategories, commerceConfig }: CartClientProps) {
   const { t } = useTranslation();
-  const [cart, setCart] = useState<CartDetail>(initialCart);
+  const [cart, setCart] = useState<CartDetail | null>(initialCart);
+  const [isLoading, setIsLoading] = useState(initialCart === null);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (initialCart) {
+    if (initialCart !== null) {
       return;
     }
 
+    let cancelled = false;
+
     void apiFetch<CartDetail>('/api/front/cart')
-      .then((detail) => setCart(detail))
-      .catch(() => setCart(null));
+      .then((detail) => {
+        if (!cancelled) {
+          setCart(detail);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCart(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [initialCart]);
 
   const productsPath = withLocalePath('/products', locale);
@@ -51,7 +71,16 @@ export function CartClient({ initialCart, locale, crossSellProducts, emptyStateC
 
   return (
     <div className="trade-flow-stack cart-page-stack">
-      {!cart || !cart.items.length ? (
+      {isLoading ? (
+        <article className="info-card trade-empty-card cart-loading-card">
+          <div className="section-header trade-card-header">
+            <div>
+              <h2 className="cart-section-title">{t('cart.title')}</h2>
+              <p className="section-description">{t('cart.loadingDescription')}</p>
+            </div>
+          </div>
+        </article>
+      ) : !cart || !cart.items.length ? (
         <article className="info-card trade-empty-card">
           <div className="section-header trade-card-header">
             <div>
