@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useToast } from '@C/toast';
+import { useAuth } from '@/components/providers/auth-provider';
+import { addCompareItemRemote } from '@/lib/compare-api';
 import {
   type CompareItem,
   COMPARE_ITEMS_UPDATED_EVENT,
@@ -31,6 +33,7 @@ function CompareIcon({ className }: { className?: string }) {
 export function AddToCompareButton({ item, compact = false, icon = false }: AddToCompareButtonProps) {
   const { pushToast } = useToast();
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [isAdded, setIsAdded] = useState(false);
 
   const syncAddedState = useCallback(() => {
@@ -55,6 +58,9 @@ export function AddToCompareButton({ item, compact = false, icon = false }: AddT
     const result = addCompareItem(item);
     if (result.added) {
       setIsAdded(true);
+      if (user) {
+        void addCompareItemRemote(item.id).catch(() => undefined);
+      }
       pushToast({
         title: t('product.addToCompare'),
         description: t('compare.addedToast', { sku: item.sku }),

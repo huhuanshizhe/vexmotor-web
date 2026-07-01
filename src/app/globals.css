@@ -6467,12 +6467,8 @@ main {
 }
 
 .compare-page-stack,
-.compare-toolbar-actions,
-.compare-add-panel,
-.compare-add-grid,
-.compare-group-stack,
-.compare-doc-card,
-.compare-cta-strip,
+.compare-page-intro,
+.compare-product-actions,
 .search-page-stack,
 .search-section-card,
 .search-product-list,
@@ -6486,22 +6482,111 @@ main {
   gap: 18px;
 }
 
-.compare-toolbar {
-  align-items: start;
+.compare-page-intro {
+  align-items: center;
+  justify-content: space-between;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
-.compare-toolbar-actions {
+.compare-product-actions {
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
 
-.compare-add-grid,
+.compare-remove-action {
+  color: var(--color-accent);
+}
+
+.compare-board {
+  border: 1px solid rgba(16, 41, 66, 0.1);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.compare-board-scroll {
+  overflow-x: auto;
+}
+
+.compare-board-grid {
+  display: grid;
+  grid-template-columns: var(--compare-label-width, 220px) repeat(var(--compare-columns, 2), minmax(240px, 1fr));
+  min-width: max(100%, calc(var(--compare-label-width, 220px) + var(--compare-columns, 2) * 240px));
+}
+
+.compare-board-corner {
+  background: #f7f9fc;
+  border-bottom: 1px solid rgba(16, 41, 66, 0.08);
+  min-height: 12px;
+}
+
+.compare-product-col {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 20px;
+  border-left: 1px solid rgba(16, 41, 66, 0.08);
+  border-bottom: 1px solid rgba(16, 41, 66, 0.08);
+  background: #fff;
+}
+
+.compare-product-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.compare-product-title {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.compare-group-heading,
+.compare-board-message {
+  grid-column: 1 / -1;
+}
+
+.compare-group-heading {
+  padding: 12px 16px;
+  background: #f3f6fa;
+  color: var(--color-accent);
+  font-weight: 700;
+  border-top: 1px solid rgba(16, 41, 66, 0.08);
+}
+
+.compare-board-message {
+  padding: 18px 20px;
+  background: #fafbfc;
+  border-top: 1px solid rgba(16, 41, 66, 0.08);
+}
+
+.compare-spec-label,
+.compare-spec-value {
+  padding: 14px 16px;
+  border-top: 1px solid rgba(16, 41, 66, 0.08);
+  background: #fff;
+}
+
+.compare-spec-label {
+  background: #fafbfc;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.compare-spec-value {
+  border-left: 1px solid rgba(16, 41, 66, 0.08);
+}
+
+.compare-spec-label.is-different,
+.compare-spec-value.is-different {
+  background: rgba(214, 91, 34, 0.06);
+}
+
 .search-card-grid {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-.compare-add-card,
-.compare-header-card,
-.compare-doc-card,
 .search-product-row {
   display: grid;
   gap: 14px;
@@ -6510,68 +6595,6 @@ main {
   background: #fff;
   border: 1px solid rgba(16, 41, 66, 0.08);
   box-shadow: var(--shadow-panel);
-}
-
-.compare-column-grid {
-  display: grid;
-  grid-template-columns: repeat(var(--compare-columns, 4), minmax(220px, 1fr));
-  gap: 14px;
-  overflow-x: auto;
-}
-
-.compare-column-grid-docs {
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-}
-
-.compare-remove-button {
-  border: 0;
-  background: transparent;
-  color: var(--color-accent);
-  font-size: 1.6rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.compare-table-card {
-  overflow-x: auto;
-}
-
-.compare-spec-table {
-  display: grid;
-  gap: 0;
-  min-width: 920px;
-}
-
-.compare-spec-row {
-  display: grid;
-  grid-template-columns: minmax(180px, 240px) repeat(var(--compare-columns, 4), minmax(220px, 1fr));
-  border-top: 1px solid rgba(16, 41, 66, 0.08);
-}
-
-.compare-spec-row:first-child {
-  border-top: 0;
-}
-
-.compare-spec-row.is-different {
-  background: rgba(214, 91, 34, 0.08);
-}
-
-.compare-spec-label,
-.compare-spec-cell {
-  padding: 14px 16px;
-}
-
-.compare-spec-label {
-  font-weight: 700;
-  color: var(--color-accent);
-}
-
-.compare-spec-cell {
-  border-left: 1px solid rgba(16, 41, 66, 0.08);
-}
-
-.compare-cta-strip {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 .search-tabs-row {
@@ -9524,8 +9547,7 @@ main {
   .quote-form-grid,
   .search-card-grid,
   .search-suggestion-card,
-  .compare-toolbar-actions,
-  .compare-cta-strip,
+  .compare-page-intro,
   .search-product-row,
   .auth-step-tabs,
   .auth-social-grid,
@@ -9623,7 +9645,7 @@ main {
   .solution-requirement-row,
   .solution-stat-row,
   .solution-sku-footer,
-  .compare-toolbar,
+  .compare-page-intro,
   .auth-inline-row,
   .selector-progress-header,
   .selector-tip-header,

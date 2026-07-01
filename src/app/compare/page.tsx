@@ -2,7 +2,6 @@ import { StorefrontFrame } from '@/components/layout/storefront-frame';
 import { getServerSitePreferences } from '@/lib/i18n-server';
 import { buildMetadata } from '@/lib/seo';
 import { CompareClient } from '@/components/storefront/compare-client';
-import { getProductList } from '@/lib/storefront-api';
 
 export async function generateMetadata() {
   const { locale } = await getServerSitePreferences();
@@ -17,17 +16,16 @@ export async function generateMetadata() {
 
 export default async function ComparePage() {
   const preferences = await getServerSitePreferences();
-  const catalog = await getProductList({ pageSize: 96, sort: 'featured' });
 
   return (
     <StorefrontFrame
       eyebrow="Compare"
       title="Review products side by side before checkout or RFQ."
-      description="This compare list keeps a lightweight shortlist in your browser so you can move between catalog browsing and product evaluation without losing context."
+      description="Compare up to four SKUs with live catalog specifications. Your shortlist stays in this browser, and signed-in buyers can sync it across devices."
     >
       <section className="section">
         <div className="section-inner">
-          <CompareClient locale={preferences.locale} catalogProducts={catalog.items} />
+          <CompareClient locale={preferences.locale} />
         </div>
       </section>
     </StorefrontFrame>
