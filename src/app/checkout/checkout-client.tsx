@@ -73,7 +73,7 @@ export function CheckoutClient({
   const [contactPhone, setContactPhone] = useState('');
   const [subscribeToUpdates, setSubscribeToUpdates] = useState(false);
   const [shippingMethod, setShippingMethod] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('Credit Card');
   const [purchaseOrderNumber, setPurchaseOrderNumber] = useState('');
   const [taxId, setTaxId] = useState('');
   const [requestedShipDate, setRequestedShipDate] = useState('');
@@ -212,9 +212,9 @@ export function CheckoutClient({
   ];
 
   const paymentOptions = [
-    { value: 'Credit Card', title: 'Credit Card', note: 'Fastest for smaller catalog transactions.' },
-    { value: 'PayPal', title: 'PayPal', note: 'Useful for small orders with buyer protection.' },
-    { value: 'Wire transfer', title: 'Wire transfer', note: 'Preferred for larger B2B orders.' },
+    { value: 'Credit Card', title: 'Credit Card', note: 'Fastest for smaller catalog transactions.', disabled: false },
+    { value: 'PayPal', title: 'PayPal', note: 'Useful for small orders with buyer protection.', disabled: true },
+    { value: 'Wire transfer', title: 'Wire transfer', note: 'Preferred for larger B2B orders.', disabled: true },
   ];
 
   async function handleAuthSuccess() {
@@ -489,21 +489,41 @@ export function CheckoutClient({
               </div>
             </div>
             <div className="option-choice-grid">
-              {paymentOptions.map((option) => (
-                <label key={option.value} className={`option-choice-card trade-choice-card ${paymentMethod === option.value ? 'is-selected' : ''}`}>
-                  <input type="radio" className="trade-choice-input" name="payment-method" checked={paymentMethod === option.value} onChange={() => setPaymentMethod(option.value)} />
-                  <span className="trade-choice-mark" aria-hidden="true" />
-                  <div className="option-choice-body">
-                    <div className="option-choice-title-row">
-                      <span className="payment-method-icon" aria-hidden="true">
-                        <PaymentMethodIcon method={option.value} />
-                      </span>
-                      <strong className="option-choice-title">{option.title}</strong>
+              {paymentOptions.map((option) => {
+                const isDisabled = option.disabled;
+                const isSelected = paymentMethod === option.value;
+
+                return (
+                  <label
+                    key={option.value}
+                    className={`option-choice-card trade-choice-card${isSelected ? ' is-selected' : ''}${isDisabled ? ' is-disabled' : ''}`}
+                    aria-disabled={isDisabled || undefined}
+                  >
+                    <input
+                      type="radio"
+                      className="trade-choice-input"
+                      name="payment-method"
+                      checked={isSelected}
+                      disabled={isDisabled}
+                      onChange={() => {
+                        if (!isDisabled) {
+                          setPaymentMethod(option.value);
+                        }
+                      }}
+                    />
+                    <span className="trade-choice-mark" aria-hidden="true" />
+                    <div className="option-choice-body">
+                      <div className="option-choice-title-row">
+                        <span className="payment-method-icon" aria-hidden="true">
+                          <PaymentMethodIcon method={option.value} />
+                        </span>
+                        <strong className="option-choice-title">{option.title}</strong>
+                      </div>
+                      <span className="section-description">{option.note}</span>
                     </div>
-                    <span className="section-description">{option.note}</span>
-                  </div>
-                </label>
-              ))}
+                  </label>
+                );
+              })}
             </div>
           </article>
         ) : null}

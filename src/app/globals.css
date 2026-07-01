@@ -6362,6 +6362,39 @@ main {
   transform: translateY(-1px);
 }
 
+.option-choice-card.is-disabled,
+.trade-choice-card.is-disabled {
+  cursor: not-allowed;
+  border-color: #e8edf3;
+  background: #f3f5f7;
+  opacity: 0.72;
+  box-shadow: none;
+  transform: none;
+}
+
+.option-choice-card.is-disabled:hover,
+.trade-choice-card.is-disabled:hover {
+  border-color: #e8edf3;
+  background: #f3f5f7;
+  box-shadow: none;
+  transform: none;
+}
+
+.option-choice-card.is-disabled .option-choice-title,
+.trade-choice-card.is-disabled .option-choice-title,
+.option-choice-card.is-disabled .section-description,
+.trade-choice-card.is-disabled .section-description,
+.option-choice-card.is-disabled .payment-method-icon,
+.trade-choice-card.is-disabled .payment-method-icon {
+  color: #8a97a8;
+}
+
+.option-choice-card.is-disabled .trade-choice-mark,
+.trade-choice-card.is-disabled .trade-choice-mark {
+  border-color: #d5dde6;
+  background: #eef2f6;
+}
+
 .address-choice-card:has(.trade-choice-input:focus-visible),
 .option-choice-card:has(.trade-choice-input:focus-visible),
 .trade-choice-card:has(.trade-choice-input:focus-visible) {
