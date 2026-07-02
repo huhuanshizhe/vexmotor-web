@@ -12,6 +12,7 @@ import {
   type Locale,
   type SitePreferences,
 } from '@/lib/i18n';
+import { getRegistryDefault } from '@/ui-strings/registry';
 
 // Server-side translation JSON imports (no 'use client' boundary)
 import enTranslations from '@/locales/en.json';
@@ -43,14 +44,25 @@ function interpolateString(template: string, params?: TranslationParams): string
  * Unlike the `getTranslations` in i18n-context.tsx (which is 'use client'),
  * this version imports JSON directly and has no client boundary.
  */
-export function getServerTranslations(locale: Locale = DEFAULT_LOCALE) {
+export function getServerTranslations(locale: Locale = DEFAULT_LOCALE, uiStrings: Record<string, string> = {}) {
   return {
     t: (key: string, params?: TranslationParams): string => {
+      const fromRuntime = uiStrings[key];
+      if (typeof fromRuntime === 'string' && fromRuntime.length > 0) {
+        return interpolateString(fromRuntime, params);
+      }
+
       const translationObj = translations[locale] || translations[DEFAULT_LOCALE];
       const template = getNestedValue(translationObj, key);
       if (typeof template === 'string') {
         return interpolateString(template, params);
       }
+
+      const registryDefault = getRegistryDefault(key);
+      if (registryDefault) {
+        return interpolateString(registryDefault, params);
+      }
+
       return key;
     },
     locale,

@@ -288,6 +288,7 @@ export function CheckoutClient({
       try {
         order = await apiFetch('/api/front/checkout/orders', {
           method: 'POST',
+          locale,
           body: JSON.stringify({
             ...(isGuestCheckout
               ? {

@@ -32,7 +32,6 @@ export type StorefrontProductCard = {
   name: string;
   slug: string;
   spu: string;
-  sku: string;
   shortDescription?: string | null;
   coverImage?: StorefrontImage | null;
   price: {
@@ -291,8 +290,7 @@ export type CartDetail = {
       id: string;
       name: string;
       slug: string;
-      sku?: string;
-      spu?: string;
+      spu: string;
       shortDescription?: string | null;
       purchaseMode: 'buy' | 'inquiry';
       inStock: boolean;

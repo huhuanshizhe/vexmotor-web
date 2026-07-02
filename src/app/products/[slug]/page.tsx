@@ -23,7 +23,7 @@ import { buildSpecGroups, formatSpecValue, type DetailSpecGroup } from '@/lib/pr
 import { buildBreadcrumbJsonLd, buildMetadata } from '@/lib/seo';
 import { SITE_NAME, SITE_URL } from '@/lib/site-config';
 import { buildVolumePricingTiers } from '@/lib/volume-pricing';
-import { resolveProductSku } from '@/lib/product-sku';
+import { resolveProductSpu } from '@/lib/product-spu';
 import { getCommerceConfig } from '@/lib/storefront-api';
 import { getHomeData, getProductBySlug, type StorefrontProductCard } from '@/lib/storefront-api';
 
@@ -46,10 +46,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const topSpecs = p.features.slice(0, 2).map((feature) => `${feature.key} ${formatSpecValue(feature.value, feature.unit)}`);
   const description =
     p.seoDescription ??
-    `${p.name} (${p.sku}) with ${topSpecs.join(', ') || 'engineering-grade motion parameters'}, ${p.inStock ? 'multi-warehouse availability' : 'quote-based lead times'}, and ${p.purchaseMode === 'buy' ? `pricing from ${p.price.formatted}` : 'RFQ pricing support'}.`;
+    `${p.name} (${p.spu}) with ${topSpecs.join(', ') || 'engineering-grade motion parameters'}, ${p.inStock ? 'multi-warehouse availability' : 'quote-based lead times'}, and ${p.purchaseMode === 'buy' ? `pricing from ${p.price.formatted}` : 'RFQ pricing support'}.`;
 
   return buildMetadata({
-    title: p.seoTitle ?? `${p.name} — ${p.sku} | ${SITE_NAME}`,
+    title: p.seoTitle ?? `${p.name} — ${p.spu} | ${SITE_NAME}`,
     description,
     path: `/products/${slug}`,
     locale,
@@ -60,11 +60,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const [{ locale }, product, homeData, commerceConfig] = await Promise.all([
-    getServerSitePreferences(),
+  const { locale } = await getServerSitePreferences();
+  const [product, homeData, commerceConfig] = await Promise.all([
     getProductBySlug(slug),
     getHomeData(),
-    getCommerceConfig(),
+    getCommerceConfig(locale),
   ]);
 
   if (!product) {
@@ -107,7 +107,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const heroSpecs = topSpecs.filter((item) => item.label !== 'SKU' && item.label !== 'SPU').slice(0, 4);
 
   const priceHeadline = p.purchaseMode === 'buy' ? p.price.formatted : 'Request Quote';
-  const productCode = resolveProductSku(p);
+  const productCode = resolveProductSpu(p);
 
   const lifecycleBadge = (() => {
     if (!p.lifecycleStatus || p.lifecycleStatus === 'active') return null;
@@ -130,12 +130,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   // URLs
   const queryForQuote = new URLSearchParams({
-    addSku: productCode,
+    addSpu: productCode,
     productId: p.id,
   }).toString();
   const queryForSample = new URLSearchParams({ topic: 'sample', product: productCode }).toString();
-  const queryForVolume = new URLSearchParams({ sku: productCode }).toString();
-  const queryForCustom = new URLSearchParams({ sourceSku: productCode, sourceProduct: p.name }).toString();
+  const queryForVolume = new URLSearchParams({ spu: productCode }).toString();
+  const queryForCustom = new URLSearchParams({ sourceSpu: productCode, sourceProduct: p.name }).toString();
   const quoteHref = `${withLocalePath('/quote', locale)}?${queryForQuote}`;
   const sampleHref = `${contactPath}?${queryForSample}`;
   const volumePricingHref = `${withLocalePath('/volume-pricing', locale)}?${queryForVolume}`;
@@ -330,7 +330,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                     id: p.id,
                     name: p.name,
                     slug: p.slug,
-                    sku: productCode,
+                    spu: productCode,
                     priceLabel: p.price.formatted,
                     purchaseMode: p.purchaseMode,
                     inStock: p.inStock,
@@ -409,7 +409,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                       id: p.id,
                       name: p.name,
                       slug: p.slug,
-                      sku: productCode,
+                      spu: productCode,
                       priceLabel: 'Request Quote',
                       purchaseMode: p.purchaseMode,
                       inStock: p.inStock,
@@ -535,7 +535,7 @@ function CompatibleGroupsSection({ groups, locale }: { groups: DetailCompatibleG
                   )}
                 </div>
                 <div className="compatible-product-info">
-                  <p className="product-meta">SKU {item.sku}</p>
+                  <p className="product-meta">SPU {item.spu}</p>
                   <h4 className="compatible-product-name">{item.name}</h4>
                   <div className="compatible-product-footer">
                     <span className="compatible-product-price">{item.purchaseMode === 'buy' ? item.price.formatted : 'Request Quote'}</span>

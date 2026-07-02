@@ -13,6 +13,7 @@ import {
   UNIT_SYSTEM_COOKIE_NAME,
   PREFERENCE_COOKIE_MAX_AGE,
 } from '@/lib/i18n';
+import { getRegistryDefault } from '@/ui-strings/registry';
 
 // Import translations
 import enTranslations from '@/locales/en.json';
@@ -60,21 +61,33 @@ function interpolateString(template: string, params?: TranslationParams): string
 // Provider component
 export function I18nProvider({ 
   children, 
-  initialLocale = DEFAULT_LOCALE 
+  initialLocale = DEFAULT_LOCALE,
+  initialUiStrings = {},
 }: { 
   children: ReactNode;
   initialLocale?: Locale;
+  initialUiStrings?: Record<string, string>;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
 
   const t = useCallback((key: string, params?: TranslationParams): string => {
+    const fromRuntime = initialUiStrings[key];
+    if (typeof fromRuntime === 'string' && fromRuntime.length > 0) {
+      return interpolateString(fromRuntime, params);
+    }
+
     const translationObj = translations[locale] || translations[DEFAULT_LOCALE];
     const template = getNestedValue(translationObj, key);
 
     if (typeof template === 'string') {
       return interpolateString(template, params);
+    }
+
+    const registryDefault = getRegistryDefault(key);
+    if (registryDefault) {
+      return interpolateString(registryDefault, params);
     }
 
     // Fallback: return key if translation not found
@@ -83,7 +96,7 @@ export function I18nProvider({
     }
 
     return key;
-  }, [locale]);
+  }, [locale, initialUiStrings]);
 
   const setLocale = useCallback((newLocale: Locale) => {
     const defaults = getMarketDefaults(newLocale);

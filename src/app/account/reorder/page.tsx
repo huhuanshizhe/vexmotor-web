@@ -39,7 +39,7 @@ export default async function AccountReorderPage({
           <div className="account-company-grid" style={{ marginTop: 18 }}>
             {quickResults.items.map((product) => (
               <article key={product.id} className="summary-stat">
-                <span className="summary-label">{product.sku}</span>
+                <span className="summary-label">{product.spu}</span>
                 <strong>{product.name}</strong>
                 <span className="section-description compact-copy">{product.shortDescription}</span>
                 <div className="account-inline-actions">
@@ -70,12 +70,12 @@ export default async function AccountReorderPage({
         {accountReorderCandidates.map((candidate) => {
           const product = productBySlug.get(candidate.productSlug) ?? null;
           return (
-            <div key={`${candidate.orderNumber}-${candidate.sku}`} className="account-table-row">
+            <div key={`${candidate.orderNumber}-${candidate.spu}`} className="account-table-row">
               <div>
                 <strong>{candidate.source}</strong>
                 <div className="product-meta">{candidate.orderNumber}</div>
               </div>
-              <strong>{candidate.sku}</strong>
+              <strong>{candidate.spu}</strong>
               <div>
                 <strong>{candidate.productName}</strong>
                 <div className="section-description compact-copy">{candidate.note}</div>

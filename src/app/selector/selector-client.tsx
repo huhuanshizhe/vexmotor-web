@@ -34,7 +34,7 @@ function buildCompareItem(match: SelectorMatchResult) {
     id: match.product.id,
     name: match.product.name,
     slug: match.product.slug,
-    sku: match.product.sku,
+    spu: match.product.spu,
     priceLabel: match.product.purchaseMode === 'buy' ? match.product.price.formatted : 'Request Quote',
     purchaseMode: match.product.purchaseMode,
     inStock: match.product.inStock,
@@ -437,7 +437,7 @@ export function SelectorClient({ locale, catalogProducts, initialState, isLogged
                   <article key={match.product.id} className="selector-match-card">
                     <div className="selector-match-header">
                       <div>
-                        <div className="card-kicker">{match.product.sku}</div>
+                        <div className="card-kicker">{match.product.spu}</div>
                         <h3 className="selector-match-title">{match.product.name}</h3>
                       </div>
                       <div className="selector-match-meta">
@@ -474,7 +474,7 @@ export function SelectorClient({ locale, catalogProducts, initialState, isLogged
                           Review RFQ item
                         </Link>
                       )}
-                      <Link href={`${quoteBasePath}?addSku=${encodeURIComponent(match.product.sku)}`} className="button-secondary">
+                      <Link href={`${quoteBasePath}?addSpu=${encodeURIComponent(match.product.spu)}`} className="button-secondary">
                         Add to Quote
                       </Link>
                       <Link href={withLocalePath(`/products/${match.product.slug}`, locale)} className="section-link selector-detail-link">

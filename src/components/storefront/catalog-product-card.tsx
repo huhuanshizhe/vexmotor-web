@@ -5,7 +5,7 @@ import { AddToCartButton } from '@/components/storefront/add-to-cart-button';
 import { AddToCompareButton } from '@/components/storefront/add-to-compare-button';
 import { AddToWishlistButton } from '@/components/storefront/add-to-wishlist-button';
 import { CatalogProductCardTitle } from '@/components/storefront/catalog-product-card-title';
-import { resolveProductSku } from '@/lib/product-sku';
+import { resolveProductSpu } from '@/lib/product-spu';
 import type { StorefrontProductCard } from '@/lib/storefront-types';
 
 type CatalogProductCardProps = {
@@ -32,7 +32,7 @@ export function CatalogProductCard({ product, productHref, compareCategoryName, 
               id: product.id,
               name: product.name,
               slug: product.slug,
-              sku: resolveProductSku(product),
+              spu: resolveProductSpu(product),
               priceLabel: product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote',
               purchaseMode: product.purchaseMode,
               inStock: product.inStock,

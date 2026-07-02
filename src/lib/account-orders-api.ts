@@ -41,7 +41,7 @@ export type AccountOrderLineItem = {
   id: string;
   productId: string;
   productName: string;
-  sku: string;
+  spu: string;
   quantity: number;
   unitPrice: string;
   subtotal: string;
@@ -62,7 +62,7 @@ export type AccountOrderShipment = {
   items: Array<{
     orderItemId: string;
     productName: string;
-    sku: string;
+    spu: string;
     quantity: number | null;
   }>;
 };

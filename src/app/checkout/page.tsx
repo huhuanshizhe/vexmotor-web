@@ -21,7 +21,8 @@ export default async function CheckoutPage({
 }: {
   searchParams: Promise<{ buyNow?: string; productId?: string; qty?: string; fromQuote?: string }>;
 }) {
-  const commerceConfig = await getCommerceConfig();
+  const { locale } = await getServerSitePreferences();
+  const commerceConfig = await getCommerceConfig(locale);
   const params = await searchParams;
   const buyNowProductId = params.buyNow === '1' && params.productId ? params.productId : undefined;
   const buyNowQuantity = buyNowProductId ? Math.max(1, Number(params.qty) || 1) : undefined;

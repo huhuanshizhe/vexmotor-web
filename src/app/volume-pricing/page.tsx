@@ -12,7 +12,7 @@ import { getProductList } from '@/lib/storefront-api';
 const faq = [
   {
     question: 'When does contract pricing start to apply?',
-    answer: 'Contract review starts after the sales team validates annual demand, target SKU family, warehouse cadence, and payment posture.',
+    answer: 'Contract review starts after the sales team validates annual demand, target SPU family, warehouse cadence, and payment posture.',
   },
   {
     question: 'Can contract pricing stack with public promotions?',
@@ -35,15 +35,15 @@ export async function generateMetadata() {
 }
 
 type VolumePricingPageProps = {
-  searchParams: Promise<{ sku?: string }>;
+  searchParams: Promise<{ spu?: string }>;
 };
 
 export default async function VolumePricingPage({ searchParams }: VolumePricingPageProps) {
-  const [{ locale }, catalog, params, commerceConfig] = await Promise.all([
-    getServerSitePreferences(),
+  const { locale } = await getServerSitePreferences();
+  const [catalog, params, commerceConfig] = await Promise.all([
     getProductList({ pageSize: 96, sort: 'featured' }),
     searchParams,
-    getCommerceConfig(),
+    getCommerceConfig(locale),
   ]);
 
   const products = catalog.items.filter((product) => product.purchaseMode === 'buy');
@@ -51,7 +51,7 @@ export default async function VolumePricingPage({ searchParams }: VolumePricingP
   if (!intakeProduct) {
     return null;
   }
-  const initialSku = params.sku?.trim() || products[0]?.sku || undefined;
+  const initialSpu = params.spu?.trim() || products[0]?.spu || undefined;
   const browsePath = withLocalePath('/products', locale);
   const breadcrumbJsonLd = buildBreadcrumbJsonLd(
     [
@@ -115,7 +115,7 @@ export default async function VolumePricingPage({ searchParams }: VolumePricingP
             locale={locale}
             intakeProductId={intakeProduct.id}
             products={products}
-            initialSku={initialSku}
+            initialSpu={initialSpu}
             volumePricingRules={commerceConfig.volumePricingRules}
           />
         </div>

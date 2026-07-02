@@ -32,7 +32,7 @@ type CoverImage = {
 type PayableOrderItem = {
   id: string;
   productName: string;
-  sku: string;
+  spu: string;
   quantity: number;
   subtotal: string;
   coverImage?: CoverImage | null;
@@ -251,7 +251,7 @@ export function CheckoutPaymentClient({ orderNumber, guestToken }: CheckoutPayme
                 </div>
                 <div className="payment-gateway-item-copy">
                   <strong>{item.productName}</strong>
-                  <span className="product-meta">{item.sku}</span>
+                  <span className="product-meta">{item.spu}</span>
                   <span className="payment-gateway-item-qty">Qty {item.quantity}</span>
                 </div>
                 <strong className="payment-gateway-item-price">{formatAmount(item.subtotal)}</strong>

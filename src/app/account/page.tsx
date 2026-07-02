@@ -137,7 +137,7 @@ export default function AccountPage() {
                 <Link href={`/products/${product.slug}`} className="section-link">
                   {product.name}
                 </Link>
-                <div className="section-description compact-copy">{product.sku}</div>
+                <div className="section-description compact-copy">{product.spu}</div>
                 <AddToCartButton productId={product.id} moq={product.moq} />
               </div>
             ))}

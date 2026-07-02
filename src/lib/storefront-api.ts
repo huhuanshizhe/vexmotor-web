@@ -109,8 +109,8 @@ export async function getProductBySlug(slug: string): Promise<StorefrontProductD
   }
 }
 
-export async function getCommerceConfig(): Promise<CommerceConfig> {
-  return serverFetch<CommerceConfig>('/api/front/commerce');
+export async function getCommerceConfig(locale?: string): Promise<CommerceConfig> {
+  return serverFetch<CommerceConfig>('/api/front/commerce', { locale });
 }
 
 export async function getSupportCatalog(): Promise<SupportCatalog> {

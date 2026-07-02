@@ -6,7 +6,7 @@ import { DownOutlined, UpOutlined, CloseOutlined } from '@ant-design/icons';
 type SpecCompareItem = {
   id: string;
   name: string;
-  sku: string;
+  spu: string;
   image?: string;
   specs: Record<string, string>;
 };
@@ -45,11 +45,11 @@ export function ProductCompareTable({
       (key) => /(accuracy|resolution|efficiency|temperature|rating)/i.test(key)
     ),
     'Commercial': allSpecKeys.filter(
-      (key) => /(sku|brand|stock|price|warranty|moq)/i.test(key)
+      (key) => /(spu|brand|stock|price|warranty|moq)/i.test(key)
     ),
     Other: allSpecKeys.filter(
       (key) =>
-        !/(voltage|current|power|torque|speed|rpm|step|phase|length|width|height|weight|size|diameter|shaft|accuracy|resolution|efficiency|temperature|rating|sku|brand|stock|price|warranty|moq)/i.test(key)
+        !/(voltage|current|power|torque|speed|rpm|step|phase|length|width|height|weight|size|diameter|shaft|accuracy|resolution|efficiency|temperature|rating|spu|brand|stock|price|warranty|moq)/i.test(key)
     ),
   };
 
@@ -105,7 +105,7 @@ export function ProductCompareTable({
             )}
             <div className="compare-product-info">
               <h4 className="compare-product-name">{item.name}</h4>
-              <p className="compare-product-sku">{item.sku}</p>
+              <p className="compare-product-spu">{item.spu}</p>
             </div>
           </div>
         ))}
@@ -246,7 +246,7 @@ export function ProductCompareTable({
           margin: 0;
         }
 
-        .compare-product-sku {
+        .compare-product-spu {
           font-family: var(--font-mono);
           font-size: 0.75rem;
           color: var(--color-text-secondary);

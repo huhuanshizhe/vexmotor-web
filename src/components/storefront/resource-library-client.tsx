@@ -105,7 +105,7 @@ function ResourceCard({
         </div>
         <div>
           <dt>{resource.section === 'cad' || resource.section === 'datasheet' ? 'SKU' : 'Access'}</dt>
-          <dd>{resource.sku ?? (resource.gated ? 'Email / login' : 'Open')}</dd>
+          <dd>{resource.spu ?? (resource.gated ? 'Email / login' : 'Open')}</dd>
         </div>
       </dl>
 
@@ -178,7 +178,7 @@ export function ResourceLibraryClient({ locale, resources }: ResourceLibraryClie
   const filteredResources = useMemo(() => {
     return resources.filter((resource) => {
       const matchesKeyword = !deferredKeyword
-        || `${resource.title} ${resource.summary} ${resource.topic} ${resource.productLine} ${resource.language} ${resource.sku ?? ''}`.toLowerCase().includes(deferredKeyword);
+        || `${resource.title} ${resource.summary} ${resource.topic} ${resource.productLine} ${resource.language} ${resource.spu ?? ''}`.toLowerCase().includes(deferredKeyword);
       const matchesTopic = topic === 'all' || resource.topic === topic;
       const matchesProductLine = productLine === 'all' || resource.productLine === productLine;
       const matchesLanguage = language === 'all' || resource.language === language;

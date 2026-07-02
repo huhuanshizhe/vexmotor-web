@@ -77,7 +77,7 @@ export function buildFaqItems(
         : `Start with the SKU, purchase mode, and attached documents, then confirm the remaining mechanical and electrical details with the engineering team.`,
     },
     {
-      question: `Can I order ${product.sku} directly online?`,
+      question: `Can I order ${product.spu} directly online?`,
       answer: product.purchaseMode === 'buy' ? 'Yes. This SKU is configured for direct checkout, quantity changes, and tier-price review from the PDP.' : 'This SKU currently follows an RFQ workflow so the engineering team can confirm spec, lead time, and commercial terms.',
     },
     {

@@ -211,7 +211,7 @@ export function TechFaqClient({ glossaryTerms, locale, productsBySlug, techFaqCa
                                   <Link key={slug} href={withLocalePath(`/products/${slug}`, locale)} className="summary-stat knowledge-product-card">
                                     <span className="summary-label">{product.purchaseMode === 'buy' ? product.priceLabel : 'Request Quote'}</span>
                                     <strong>{product.name}</strong>
-                                    <span className="section-description compact-copy">{product.sku}</span>
+                                    <span className="section-description compact-copy">{product.spu}</span>
                                   </Link>
                                 ) : null;
                               })}

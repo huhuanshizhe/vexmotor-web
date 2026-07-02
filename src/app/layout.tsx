@@ -4,12 +4,15 @@ import 'antd/dist/reset.css';
 
 import { AuthProvider } from '@/components/providers/auth-provider';
 import { AntdProvider } from '@/components/providers/antd-provider';
+import { UiStringsProvider } from '@/components/providers/ui-strings-provider';
 import { GoogleAnalytics } from '@/components/seo/google-analytics';
 import { JsonLdScript } from '@/components/seo/json-ld';
 import { ToastProvider } from '@C/toast';
 import { I18nProvider } from '@/lib/i18n-context';
 import { getServerSitePreferences } from '@/lib/i18n-server';
+import { fetchUiStringGroups } from '@/lib/ui-strings-client';
 import { buildMetadata, buildOrganizationJsonLd } from '@/lib/seo';
+import { UI_STRING_PREFETCH_GROUPS } from '@/ui-strings/registry';
 
 import './globals.css';
 import './design-system.css';
@@ -30,18 +33,21 @@ export const metadata: Metadata = buildMetadata();
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const preferences = await getServerSitePreferences();
+  const uiStrings = await fetchUiStringGroups(preferences.locale, [...UI_STRING_PREFETCH_GROUPS]).catch(() => ({}));
 
   return (
     <html lang={preferences.locale} className={`${inter.variable}`}>
       <body data-currency={preferences.currency} data-unit-system={preferences.unitSystem}>
         <JsonLdScript id="organization-jsonld" data={buildOrganizationJsonLd()} />
-        <I18nProvider initialLocale={preferences.locale}>
-          <AuthProvider>
-            <AntdProvider>
-              <ToastProvider>{children}</ToastProvider>
-            </AntdProvider>
-          </AuthProvider>
-        </I18nProvider>
+        <UiStringsProvider initialStrings={uiStrings}>
+          <I18nProvider initialLocale={preferences.locale} initialUiStrings={uiStrings}>
+            <AuthProvider>
+              <AntdProvider>
+                <ToastProvider>{children}</ToastProvider>
+              </AntdProvider>
+            </AuthProvider>
+          </I18nProvider>
+        </UiStringsProvider>
         <GoogleAnalytics />
       </body>
     </html>

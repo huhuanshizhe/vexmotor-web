@@ -96,7 +96,7 @@ export function CompareClient({ locale }: CompareClientProps) {
         ...item,
         name: fresh.name,
         slug: fresh.slug,
-        sku: fresh.spu,
+        spu: fresh.spu,
         priceLabel: fresh.purchaseMode === 'buy' ? fresh.price.formatted : 'Request Quote',
         purchaseMode: fresh.purchaseMode === 'buy' ? ('buy' as const) : ('inquiry' as const),
         inStock: fresh.inStock,
@@ -226,7 +226,7 @@ export function CompareClient({ locale }: CompareClientProps) {
                 <h3 className="compare-product-title">
                   <Link href={withLocalePath(`/products/${item.slug}`, locale)}>{item.name}</Link>
                 </h3>
-                <p className="product-meta">{item.sku || '—'}</p>
+                <p className="product-meta">{item.spu || '—'}</p>
                 <p className="product-price">{item.priceLabel}</p>
                 <span className="product-status">{item.inStock ? 'In stock' : 'Lead time on request'}</span>
                 {item.categories.length ? (
@@ -236,7 +236,7 @@ export function CompareClient({ locale }: CompareClientProps) {
                   {item.purchaseMode === 'buy' ? (
                     <AddToCartButton productId={item.id} redirectToCart={false} />
                   ) : (
-                    <Link href={`${withLocalePath('/quote', locale)}?addSku=${encodeURIComponent(item.sku)}`} className="button-secondary product-back-link">
+                    <Link href={`${withLocalePath('/quote', locale)}?addSpu=${encodeURIComponent(item.spu)}`} className="button-secondary product-back-link">
                       Add to Quote
                     </Link>
                   )}

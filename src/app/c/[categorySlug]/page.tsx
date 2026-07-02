@@ -376,7 +376,7 @@ export default async function CategoryPage({
                           <div className="catalog-row-main">
                             <div className="catalog-row-topline">
                               <span className="product-badge">{product.inStock ? 'In Stock' : 'Lead time on request'}</span>
-                              <span className="catalog-row-model">Model: {product.sku}</span>
+                              <span className="catalog-row-model">Model: {product.spu}</span>
                             </div>
 
                             <h2 className="catalog-row-title">
@@ -408,7 +408,7 @@ export default async function CategoryPage({
                                     id: product.id,
                                     name: product.name,
                                     slug: product.slug,
-                                    sku: product.sku,
+                                    spu: product.spu,
                                     priceLabel: product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote',
                                     purchaseMode: product.purchaseMode,
                                     inStock: product.inStock,

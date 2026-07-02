@@ -203,7 +203,7 @@ export default async function AfterSalesPage() {
             <div className="after-sales-resource-grid">
               {spareParts.map((product) => (
                 <Link key={product.id} href={withLocalePath(`/products/${product.slug}`, locale)} className="summary-stat">
-                  <span className="summary-label">{product.sku}</span>
+                  <span className="summary-label">{product.spu}</span>
                   <strong>{product.name}</strong>
                   <span className="section-description compact-copy">{product.shortDescription}</span>
                 </Link>
@@ -224,7 +224,7 @@ export default async function AfterSalesPage() {
               {softwarePacks.map((product) => (
                 <Link key={product.id} href={withLocalePath(`/products/${product.slug}`, locale)} className="summary-stat">
                   <span className="summary-label">Download path</span>
-                  <strong>{product.sku}</strong>
+                  <strong>{product.spu}</strong>
                   <span className="section-description compact-copy">{product.name}</span>
                 </Link>
               ))}

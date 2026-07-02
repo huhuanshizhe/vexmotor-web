@@ -11,7 +11,7 @@ type CustomDevelopmentFormProps = {
   intakeProductId: string;
   intakeProductName: string;
   locale: Locale;
-  referenceSku?: string;
+  referenceSpu?: string;
   referenceProductName?: string;
 };
 
@@ -96,9 +96,9 @@ function buildCustomBriefMessage(
   projectFiles: string[],
   signedNdaFiles: string[],
   referenceProductName?: string,
-  referenceSku?: string,
+  referenceSpu?: string,
 ) {
-  const referenceSummary = [referenceProductName, referenceSku ? `SKU ${referenceSku}` : null].filter(Boolean).join(' · ');
+  const referenceSummary = [referenceProductName, referenceSpu ? `SPU ${referenceSpu}` : null].filter(Boolean).join(' · ');
 
   return [
     'CUSTOM DEVELOPMENT BRIEF',
@@ -168,7 +168,7 @@ export function CustomDevelopmentForm({
   intakeProductId,
   intakeProductName,
   locale,
-  referenceSku,
+  referenceSpu,
   referenceProductName,
 }: CustomDevelopmentFormProps) {
   const router = useRouter();
@@ -178,7 +178,7 @@ export function CustomDevelopmentForm({
   const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>(DEFAULT_OPEN_SECTIONS);
   const [feedback, setFeedback] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
-  const referenceSummary = [referenceProductName, referenceSku ? `SKU ${referenceSku}` : null].filter(Boolean).join(' · ');
+  const referenceSummary = [referenceProductName, referenceSpu ? `SPU ${referenceSpu}` : null].filter(Boolean).join(' · ');
 
   useEffect(() => {
     const stored = window.localStorage.getItem(CUSTOM_BRIEF_STORAGE_KEY);
@@ -266,7 +266,7 @@ export function CustomDevelopmentForm({
             phone: brief.phone,
             company: brief.company,
             country: brief.country,
-            message: buildCustomBriefMessage(brief, projectFiles, signedNdaFiles, referenceProductName, referenceSku),
+            message: buildCustomBriefMessage(brief, projectFiles, signedNdaFiles, referenceProductName, referenceSpu),
           }),
         });
 

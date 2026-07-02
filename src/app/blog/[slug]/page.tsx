@@ -57,7 +57,7 @@ function BlogProductCard({ product, locale, eyebrow, body }: { product: Storefro
         <h3>
           <Link href={withLocalePath(`/products/${product.slug}`, locale)}>{product.name}</Link>
         </h3>
-        <p className="product-meta">{product.sku}</p>
+        <p className="product-meta">{product.spu}</p>
         <p className="section-description compact-copy">{body}</p>
       </div>
       <div className="blog-product-actions">

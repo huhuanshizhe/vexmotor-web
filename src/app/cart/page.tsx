@@ -18,7 +18,7 @@ export async function generateMetadata() {
 
 export default async function CartPage() {
   const { locale } = await getServerSitePreferences();
-  const [homeData, commerceConfig] = await Promise.all([getHomeData(), getCommerceConfig()]);
+  const [homeData, commerceConfig] = await Promise.all([getHomeData(), getCommerceConfig(locale)]);
 
   return (
     <StorefrontFrame>

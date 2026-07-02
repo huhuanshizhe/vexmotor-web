@@ -18,7 +18,7 @@ type VolumePricingClientProps = {
   locale: Locale;
   intakeProductId: string;
   products: StorefrontProductCard[];
-  initialSku?: string;
+  initialSpu?: string;
   volumePricingRules: VolumePricingRuleConfig[];
 };
 
@@ -26,7 +26,7 @@ type ContractPricingState = {
   company: string;
   industry: string;
   annualPurchase: string;
-  interestedSku: string;
+  interestedSpu: string;
   fullName: string;
   email: string;
   phone: string;
@@ -45,7 +45,7 @@ const INITIAL_CONTRACT_FORM: ContractPricingState = {
   company: '',
   industry: '',
   annualPurchase: '',
-  interestedSku: '',
+  interestedSpu: '',
   fullName: '',
   email: '',
   phone: '',
@@ -64,8 +64,8 @@ function buildContractPricingMessage(
     `Company: ${form.company || 'Not specified'}`,
     `Industry: ${industryLabel || 'Not specified'}`,
     `Annual purchase estimate: ${form.annualPurchase || 'Not specified'}`,
-    `Interested SKU: ${form.interestedSku || product?.sku || 'Not specified'}`,
-    `Selected product: ${product ? `${product.name} (${product.sku})` : 'Not specified'}`,
+    `Interested SPU: ${form.interestedSpu || product?.spu || 'Not specified'}`,
+    `Selected product: ${product ? `${product.name} (${product.spu})` : 'Not specified'}`,
     `Annual quantity for calculator: ${quantity}`,
     `Published savings snapshot: ${publishedSavingsLine}`,
     `Full name: ${form.fullName || 'Not specified'}`,
@@ -75,20 +75,20 @@ function buildContractPricingMessage(
   ].join('\n');
 }
 
-export function VolumePricingClient({ locale, intakeProductId, products, initialSku, volumePricingRules }: VolumePricingClientProps) {
+export function VolumePricingClient({ locale, intakeProductId, products, initialSpu, volumePricingRules }: VolumePricingClientProps) {
   const router = useRouter();
   const { getLabel } = useIndustries();
-  const defaultSku = products.some((product) => product.sku === initialSku) ? initialSku ?? '' : products[0]?.sku ?? '';
-  const [selectedSku, setSelectedSku] = useState(defaultSku);
+  const defaultSpu = products.some((product) => product.spu === initialSpu) ? initialSpu ?? '' : products[0]?.spu ?? '';
+  const [selectedSpu, setSelectedSpu] = useState(defaultSpu);
   const [quantityInput, setQuantityInput] = useState('50');
   const [form, setForm] = useState<ContractPricingState>({
     ...INITIAL_CONTRACT_FORM,
-    interestedSku: defaultSku,
+    interestedSpu: defaultSpu,
   });
   const [feedback, setFeedback] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const selectedProduct = products.find((product) => product.sku === selectedSku) ?? products[0] ?? null;
+  const selectedProduct = products.find((product) => product.spu === selectedSpu) ?? products[0] ?? null;
   const quantity = Math.max(1, Number.parseInt(quantityInput, 10) || 1);
   const tiers = selectedProduct ? buildVolumePricingTiers(selectedProduct.price.amount, selectedProduct.price.currency, volumePricingRules) : [];
   const estimate = selectedProduct ? getVolumePricingEstimate(selectedProduct.price.amount, selectedProduct.price.currency, quantity, volumePricingRules) : null;
@@ -106,9 +106,9 @@ export function VolumePricingClient({ locale, intakeProductId, products, initial
     setFeedback(null);
   }
 
-  function handleSkuChange(nextSku: string) {
-    setSelectedSku(nextSku);
-    setForm((current) => ({ ...current, interestedSku: nextSku }));
+  function handleSpuChange(nextSpu: string) {
+    setSelectedSpu(nextSpu);
+    setForm((current) => ({ ...current, interestedSpu: nextSpu }));
     setFeedback(null);
   }
 
@@ -175,7 +175,7 @@ export function VolumePricingClient({ locale, intakeProductId, products, initial
             <div>
               <div className="card-kicker">How tiers work</div>
               <h2 className="cart-section-title">Published web tiers</h2>
-              <p className="section-description">Each SKU can have its own breakpoints. This page uses the same published tier logic currently surfaced on product detail pages.</p>
+              <p className="section-description">Each SPU can have its own breakpoints. This page uses the same published tier logic currently surfaced on product detail pages.</p>
             </div>
           </div>
 
@@ -195,17 +195,17 @@ export function VolumePricingClient({ locale, intakeProductId, products, initial
             <div>
               <div className="card-kicker">Example calculator</div>
               <h2 className="cart-section-title">Estimate published savings</h2>
-              <p className="section-description">Choose a stocked catalog SKU and annual quantity to see the published web-tier impact before asking for contract terms.</p>
+              <p className="section-description">Choose a stocked catalog SPU and annual quantity to see the published web-tier impact before asking for contract terms.</p>
             </div>
           </div>
 
           <div className="volume-calc-grid">
             <label className="form-field">
-              <span>SKU</span>
-              <select className="form-input" value={selectedSku} onChange={(event) => handleSkuChange(event.target.value)}>
+              <span>SPU</span>
+              <select className="form-input" value={selectedSpu} onChange={(event) => handleSpuChange(event.target.value)}>
                 {products.map((product) => (
-                  <option key={product.id} value={product.sku}>
-                    {product.sku} · {product.name}
+                  <option key={product.id} value={product.spu}>
+                    {product.spu} · {product.name}
                   </option>
                 ))}
               </select>
@@ -329,8 +329,8 @@ export function VolumePricingClient({ locale, intakeProductId, products, initial
             <input className="form-input" value={form.annualPurchase} onChange={(event) => updateForm('annualPurchase', event.target.value)} placeholder="$50k / 12,000 pcs / scheduled releases" required />
           </label>
           <label className="form-field">
-            <span>Interested SKU</span>
-            <input className="form-input" value={form.interestedSku} onChange={(event) => updateForm('interestedSku', event.target.value)} placeholder="Primary motor or driver family" />
+            <span>Interested SPU</span>
+            <input className="form-input" value={form.interestedSpu} onChange={(event) => updateForm('interestedSpu', event.target.value)} placeholder="Primary motor or driver family" />
           </label>
           <label className="form-field">
             <span>Full name</span>

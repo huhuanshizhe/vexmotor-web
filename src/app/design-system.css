@@ -318,6 +318,25 @@ body {
   box-shadow: 0 0 0 3px var(--brand-100);
 }
 
+.header-search-input {
+  outline: none;
+  box-shadow: none;
+  border: 0;
+}
+
+.header-search-input:focus,
+.header-search-input:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border: 0;
+}
+
+.header-search-button:focus,
+.header-search-button:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-sm);
+}
+
 .header-search-button {
   min-height: 36px;
   border-radius: var(--radius-sm);

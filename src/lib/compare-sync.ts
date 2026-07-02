@@ -11,7 +11,7 @@ export function serverItemToCompareItem(entry: CompareServerItem): CompareItem {
     id: product.id,
     name: product.name,
     slug: product.slug,
-    sku: product.spu,
+    spu: product.spu,
     priceLabel: product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote',
     purchaseMode: product.purchaseMode === 'buy' ? 'buy' : 'inquiry',
     inStock: product.inStock,

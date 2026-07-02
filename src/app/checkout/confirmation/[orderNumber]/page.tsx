@@ -98,7 +98,7 @@ export default async function CheckoutConfirmationPage({
       countryCode: string;
       phone: string | null;
     };
-    items: Array<{ id: string; productId: string; productName: string; sku: string; quantity: number; unitPrice: string; subtotal: string }>;
+    items: Array<{ id: string; productId: string; productName: string; spu: string; quantity: number; unitPrice: string; subtotal: string }>;
   };
 
   const guestQuery = guestToken ? `?guestToken=${encodeURIComponent(guestToken)}` : '';
@@ -188,7 +188,7 @@ export default async function CheckoutConfirmationPage({
                     <div key={item.id} className="confirmation-line-row">
                       <div>
                         <strong>{item.productName}</strong>
-                        <div className="product-meta">{item.sku}</div>
+                        <div className="product-meta">{item.spu}</div>
                       </div>
                       <span>{item.quantity}</span>
                       <span>{formatAmount(item.unitPrice)}</span>
@@ -277,7 +277,7 @@ export default async function CheckoutConfirmationPage({
                     {recommendedProducts.map((product) => (
                       <article key={product.id} className="confirmation-cross-sell-card">
                         <strong>{product.name}</strong>
-                        <span className="product-meta">{product.sku}</span>
+                        <span className="product-meta">{product.spu}</span>
                         <p className="section-description">{product.shortDescription}</p>
                         <div className="address-choice-head">
                           <strong>{product.price.formatted}</strong>

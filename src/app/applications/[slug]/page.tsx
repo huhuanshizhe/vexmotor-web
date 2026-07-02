@@ -51,7 +51,7 @@ function ApplicationProductCard({ product, locale }: { product: StorefrontProduc
         <h3>
           <Link href={withLocalePath(`/products/${product.slug}`, locale)}>{product.name}</Link>
         </h3>
-        <p className="product-meta">{product.sku}</p>
+        <p className="product-meta">{product.spu}</p>
         <p className="section-description compact-copy">{product.shortDescription ?? 'Catalog hardware used in the reference program.'}</p>
       </div>
       <div className="blog-product-actions">

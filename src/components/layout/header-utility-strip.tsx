@@ -11,6 +11,7 @@ import { COMPARE_ITEMS_UPDATED_EVENT, readCompareItems } from '@/lib/compare-ite
 import { QUOTE_ITEMS_UPDATED_EVENT, readQuoteItems } from '@/lib/quote-live-items';
 import { withLocalePath } from '@/lib/i18n';
 import { useTranslation } from '@/lib/i18n-context';
+import { localizeUtilityLabel } from '@/lib/site-shell-localize';
 import { LanguageSwitcher } from '@/components/storefront/language-switcher';
 import type { StorefrontUtilityLink } from '@/lib/storefront-api';
 
@@ -216,7 +217,9 @@ export function HeaderUtilityStrip({ links, initialCartCount }: HeaderUtilityStr
           const IconComponent = UTILITY_ICONS[item.label];
           const count = resolveUtilityBadgeCount(item.label, cartCount, compareCount, quoteCount);
           const isAccountLink = item.label === 'Account';
-          const linkTitle = isAccountLink ? t('header.myAccount') : item.label === 'Login' ? t('header.login') : item.label;
+          const linkTitle = isAccountLink
+            ? t('header.myAccount')
+            : localizeUtilityLabel(item.label, t);
           const badgeLabel = count !== null && count > 0 ? String(count) : null;
 
           const linkContent = (

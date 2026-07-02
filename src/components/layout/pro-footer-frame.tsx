@@ -81,8 +81,8 @@ export async function StorefrontFrame({ title, description, eyebrow, actions, ch
             <span className="brand-subtitle">Factory Direct Motion Components</span>
           </Link>
 
-          <form action={withLocalePath('/search', preferences.locale)} className="header-search-form">
-            <input name="keyword" className="header-search-input" placeholder="Search Product Here..." aria-label="Search products" />
+          <form action={withLocalePath('/search', preferences.locale)} className="header-search-form" role="search">
+            <input name="q" className="header-search-input" placeholder="Search Product Here..." aria-label="Search products" />
             <button type="submit" className="header-search-button">
               Search
             </button>

@@ -69,7 +69,7 @@ export async function generateMetadata() {
 }
 
 type CustomDevelopmentPageProps = {
-  searchParams: Promise<{ sourceSku?: string; sourceProduct?: string }>;
+  searchParams: Promise<{ sourceSpu?: string; sourceProduct?: string }>;
 };
 
 export default async function CustomDevelopmentPage({ searchParams }: CustomDevelopmentPageProps) {
@@ -80,7 +80,7 @@ export default async function CustomDevelopmentPage({ searchParams }: CustomDeve
     return null;
   }
 
-  const referenceSku = params.sourceSku?.trim() || undefined;
+  const referenceSpu = params.sourceSpu?.trim() || undefined;
   const referenceProductName = params.sourceProduct?.trim() || undefined;
   const selectorPath = withLocalePath('/selector', preferences.locale);
   const contactPath = `${withLocalePath('/contact', preferences.locale)}?topic=engineering-call`;
@@ -143,7 +143,7 @@ export default async function CustomDevelopmentPage({ searchParams }: CustomDeve
               intakeProductId={intakeProduct.id}
               intakeProductName={intakeProduct.name}
               locale={preferences.locale}
-              referenceSku={referenceSku}
+              referenceSpu={referenceSpu}
               referenceProductName={referenceProductName}
             />
           </div>
@@ -151,10 +151,10 @@ export default async function CustomDevelopmentPage({ searchParams }: CustomDeve
           <aside className="trade-side-stack">
             <article className="info-card custom-summary-card">
               <h2 className="cart-section-title">Program summary</h2>
-              {referenceSku || referenceProductName ? (
+              {referenceSpu || referenceProductName ? (
                 <article className="summary-stat">
                   <span className="summary-label">Starting point</span>
-                  <strong>{[referenceProductName, referenceSku ? `SKU ${referenceSku}` : null].filter(Boolean).join(' · ')}</strong>
+                  <strong>{[referenceProductName, referenceSpu ? `SPU ${referenceSpu}` : null].filter(Boolean).join(' · ')}</strong>
                 </article>
               ) : null}
               <div className="support-list">

@@ -12,8 +12,11 @@ import type { SitePreferences } from '@/lib/i18n';
 import { withLocalePath } from '@/lib/i18n';
 import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-server';
 import { notificationBarConfig, NOTIFICATION_BAR_COOKIE_NAME } from '@/lib/site-config';
+import { localizeHomeShell } from '@/lib/site-shell-localize';
 import { getStorefrontNavigation, homeShell } from '@/lib/site-shell';
 import { getHomeData } from '@/lib/storefront-api';
+import { fetchUiStringGroups } from '@/lib/ui-strings-client';
+import { UI_STRING_PREFETCH_GROUPS } from '@/ui-strings/registry';
 import { NewsletterSignupForm } from '@/components/storefront/newsletter-signup-form';
 
 type StorefrontFrameProps = {
@@ -57,8 +60,9 @@ function FrameLink({ href, className, children, external, locale }: FrameLinkPro
 export async function StorefrontFrame({ title, description, eyebrow, actions, children }: StorefrontFrameProps) {
   const cookieStore = await cookies();
   const preferences = await getServerSitePreferences().catch(() => fallbackSitePreferences);
-  const { t } = getServerTranslations(preferences.locale);
-  const homeData = await getHomeData().catch(() => homeShell);
+  const uiStrings = await fetchUiStringGroups(preferences.locale, [...UI_STRING_PREFETCH_GROUPS]).catch(() => ({}));
+  const { t } = getServerTranslations(preferences.locale, uiStrings);
+  const homeData = localizeHomeShell(await getHomeData().catch(() => homeShell), t);
   const navigation = getStorefrontNavigation();
   const notificationDismissed = cookieStore.get(NOTIFICATION_BAR_COOKIE_NAME)?.value === notificationBarConfig.id;
   const cookieConsentAccepted = cookieStore.get(COOKIE_CONSENT_COOKIE_NAME)?.value === 'accepted';
@@ -80,8 +84,8 @@ export async function StorefrontFrame({ title, description, eyebrow, actions, ch
             <Image src="/brand/stepmotech-logo-legacy.jpg" alt="StepMotech" width={180} height={24} className="brand-logo-image" priority />
           </Link>
 
-          <form action={withLocalePath('/search', preferences.locale)} className="header-search-form">
-            <input name="keyword" className="header-search-input" placeholder={t('common.searchPlaceholder')} aria-label={t('common.searchButton')} />
+          <form action={withLocalePath('/search', preferences.locale)} className="header-search-form" role="search">
+            <input name="q" className="header-search-input" placeholder={t('common.searchPlaceholder')} aria-label={t('common.searchButton')} />
             <button type="submit" className="header-search-button">
               {t('common.searchButton')}
             </button>

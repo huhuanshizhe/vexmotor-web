@@ -367,10 +367,24 @@ main {
   min-width: 0;
   border: 0;
   outline: none;
+  box-shadow: none;
   background: transparent;
   color: var(--color-ink);
   font: inherit;
   font-size: 0.9rem;
+}
+
+.header-search-input:focus,
+.header-search-input:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border: 0;
+}
+
+.header-search-button:focus,
+.header-search-button:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 .header-search-input::placeholder {
@@ -6605,6 +6619,15 @@ main {
 .search-suggestion-card {
   grid-template-columns: auto auto;
   align-items: center;
+}
+
+.catalog-results-shell mark,
+.search-section-card mark {
+  padding: 0 0.12em;
+  border-radius: 4px;
+  background: rgba(214, 91, 34, 0.16);
+  color: inherit;
+  font-weight: 600;
 }
 
 .search-product-row {

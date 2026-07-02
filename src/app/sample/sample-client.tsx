@@ -24,7 +24,7 @@ type CartDetail = {
       id: string;
       name: string;
       slug: string;
-      sku: string;
+      spu: string;
       shortDescription?: string | null;
       purchaseMode: 'buy' | 'inquiry';
       price: Money;
@@ -36,7 +36,7 @@ type CatalogProduct = {
   id: string;
   name: string;
   slug: string;
-  sku: string;
+  spu: string;
   shortDescription?: string | null;
   price: Money;
   purchaseMode: 'buy' | 'inquiry';
@@ -45,7 +45,7 @@ type CatalogProduct = {
 type SampleItem = {
   id: string;
   productId: string;
-  sku: string;
+  spu: string;
   name: string;
   quantity: number;
   purpose: string;
@@ -67,7 +67,7 @@ function buildSampleItem(product: CatalogProduct, quantity = 1): SampleItem {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     productId: product.id,
-    sku: product.sku,
+    spu: product.spu,
     name: product.name,
     quantity: Math.min(2, Math.max(1, quantity)),
     purpose: PURPOSES[0]!,
@@ -110,18 +110,18 @@ export function SampleClient({ locale, intakeProductId, intakeProductName, cart,
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    const sku = searchParams.get('sku');
-    if (!sku) {
+    const spu = searchParams.get('spu');
+    if (!spu) {
       return;
     }
 
-    const matchedProduct = catalogProducts.find((product) => product.sku.toLowerCase() === sku.toLowerCase());
+    const matchedProduct = catalogProducts.find((product) => product.spu.toLowerCase() === spu.toLowerCase());
     if (!matchedProduct) {
       return;
     }
 
     setItems((current) => {
-      if (current.some((item) => item.sku.toLowerCase() === matchedProduct.sku.toLowerCase())) {
+      if (current.some((item) => item.spu.toLowerCase() === matchedProduct.spu.toLowerCase())) {
         return current;
       }
       return [...current, buildSampleItem(matchedProduct, 1)].slice(0, 4);
@@ -158,7 +158,7 @@ export function SampleClient({ locale, intakeProductId, intakeProductName, cart,
         `Application summary: ${applicationSummary || 'Not specified'}`,
         '',
         'ITEMS',
-        ...items.map((item, index) => `${index + 1}. ${item.name} | SKU ${item.sku} | Qty ${item.quantity} | Purpose ${item.purpose} | ${item.priceLabel}`),
+        ...items.map((item, index) => `${index + 1}. ${item.name} | SPU ${item.spu} | Qty ${item.quantity} | Purpose ${item.purpose} | ${item.priceLabel}`),
         '',
         'FREIGHT OPTIONS',
         ...rates.map((rate) => `${rate.label}: ${rate.price} (${rate.note})`),
@@ -218,7 +218,7 @@ export function SampleClient({ locale, intakeProductId, intakeProductName, cart,
                   <div className="quote-line-head">
                     <div>
                       <strong>{item.name}</strong>
-                      <p className="product-meta">{item.sku}</p>
+                      <p className="product-meta">{item.spu}</p>
                     </div>
                     <button type="button" className="button-secondary cart-action-button" onClick={() => setItems((current) => current.filter((entry) => entry.id !== item.id))}>
                       Remove
@@ -235,7 +235,7 @@ export function SampleClient({ locale, intakeProductId, intakeProductName, cart,
                         inputMode="numeric"
                         className="form-input"
                         value={item.quantity}
-                        aria-label={`Sample quantity for ${item.sku}`}
+                        aria-label={`Sample quantity for ${item.spu}`}
                         onChange={(event) => updateQuantity(item.id, Number(event.target.value) || 1)}
                         onBlur={(event) => updateQuantity(item.id, Number(event.target.value) || item.quantity)}
                       />

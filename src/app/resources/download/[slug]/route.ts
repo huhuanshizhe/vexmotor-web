@@ -34,7 +34,7 @@ export async function GET(
       `Topic: ${resource.topic}`,
       `Product line: ${resource.productLine}`,
       `Language: ${resource.language}`,
-      resource.sku ? `SKU: ${resource.sku}` : '',
+      resource.spu ? `SPU: ${resource.spu}` : '',
       resource.duration ? `Duration: ${resource.duration}` : '',
       resource.eventDate ? `Session: ${resource.eventDate}` : '',
     ].filter(Boolean));
@@ -55,12 +55,12 @@ export async function GET(
         content: toTextPayload(resource.slug, resource.title, resource.summary),
       },
       {
-        name: resource.sku ? `${resource.sku.toLowerCase()}-notes.txt` : `${resource.slug}-notes.txt`,
+        name: resource.spu ? `${resource.spu.toLowerCase()}-notes.txt` : `${resource.slug}-notes.txt`,
         content: [
           `Format: ${resource.format}`,
           `Topic: ${resource.topic}`,
           `Product line: ${resource.productLine}`,
-          resource.sku ? `SKU: ${resource.sku}` : 'SKU: n/a',
+          resource.spu ? `SPU: ${resource.spu}` : 'SPU: n/a',
           '',
           'Included files are represented as placeholders during the migration process.',
         ].join('\n'),

@@ -24,7 +24,7 @@ export type AccountQuoteRecord = {
   projectSummary: string;
   contactOwner: string;
   lines: Array<{
-    sku: string;
+    spu: string;
     description: string;
     quantity: number;
     unitLabel: string;
@@ -70,7 +70,7 @@ export type AccountSavedList = {
   sharedWith: string[];
   items: Array<{
     productSlug: string;
-    sku: string;
+    spu: string;
     quantity: number;
     note: string;
     stockLabel: string;
@@ -100,9 +100,9 @@ export const accountQuoteRecords: AccountQuoteRecord[] = [
     projectSummary: 'Matched motors, drivers, and power stage for a three-axis palletizer retrofit with panel re-use constraints.',
     contactOwner: 'Lina Zhou',
     lines: [
-      { sku: 'VXM-23-240NCM', description: '23 Stepper Motor, 240N·cm Torque, 82mm Body', quantity: 12, unitLabel: '$68.50 / ea', leadTime: '5 working days', note: 'Primary axis motor for Z and pusher stations.' },
-      { sku: 'VXM-DM542D', description: 'Digital Stepper Driver, 18-50VDC, 1.0-4.5A', quantity: 12, unitLabel: '$24.50 / ea', leadTime: '5 working days', note: 'Quoted with 1600 pulse/rev default profile.' },
-      { sku: 'VXM-PS-480-48', description: 'Switching Power Supply, 48V 10A, 480W', quantity: 4, unitLabel: '$58.00 / ea', leadTime: '7 working days', note: 'Shared bus sizing assumes three axes per cabinet block.' },
+      { spu: 'VXM-23-240NCM', description: '23 Stepper Motor, 240N·cm Torque, 82mm Body', quantity: 12, unitLabel: '$68.50 / ea', leadTime: '5 working days', note: 'Primary axis motor for Z and pusher stations.' },
+      { spu: 'VXM-DM542D', description: 'Digital Stepper Driver, 18-50VDC, 1.0-4.5A', quantity: 12, unitLabel: '$24.50 / ea', leadTime: '5 working days', note: 'Quoted with 1600 pulse/rev default profile.' },
+      { spu: 'VXM-PS-480-48', description: 'Switching Power Supply, 48V 10A, 480W', quantity: 4, unitLabel: '$58.00 / ea', leadTime: '7 working days', note: 'Shared bus sizing assumes three axes per cabinet block.' },
     ],
     attachments: [
       { name: 'Motor datasheet pack', type: 'PDF', href: '/resources/download/vxm-23-240ncm-datasheet-en' },
@@ -126,8 +126,8 @@ export const accountQuoteRecords: AccountQuoteRecord[] = [
     projectSummary: 'Feeder and indexing axis review for a film-feed line with gearbox torque multiplication.',
     contactOwner: 'Marco Hsu',
     lines: [
-      { sku: 'VXM-PG57-10', description: 'Planetary Gearbox, 10:1 Ratio for 57mm Motor Frame', quantity: 8, unitLabel: '$72.00 / ea', leadTime: '8 working days', note: 'Backlash target stays below 20 arc-min for short indexing moves.' },
-      { sku: 'VXM-CL57-2NM-KIT', description: 'Closed Loop Stepper Motor Kit, 2.0N·m with Driver and Encoder', quantity: 8, unitLabel: '$129.00 / ea', leadTime: '6 working days', note: 'Quoted to reduce restart losses during jam recovery.' },
+      { spu: 'VXM-PG57-10', description: 'Planetary Gearbox, 10:1 Ratio for 57mm Motor Frame', quantity: 8, unitLabel: '$72.00 / ea', leadTime: '8 working days', note: 'Backlash target stays below 20 arc-min for short indexing moves.' },
+      { spu: 'VXM-CL57-2NM-KIT', description: 'Closed Loop Stepper Motor Kit, 2.0N·m with Driver and Encoder', quantity: 8, unitLabel: '$129.00 / ea', leadTime: '6 working days', note: 'Quoted to reduce restart losses during jam recovery.' },
     ],
     attachments: [
       { name: 'Driver tuning brief', type: 'PDF', href: '/resources/download/driver-tuning-video-brief' },
@@ -149,8 +149,8 @@ export const accountQuoteRecords: AccountQuoteRecord[] = [
     projectSummary: 'Quiet indexing transport and enclosure-limited actuator selection for a diagnostic tray mover.',
     contactOwner: 'Lina Zhou',
     lines: [
-      { sku: 'VXM-LA-100-24', description: 'Electric Linear Actuator, 100mm Stroke, 24VDC', quantity: 6, unitLabel: 'Pending', leadTime: 'Pending review', note: 'Evaluate against tray stroke and mounting envelope.' },
-      { sku: 'VXM-OEM-ASM', description: 'Integrated Motion Assembly for OEM Projects', quantity: 2, unitLabel: 'Pending', leadTime: 'Pending review', note: 'Only if the integrated frame concept clears medical enclosure review.' },
+      { spu: 'VXM-LA-100-24', description: 'Electric Linear Actuator, 100mm Stroke, 24VDC', quantity: 6, unitLabel: 'Pending', leadTime: 'Pending review', note: 'Evaluate against tray stroke and mounting envelope.' },
+      { spu: 'VXM-OEM-ASM', description: 'Integrated Motion Assembly for OEM Projects', quantity: 2, unitLabel: 'Pending', leadTime: 'Pending review', note: 'Only if the integrated frame concept clears medical enclosure review.' },
     ],
     attachments: [
       { name: 'NDA request template', type: 'TXT', href: '/resources/download/nda-request-template' },
@@ -170,7 +170,7 @@ export const accountQuoteRecords: AccountQuoteRecord[] = [
     projectSummary: 'Spare clamp axis refresh with a narrow panel footprint and limited cable bend radius.',
     contactOwner: 'Marco Hsu',
     lines: [
-      { sku: 'VXM-DM542D', description: 'Digital Stepper Driver, 18-50VDC, 1.0-4.5A', quantity: 10, unitLabel: '$24.50 / ea', leadTime: 'Expired', note: 'Expired during internal budget hold.' },
+      { spu: 'VXM-DM542D', description: 'Digital Stepper Driver, 18-50VDC, 1.0-4.5A', quantity: 10, unitLabel: '$24.50 / ea', leadTime: 'Expired', note: 'Expired during internal budget hold.' },
     ],
     attachments: [
       { name: 'Export compliance playbook', type: 'PDF', href: '/resources/download/export-compliance-playbook' },
@@ -273,10 +273,10 @@ export const accountSavedLists: AccountSavedList[] = [
     scope: 'Team',
     sharedWith: ['EK', 'MH', 'RZ'],
     items: [
-      { productSlug: '23-stepper-motor-240ncm', sku: 'VXM-23-240NCM', quantity: 4, note: 'Primary feeder axis spare.', stockLabel: 'In stock', priceLabel: '$68.50' },
-      { productSlug: 'digital-stepper-driver-18-50vdc', sku: 'VXM-DM542D', quantity: 4, note: 'Driver pairing for same cabinet.', stockLabel: 'In stock', priceLabel: '$24.50' },
-      { productSlug: 'switching-power-supply-48v-10a', sku: 'VXM-PS-480-48', quantity: 2, note: 'One spare block per cabinet pair.', stockLabel: 'In stock', priceLabel: '$58.00' },
-      { productSlug: 'planetary-gearbox-10-1-57mm', sku: 'VXM-PG57-10', quantity: 2, note: 'Short indexing retrofit option.', stockLabel: 'Low stock', priceLabel: '$72.00' },
+      { productSlug: '23-stepper-motor-240ncm', spu: 'VXM-23-240NCM', quantity: 4, note: 'Primary feeder axis spare.', stockLabel: 'In stock', priceLabel: '$68.50' },
+      { productSlug: 'digital-stepper-driver-18-50vdc', spu: 'VXM-DM542D', quantity: 4, note: 'Driver pairing for same cabinet.', stockLabel: 'In stock', priceLabel: '$24.50' },
+      { productSlug: 'switching-power-supply-48v-10a', spu: 'VXM-PS-480-48', quantity: 2, note: 'One spare block per cabinet pair.', stockLabel: 'In stock', priceLabel: '$58.00' },
+      { productSlug: 'planetary-gearbox-10-1-57mm', spu: 'VXM-PG57-10', quantity: 2, note: 'Short indexing retrofit option.', stockLabel: 'Low stock', priceLabel: '$72.00' },
     ],
   },
   {
@@ -288,8 +288,8 @@ export const accountSavedLists: AccountSavedList[] = [
     scope: 'Private',
     sharedWith: ['EK'],
     items: [
-      { productSlug: 'electric-linear-actuator-100mm-stroke', sku: 'VXM-LA-100-24', quantity: 3, note: 'Bench spares for enclosure fit check.', stockLabel: 'In stock', priceLabel: '$96.00' },
-      { productSlug: 'integrated-motion-assembly-oem', sku: 'VXM-OEM-ASM', quantity: 1, note: 'Only if the integrated concept clears clinical review.', stockLabel: 'RFQ only', priceLabel: 'Request Quote' },
+      { productSlug: 'electric-linear-actuator-100mm-stroke', spu: 'VXM-LA-100-24', quantity: 3, note: 'Bench spares for enclosure fit check.', stockLabel: 'In stock', priceLabel: '$96.00' },
+      { productSlug: 'integrated-motion-assembly-oem', spu: 'VXM-OEM-ASM', quantity: 1, note: 'Only if the integrated concept clears clinical review.', stockLabel: 'RFQ only', priceLabel: 'Request Quote' },
     ],
   },
   {
@@ -301,9 +301,9 @@ export const accountSavedLists: AccountSavedList[] = [
     scope: 'Public link readonly',
     sharedWith: ['EK', 'QA'],
     items: [
-      { productSlug: '17-single-shaft-bipolar-stepper-motor-45ncm', sku: 'VXM-17-45NCM', quantity: 6, note: 'X/Y gantry pair plus spares.', stockLabel: 'In stock', priceLabel: '$23.90' },
-      { productSlug: 'digital-stepper-driver-18-50vdc', sku: 'VXM-DM542D', quantity: 3, note: 'Shared driver stack per machine block.', stockLabel: 'In stock', priceLabel: '$24.50' },
-      { productSlug: 'switching-power-supply-48v-10a', sku: 'VXM-PS-480-48', quantity: 1, note: 'Dedicated 48V cabinet supply.', stockLabel: 'In stock', priceLabel: '$58.00' },
+      { productSlug: '17-single-shaft-bipolar-stepper-motor-45ncm', spu: 'VXM-17-45NCM', quantity: 6, note: 'X/Y gantry pair plus spares.', stockLabel: 'In stock', priceLabel: '$23.90' },
+      { productSlug: 'digital-stepper-driver-18-50vdc', spu: 'VXM-DM542D', quantity: 3, note: 'Shared driver stack per machine block.', stockLabel: 'In stock', priceLabel: '$24.50' },
+      { productSlug: 'switching-power-supply-48v-10a', spu: 'VXM-PS-480-48', quantity: 1, note: 'Dedicated 48V cabinet supply.', stockLabel: 'In stock', priceLabel: '$58.00' },
     ],
   },
 ];
@@ -334,7 +334,7 @@ export const accountReorderCandidates = [
     source: 'Past order',
     orderNumber: 'SO-24044',
     productSlug: '23-stepper-motor-240ncm',
-    sku: 'VXM-23-240NCM',
+    spu: 'VXM-23-240NCM',
     productName: '23 Stepper Motor, 240N·cm Torque, 82mm Body',
     lastQuantity: 8,
     cadence: 'every 42 days',
@@ -345,7 +345,7 @@ export const accountReorderCandidates = [
     source: 'Past order',
     orderNumber: 'SO-24044',
     productSlug: 'digital-stepper-driver-18-50vdc',
-    sku: 'VXM-DM542D',
+    spu: 'VXM-DM542D',
     productName: 'Digital Stepper Driver, 18-50VDC, 1.0-4.5A',
     lastQuantity: 8,
     cadence: 'every 42 days',
@@ -356,7 +356,7 @@ export const accountReorderCandidates = [
     source: 'Saved list',
     orderNumber: 'packaging-line-refresh',
     productSlug: 'planetary-gearbox-10-1-57mm',
-    sku: 'VXM-PG57-10',
+    spu: 'VXM-PG57-10',
     productName: 'Planetary Gearbox, 10:1 Ratio for 57mm Motor Frame',
     lastQuantity: 2,
     cadence: 'service spare only',

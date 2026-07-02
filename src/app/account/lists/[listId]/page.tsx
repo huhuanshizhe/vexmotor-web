@@ -57,9 +57,9 @@ export default async function AccountListDetailPage({ params }: AccountListDetai
           const product = productBySlug.get(item.productSlug) ?? null;
 
           return (
-            <div key={item.sku} className="account-list-row">
+            <div key={item.spu} className="account-list-row">
               <div>
-                <strong>{item.sku}</strong>
+                <strong>{item.spu}</strong>
                 <div className="section-description compact-copy">{product?.name ?? item.productSlug}</div>
               </div>
               <span>{item.quantity}</span>

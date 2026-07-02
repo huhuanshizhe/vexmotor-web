@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from '@/lib/i18n-context';
 import { LOCALE_MARKET_OPTIONS, type Locale } from '@/lib/i18n';
+import { getApiBaseUrl } from '@/lib/api-client';
 
 function GlobeIcon() {
   return (
@@ -27,8 +28,38 @@ function ChevronIcon({ open }: { open: boolean }) {
 export function LanguageSwitcher() {
   const { locale, setLocale, t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
+  const [localeOptions, setLocaleOptions] = useState(LOCALE_MARKET_OPTIONS);
   const rootRef = useRef<HTMLDivElement>(null);
-  const current = LOCALE_MARKET_OPTIONS.find((item) => item.code === locale) ?? LOCALE_MARKET_OPTIONS[0];
+  const current = localeOptions.find((item) => item.code === locale) ?? localeOptions[0] ?? LOCALE_MARKET_OPTIONS[0];
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadActiveLocales() {
+      try {
+        const base = getApiBaseUrl().replace(/\/+$/, '');
+        const response = await fetch(`${base}/api/front/languages`, { cache: 'no-store' });
+        if (!response.ok) return;
+        const payload = (await response.json()) as {
+          languages?: Array<{ code: string; status?: string }>;
+        };
+        const activeCodes = new Set(
+          (payload.languages ?? [])
+            .filter((item) => item.status !== 'inactive')
+            .map((item) => item.code),
+        );
+        if (!activeCodes.size || cancelled) return;
+        setLocaleOptions(LOCALE_MARKET_OPTIONS.filter((item) => activeCodes.has(item.code)));
+      } catch {
+        // Keep static fallback options when API is unavailable.
+      }
+    }
+
+    void loadActiveLocales();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -80,7 +111,7 @@ export function LanguageSwitcher() {
       {isOpen ? (
         <div className="locale-switcher-menu" role="listbox" aria-label={t('header.selectLanguage')}>
           <div className="locale-switcher-menu-head">{t('header.language')}</div>
-          {LOCALE_MARKET_OPTIONS.map((option) => {
+          {localeOptions.map((option) => {
             const active = option.code === locale;
 
             return (

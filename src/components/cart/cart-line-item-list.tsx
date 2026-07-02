@@ -8,7 +8,7 @@ import { removeCartItem, syncCartResponse, updateCartItemQuantity } from '@/lib/
 import type { CommerceConfig } from '@/lib/commerce-config';
 import type { Locale } from '@/lib/i18n';
 import { withLocalePath } from '@/lib/i18n';
-import { productSpuBadge } from '@/lib/product-sku';
+import { productSpuBadge } from '@/lib/product-spu';
 import type { CartDetail } from '@/lib/storefront-types';
 import { getNextVolumeTier } from '@/lib/volume-pricing';
 

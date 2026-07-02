@@ -154,7 +154,7 @@ export async function generateMetadata() {
 
 export default async function SupportShippingPage() {
   const { locale } = await getServerSitePreferences();
-  const commerceConfig = await getCommerceConfig();
+  const commerceConfig = await getCommerceConfig(locale);
   const primaryLaneRate = commerceConfig.shippingCountryRates.find(
     (rate) => rate.countryCode === commerceConfig.defaultCountryCode && rate.shippingMethodCode === commerceConfig.defaultShippingMethodCode && rate.enabled,
   );

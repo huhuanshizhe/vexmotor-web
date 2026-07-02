@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { AddToCartButton } from '@/components/storefront/add-to-cart-button';
 import type { Locale } from '@/lib/i18n';
 import { withLocalePath } from '@/lib/i18n';
-import { productSpuBadge } from '@/lib/product-sku';
+import { productSpuBadge } from '@/lib/product-spu';
 import type { StorefrontProductCard } from '@/lib/storefront-types';
 
 type CartCompatibleProductsProps = {

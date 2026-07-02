@@ -26,7 +26,7 @@ function buildKnowledgeProductMap(products: StorefrontProductDetail[]) {
     accumulator[product.slug] = {
       slug: product.slug,
       name: product.name,
-      sku: product.sku,
+      spu: product.spu,
       purchaseMode: product.purchaseMode,
       priceLabel: product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote',
       shortDescription: product.shortDescription ?? undefined,

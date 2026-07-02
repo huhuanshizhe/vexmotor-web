@@ -69,13 +69,13 @@ function OrderLineCard({
           />
         ) : (
           <span className="account-order-line-card__thumb-fallback" aria-hidden="true">
-            {item.sku.slice(0, 2)}
+            {item.spu.slice(0, 2)}
           </span>
         )}
       </div>
       <div className="account-order-line-card__body">
         <strong className="account-order-line-card__title">{item.productName}</strong>
-        <span className="account-quote-mono account-order-line-card__sku">{item.sku}</span>
+        <span className="account-quote-mono account-order-line-card__sku">{item.spu}</span>
         {item.featureSelections?.length ? (
           <p className="account-order-line-card__features">
             {item.featureSelections.map((selection) => selection.display).join(' · ')}
@@ -362,7 +362,7 @@ export function AccountOrderDetailClient({ orderNumber, locale = 'en' }: Account
                 {shipment.note ? <p className="account-order-shipment-card__note">{shipment.note}</p> : null}
                 {shipment.items.length ? (
                   <p className="account-order-shipment-card__items">
-                    {shipment.items.map((item) => `${item.productName} (${item.sku})`).join(', ')}
+                    {shipment.items.map((item) => `${item.productName} (${item.spu})`).join(', ')}
                   </p>
                 ) : null}
               </article>

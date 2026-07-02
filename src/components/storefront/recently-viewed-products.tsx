@@ -11,7 +11,7 @@ import type { StorefrontProductCard } from '@/lib/storefront-api';
 
 const RECENTLY_VIEWED_STORAGE_KEY = 'vexmotor-recently-viewed-products';
 
-type RecentProduct = Pick<StorefrontProductCard, 'id' | 'name' | 'slug' | 'sku' | 'price' | 'purchaseMode' | 'coverImage' | 'inStock'>;
+type RecentProduct = Pick<StorefrontProductCard, 'id' | 'name' | 'slug' | 'spu' | 'price' | 'purchaseMode' | 'coverImage' | 'inStock'>;
 
 type RecentlyViewedProductsProps = {
   currentProduct: StorefrontProductCard;
@@ -32,7 +32,7 @@ function toRecentProduct(product: StorefrontProductCard): RecentProduct {
     id: product.id,
     name: product.name,
     slug: product.slug,
-    sku: product.sku,
+    spu: product.spu,
     price: product.price,
     purchaseMode: product.purchaseMode,
     coverImage: product.coverImage,
@@ -212,7 +212,7 @@ export function RecentlyViewedProducts({ currentProduct, fallbackProducts, local
             <div className="detail-recent-content">
               <strong className="detail-recent-title">{item.name}</strong>
               <div className="detail-recent-stats">
-                <span className="detail-recent-stat">SKU {item.sku}</span>
+                <span className="detail-recent-stat">SPU {item.spu}</span>
                 <span className="detail-recent-stat">{item.purchaseMode === 'buy' ? item.price.formatted : 'Request Quote'}</span>
                 <span className="detail-recent-stat">{formatAvailability(item)}</span>
               </div>

@@ -63,7 +63,7 @@ export function AddToCompareButton({ item, compact = false, icon = false }: AddT
       }
       pushToast({
         title: t('product.addToCompare'),
-        description: t('compare.addedToast', { sku: item.sku }),
+        description: t('compare.addedToast', { spu: item.spu }),
         tone: 'success',
       });
       return;
