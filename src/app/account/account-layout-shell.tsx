@@ -33,20 +33,20 @@ export function AccountLayoutShell({ children }: { children: ReactNode }) {
   }
 
   if (isLoading) {
-    return <p className="section-description">Loading account…</p>;
+    return <p className="section-description">{t('accountPortal.loading')}</p>;
   }
 
   if (!user) {
     return (
       <article ref={signInPanelRef} className="info-card account-sign-in-panel">
-        <h2 style={{ marginTop: 0 }}>Sign in to access your member center</h2>
-        <p className="section-description">Orders, addresses, wishlist items, and inquiry history are tied to an authenticated account.</p>
+        <h2 style={{ marginTop: 0 }}>{t('accountPortal.signInTitle')}</h2>
+        <p className="section-description">{t('accountPortal.signInDesc')}</p>
         <div className="account-inline-actions">
           <Link href={`${withLocalePath('/login', locale)}?callbackUrl=${encodeURIComponent(withLocalePath('/account', locale))}`} className="button-primary">
-            Go to Login
+            {t('accountPortal.goToLogin')}
           </Link>
           <Link href={withLocalePath('/', locale)} className="button-secondary">
-            Go to Home
+            {t('accountPortal.goToHome')}
           </Link>
         </div>
       </article>
@@ -56,11 +56,11 @@ export function AccountLayoutShell({ children }: { children: ReactNode }) {
   return (
     <div className="account-shell-grid">
       <aside className="info-card account-nav-card">
-        <div className="card-kicker">Account navigation</div>
+        <div className="card-kicker">{t('accountPortal.navKicker')}</div>
         <div className="account-nav-list">
           {accountNavLinks.map((item) => (
             <Link key={item.href} href={withLocalePath(item.href, locale)} className="nav-link">
-              {item.label}
+              {t(item.labelKey)}
             </Link>
           ))}
         </div>

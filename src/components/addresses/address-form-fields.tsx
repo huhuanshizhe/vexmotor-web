@@ -5,6 +5,7 @@ import { useEffect, useMemo } from 'react';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import type { AccountAddress } from '@/lib/account-api';
 import { formatGeoCountryOption, formatGeoDivisionOption } from '@/lib/geo-display';
+import { useTranslation } from '@/lib/i18n-context';
 import { useGeoDivisionCascade } from '@/lib/use-geo-division-cascade';
 
 export type AddressFormState = {
@@ -61,6 +62,7 @@ type AddressFormFieldsProps = {
 };
 
 export function AddressFormFields({ form, onChange, variant = 'page', disabled = false }: AddressFormFieldsProps) {
+  const { t } = useTranslation();
   const {
     countries,
     admin1Options,
@@ -105,33 +107,33 @@ export function AddressFormFields({ form, onChange, variant = 'page', disabled =
   return (
     <div className={compactClass}>
       <label className="form-field">
-        <span>First name</span>
+        <span>{t('addressForm.firstName')}</span>
         <input className="form-input" value={form.firstName} onChange={(e) => update('firstName', e.target.value)} disabled={disabled} />
       </label>
       <label className="form-field">
-        <span>Last name</span>
+        <span>{t('addressForm.lastName')}</span>
         <input className="form-input" value={form.lastName} onChange={(e) => update('lastName', e.target.value)} disabled={disabled} />
       </label>
       <label className="form-field">
-        <span>Company</span>
-        <input className="form-input" value={form.company} onChange={(e) => update('company', e.target.value)} disabled={disabled} placeholder="Optional" />
+        <span>{t('addressForm.company')}</span>
+        <input className="form-input" value={form.company} onChange={(e) => update('company', e.target.value)} disabled={disabled} placeholder={t('checkout.optional')} />
       </label>
       <label className="form-field">
-        <span>Phone</span>
-        <input className="form-input" value={form.phone} onChange={(e) => update('phone', e.target.value)} disabled={disabled} placeholder="Optional" />
+        <span>{t('addressForm.phone')}</span>
+        <input className="form-input" value={form.phone} onChange={(e) => update('phone', e.target.value)} disabled={disabled} placeholder={t('checkout.optional')} />
       </label>
       <label className="form-field">
-        <span>Country / Region</span>
+        <span>{t('addressForm.countryRegion')}</span>
         <SearchableSelect
           value={form.countryCode}
           onChange={(countryCode) => onChange({ ...form, countryCode, state: '', city: '' })}
           options={countryOptions.length ? countryOptions : [{ value: form.countryCode, label: form.countryCode }]}
-          placeholder="Search country or region"
+          placeholder={t('addressForm.searchCountry')}
           disabled={disabled || isLoadingCountries}
         />
       </label>
       <label className="form-field">
-        <span>State / Province</span>
+        <span>{t('addressForm.stateProvince')}</span>
         {admin1Options.length ? (
           <SearchableSelect
             value={selectedAdmin1Id ?? ''}
@@ -141,7 +143,7 @@ export function AddressFormFields({ form, onChange, variant = 'page', disabled =
               onChange({ ...form, state: option?.nameEn ?? '', city: '' });
             }}
             options={admin1SelectOptions}
-            placeholder="Search state or province"
+            placeholder={t('addressForm.searchState')}
             disabled={disabled || isLoadingAdmin1}
           />
         ) : (
@@ -151,12 +153,12 @@ export function AddressFormFields({ form, onChange, variant = 'page', disabled =
             onChange={(e) => update('state', e.target.value)}
             onBlur={() => syncAdmin1FromStateName(form.state)}
             disabled={disabled}
-            placeholder="State or province"
+            placeholder={t('addressForm.statePlaceholder')}
           />
         )}
       </label>
       <label className="form-field">
-        <span>City</span>
+        <span>{t('addressForm.city')}</span>
         {admin2Options.length ? (
           <select
             className="form-input"
@@ -164,7 +166,7 @@ export function AddressFormFields({ form, onChange, variant = 'page', disabled =
             onChange={(e) => update('city', e.target.value)}
             disabled={disabled}
           >
-            <option value="">Select city</option>
+            <option value="">{t('addressForm.selectCity')}</option>
             {admin2Options.map((option) => (
               <option key={option.id} value={option.nameEn}>{formatGeoDivisionOption(option)}</option>
             ))}
@@ -174,20 +176,20 @@ export function AddressFormFields({ form, onChange, variant = 'page', disabled =
         )}
       </label>
       <label className="form-field">
-        <span>Postal code</span>
+        <span>{t('addressForm.postalCode')}</span>
         <input className="form-input" value={form.postalCode} onChange={(e) => update('postalCode', e.target.value)} disabled={disabled} />
       </label>
       <label className={`form-field ${variant === 'page' ? 'checkout-field-span' : ''}`}>
-        <span>Address line 1</span>
+        <span>{t('addressForm.addressLine1')}</span>
         <input className="form-input" value={form.addressLine1} onChange={(e) => update('addressLine1', e.target.value)} disabled={disabled} />
       </label>
       <label className={`form-field ${variant === 'page' ? 'checkout-field-span' : ''}`}>
-        <span>Address line 2</span>
-        <input className="form-input" value={form.addressLine2} onChange={(e) => update('addressLine2', e.target.value)} disabled={disabled} placeholder="Optional" />
+        <span>{t('addressForm.addressLine2')}</span>
+        <input className="form-input" value={form.addressLine2} onChange={(e) => update('addressLine2', e.target.value)} disabled={disabled} placeholder={t('checkout.optional')} />
       </label>
       <label className="address-default-row checkout-field-span">
         <input type="checkbox" checked={form.isDefault} onChange={(e) => update('isDefault', e.target.checked)} disabled={disabled} />
-        <span>Set as default address</span>
+        <span>{t('addressForm.setDefault')}</span>
       </label>
     </div>
   );

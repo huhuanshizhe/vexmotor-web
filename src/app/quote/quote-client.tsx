@@ -15,6 +15,7 @@ import type { InquiryAttachment } from '@/lib/inquiry-api';
 import { submitInquiry, uploadInquiryDocument } from '@/lib/inquiry-api';
 import type { Locale } from '@/lib/i18n';
 import { withLocalePath } from '@/lib/i18n';
+import { useTranslation } from '@/lib/i18n-context';
 import { MAX_QUOTE_ATTACHMENTS } from '@/lib/quote-form-options';
 import { fetchGeoCountries, resolveCountryCode } from '@/lib/geo-api';
 import { fetchIndustries, resolveIndustrySlug } from '@/lib/industries-api';
@@ -93,6 +94,8 @@ function QuoteSection({
   requirement?: 'required' | 'optional';
   children: ReactNode;
 }) {
+  const { t } = useTranslation();
+
   return (
     <section className="quote-rfq-block">
       <header className="quote-rfq-block__header">
@@ -101,13 +104,13 @@ function QuoteSection({
           <div className="quote-rfq-block__title-row">
             <h2 className="quote-rfq-block__title">{title}</h2>
             {requirement === 'required' ? (
-              <span className="quote-rfq-requirement quote-rfq-requirement--required" title="Required section">
-                Required
+              <span className="quote-rfq-requirement quote-rfq-requirement--required" title={t('quotePage.sectionRequiredTitle')}>
+                {t('quotePage.sectionRequired')}
               </span>
             ) : null}
             {requirement === 'optional' ? (
-              <span className="quote-rfq-requirement quote-rfq-requirement--optional" title="Optional section">
-                Optional
+              <span className="quote-rfq-requirement quote-rfq-requirement--optional" title={t('quotePage.sectionOptionalTitle')}>
+                {t('quotePage.sectionOptional')}
               </span>
             ) : null}
           </div>
@@ -122,6 +125,7 @@ function QuoteSection({
 export function QuoteClient({ locale }: QuoteClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useTranslation();
   const { pushToast } = useToast();
   const [draft, setDraft] = useState<DraftForm>(EMPTY_DRAFT);
   const [liveItems, setLiveItems] = useState<QuoteLiveItem[]>([]);
@@ -276,7 +280,7 @@ export function QuoteClient({ locale }: QuoteClientProps) {
   function saveDraft() {
     window.localStorage.setItem(QUOTE_DRAFT_STORAGE_KEY, JSON.stringify(draft));
     draftSavedRef.current = true;
-    pushToast({ title: 'Draft saved', description: 'Your RFQ form was saved in this browser.', tone: 'success' });
+    pushToast({ title: t('quotePage.draftSaved'), description: t('quotePage.draftSavedDesc'), tone: 'success' });
   }
 
   async function handleAttachmentUpload(files: FileList | null) {
@@ -288,7 +292,7 @@ export function QuoteClient({ locale }: QuoteClientProps) {
     const selected = Array.from(files).slice(0, Math.max(0, remainingSlots));
 
     if (!selected.length) {
-      setFeedback(`You can attach up to ${MAX_QUOTE_ATTACHMENTS} files.`);
+      setFeedback(t('quotePage.maxAttachments', { count: MAX_QUOTE_ATTACHMENTS }));
       return;
     }
 
@@ -304,7 +308,7 @@ export function QuoteClient({ locale }: QuoteClientProps) {
           projectAttachments: [...current.projectAttachments, uploaded],
         }));
       } catch {
-        setFeedback('One or more attachments failed to upload. Please try again.');
+        setFeedback(t('quotePage.uploadFailed'));
       } finally {
         setPendingUploads((current) => current.filter((item) => item.id !== pendingId));
         setUploadingCount((count) => Math.max(0, count - 1));
@@ -321,7 +325,7 @@ export function QuoteClient({ locale }: QuoteClientProps) {
 
   function handleSubmit() {
     if (!displayLines.length) {
-      setFeedback('Add at least one product line before submitting.');
+      setFeedback(t('quotePage.needLine'));
       return;
     }
 
@@ -332,13 +336,13 @@ export function QuoteClient({ locale }: QuoteClientProps) {
       || !draft.contact.country.trim()
       || !draft.contact.phone.trim()
     ) {
-      setFeedback('Complete all required contact fields (except VAT / Tax ID) before submitting.');
+      setFeedback(t('quotePage.needContact'));
       return;
     }
 
     const anchorProductId = displayLines[0]?.id;
     if (!anchorProductId) {
-      setFeedback('Add at least one product line before submitting.');
+      setFeedback(t('quotePage.needLine'));
       return;
     }
 
@@ -382,14 +386,14 @@ export function QuoteClient({ locale }: QuoteClientProps) {
         syncLiveItems();
 
         pushToast({
-          title: 'RFQ submitted',
-          description: result.quoteNumber ? `Quote ${result.quoteNumber}` : 'Your request was sent.',
+          title: t('quotePage.submitted'),
+          description: result.quoteNumber ? `Quote ${result.quoteNumber}` : t('quotePage.submittedDesc'),
           tone: 'success',
         });
 
         router.push(withLocalePath(result.redirectPath, locale));
       } catch {
-        setFeedback('Unable to submit RFQ right now. Please try again.');
+        setFeedback(t('quotePage.submitFailed'));
       }
     });
   }
@@ -398,16 +402,18 @@ export function QuoteClient({ locale }: QuoteClientProps) {
     <div className="quote-rfq-page">
       <header className="quote-rfq-hero">
         <div className="quote-rfq-hero__copy">
-          <p className="quote-rfq-hero__eyebrow">Request for quote</p>
-          <h1 className="quote-rfq-hero__title">Build your RFQ</h1>
-          <p className="quote-rfq-hero__desc">
-            Add products from the catalog, share project context, and send a structured quote request to our engineering team.
-          </p>
+          <p className="quote-rfq-hero__eyebrow">{t('quotePage.eyebrow')}</p>
+          <h1 className="quote-rfq-hero__title">{t('quotePage.heroTitle')}</h1>
+          <p className="quote-rfq-hero__desc">{t('quotePage.heroDesc')}</p>
         </div>
         <div className="quote-rfq-hero__meta">
-          <span className="quote-rfq-hero__pill">{displayLines.length} line{displayLines.length === 1 ? '' : 's'}</span>
+          <span className="quote-rfq-hero__pill">
+            {displayLines.length === 1
+              ? t('quotePage.lineCount', { count: displayLines.length })
+              : t('quotePage.lineCountPlural', { count: displayLines.length })}
+          </span>
           <Link href={withLocalePath('/products', locale)} className="quote-rfq-hero__link">
-            Continue shopping
+            {t('quotePage.continueShopping')}
           </Link>
         </div>
       </header>
@@ -416,14 +422,14 @@ export function QuoteClient({ locale }: QuoteClientProps) {
         <div className="quote-rfq-main">
           <QuoteSection
             step="01"
-            title="Line items"
+            title={t('quotePage.lineItemsTitle')}
             requirement="required"
-            description="Review quantities before submitting. Click a product image to preview."
+            description={t('quotePage.lineItemsDesc')}
           >
             {!displayLines.length ? (
               <div className="quote-rfq-empty">
-                <p>Your quote list is empty.</p>
-                <Link href={withLocalePath('/products', locale)} className="button-primary">Browse products</Link>
+                <p>{t('quotePage.emptyList')}</p>
+                <Link href={withLocalePath('/products', locale)} className="button-primary">{t('quotePage.browseProducts')}</Link>
               </div>
             ) : (
               <div className="quote-rfq-line-list">
@@ -449,13 +455,13 @@ export function QuoteClient({ locale }: QuoteClientProps) {
           <div className="quote-rfq-panels">
             <QuoteSection
               step="02"
-              title="Contact & company"
+              title={t('quotePage.contactTitle')}
               requirement="required"
-              description="We will use these details for quote follow-up and commercial coordination."
+              description={t('quotePage.contactDesc')}
             >
               <div className="quote-rfq-form-grid">
                 <label className="quote-rfq-field">
-                  <span className="quote-rfq-field__label quote-rfq-field__label--required">Full name</span>
+                  <span className="quote-rfq-field__label quote-rfq-field__label--required">{t('quotePage.fieldFullName')}</span>
                   <input
                     className="quote-rfq-input"
                     value={draft.contact.fullName}
@@ -465,7 +471,7 @@ export function QuoteClient({ locale }: QuoteClientProps) {
                   />
                 </label>
                 <label className="quote-rfq-field">
-                  <span className="quote-rfq-field__label quote-rfq-field__label--required">Work email</span>
+                  <span className="quote-rfq-field__label quote-rfq-field__label--required">{t('quotePage.fieldWorkEmail')}</span>
                   <input
                     type="email"
                     className="quote-rfq-input"
@@ -476,7 +482,7 @@ export function QuoteClient({ locale }: QuoteClientProps) {
                   />
                 </label>
                 <label className="quote-rfq-field">
-                  <span className="quote-rfq-field__label quote-rfq-field__label--required">Company</span>
+                  <span className="quote-rfq-field__label quote-rfq-field__label--required">{t('quotePage.fieldCompany')}</span>
                   <input
                     className="quote-rfq-input"
                     value={draft.contact.company}
@@ -486,7 +492,7 @@ export function QuoteClient({ locale }: QuoteClientProps) {
                   />
                 </label>
                 <label className="quote-rfq-field">
-                  <span className="quote-rfq-field__label quote-rfq-field__label--required">Country</span>
+                  <span className="quote-rfq-field__label quote-rfq-field__label--required">{t('quotePage.fieldCountry')}</span>
                   <CountrySelect
                     className="quote-rfq-input"
                     value={draft.contact.country}
@@ -495,7 +501,7 @@ export function QuoteClient({ locale }: QuoteClientProps) {
                   />
                 </label>
                 <label className="quote-rfq-field">
-                  <span className="quote-rfq-field__label quote-rfq-field__label--required">Phone</span>
+                  <span className="quote-rfq-field__label quote-rfq-field__label--required">{t('quotePage.fieldPhone')}</span>
                   <input
                     className="quote-rfq-input"
                     value={draft.contact.phone}
@@ -505,12 +511,12 @@ export function QuoteClient({ locale }: QuoteClientProps) {
                   />
                 </label>
                 <label className="quote-rfq-field">
-                  <span className="quote-rfq-field__label quote-rfq-field__label--optional">VAT / Tax ID</span>
+                  <span className="quote-rfq-field__label quote-rfq-field__label--optional">{t('quotePage.fieldVat')}</span>
                   <input
                     className="quote-rfq-input"
                     value={draft.contact.vat}
                     onChange={(e) => updateContactField('vat', e.target.value)}
-                    placeholder="Optional"
+                    placeholder={t('checkout.optional')}
                   />
                 </label>
               </div>
@@ -518,17 +524,17 @@ export function QuoteClient({ locale }: QuoteClientProps) {
 
             <QuoteSection
               step="03"
-              title="Project info"
+              title={t('quotePage.projectTitle')}
               requirement="optional"
-              description="Help us understand scope, timing, and expected volume."
+              description={t('quotePage.projectDesc')}
             >
               <div className="quote-rfq-form-grid">
                 <label className="quote-rfq-field quote-rfq-field--wide">
-                  <span className="quote-rfq-field__label">Project name</span>
-                  <input className="quote-rfq-input" value={draft.project.projectName} onChange={(e) => updateProjectField('projectName', e.target.value)} placeholder="e.g. CNC retrofit phase 2" />
+                  <span className="quote-rfq-field__label">{t('quotePage.fieldProjectName')}</span>
+                  <input className="quote-rfq-input" value={draft.project.projectName} onChange={(e) => updateProjectField('projectName', e.target.value)} placeholder={t('quotePage.projectNamePlaceholder')} />
                 </label>
                 <label className="quote-rfq-field">
-                  <span className="quote-rfq-field__label">Industry</span>
+                  <span className="quote-rfq-field__label">{t('quotePage.fieldIndustry')}</span>
                   <IndustrySelect
                     className="quote-rfq-input"
                     value={draft.project.industry}
@@ -536,12 +542,12 @@ export function QuoteClient({ locale }: QuoteClientProps) {
                   />
                 </label>
                 <label className="quote-rfq-field">
-                  <span className="quote-rfq-field__label">Target start date</span>
+                  <span className="quote-rfq-field__label">{t('quotePage.fieldTargetStart')}</span>
                   <input type="date" className="quote-rfq-input" value={draft.project.targetStartDate} onChange={(e) => updateProjectField('targetStartDate', e.target.value)} />
                 </label>
                 <label className="quote-rfq-field quote-rfq-field--wide">
-                  <span className="quote-rfq-field__label">Annual volume estimate</span>
-                  <input className="quote-rfq-input" value={draft.project.annualVolumeEstimate} onChange={(e) => updateProjectField('annualVolumeEstimate', e.target.value)} placeholder="e.g. 500 units / year" />
+                  <span className="quote-rfq-field__label">{t('quotePage.fieldAnnualVolume')}</span>
+                  <input className="quote-rfq-input" value={draft.project.annualVolumeEstimate} onChange={(e) => updateProjectField('annualVolumeEstimate', e.target.value)} placeholder={t('quotePage.annualVolumePlaceholder')} />
                 </label>
               </div>
             </QuoteSection>
@@ -549,9 +555,9 @@ export function QuoteClient({ locale }: QuoteClientProps) {
 
           <QuoteSection
             step="04"
-            title="Project attachments"
+            title={t('quotePage.attachmentsTitle')}
             requirement="optional"
-            description="Drawings, BOMs, or spec sheets help us quote faster. Up to 8 files."
+            description={t('quotePage.attachmentsDesc')}
           >
             <div className="quote-rfq-upload">
               <input
@@ -573,8 +579,8 @@ export function QuoteClient({ locale }: QuoteClientProps) {
               >
                 <span className="quote-rfq-upload__icon" aria-hidden="true">↑</span>
                 <span>
-                  <strong>{uploading ? 'Uploading…' : 'Choose files'}</strong>
-                  <small>PDF, Office, or images · multiple files supported</small>
+                  <strong>{uploading ? t('quotePage.uploading') : t('quotePage.chooseFiles')}</strong>
+                  <small>{t('quotePage.uploadHint')}</small>
                 </span>
               </button>
 
@@ -588,7 +594,7 @@ export function QuoteClient({ locale }: QuoteClientProps) {
                   {draft.projectAttachments.map((file, index) => (
                     <span key={`${file.key}-${index}`} className="quote-rfq-upload__chip">
                       <span>{file.filename}</span>
-                      <button type="button" onClick={() => removeAttachment(index)} aria-label={`Remove ${file.filename}`}>
+                      <button type="button" onClick={() => removeAttachment(index)} aria-label={t('quotePage.removeFile', { filename: file.filename })}>
                         ×
                       </button>
                     </span>

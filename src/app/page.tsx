@@ -6,7 +6,7 @@ import { JsonLdScript } from '@/components/seo/json-ld';
 import { CatalogProductCard } from '@/components/storefront/catalog-product-card';
 import { NewsletterSignupForm } from '@/components/storefront/newsletter-signup-form';
 import { withLocalePath } from '@/lib/i18n';
-import { getServerSitePreferences } from '@/lib/i18n-server';
+import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-server';
 import { buildMetadata, buildWebsiteJsonLd } from '@/lib/seo';
 import { solutionIndustries } from '@/lib/solutions';
 import { getBoardBlogs } from '@/lib/storefront-api';
@@ -28,48 +28,37 @@ export async function generateMetadata() {
 // Revalidate homepage every 60 seconds (ISR)
 export const revalidate = 60;
 
-const heroTrustStats = [
-  { value: '10,000+', label: 'SKUs in catalog' },
-  { value: '3', label: 'Global warehouses' },
-  { value: '24h', label: 'Dispatch on stock' },
-  { value: 'CE / UL / RoHS', label: 'Certified components' },
-];
-
-const whyHighlights = [
-  {
-    title: 'In-house manufacturing',
-    description: 'Self-owned brand and factory control over motors, drivers, gearboxes, and matched motion kits.',
-  },
-  {
-    title: '24h dispatch from US/EU',
-    description: 'Stocked catalog items ship fast from multiple regional warehouses with export-ready packaging.',
-  },
-  {
-    title: 'Engineering support',
-    description: 'Application engineers help with sizing, spec confirmation, and post-order follow-up.',
-  },
-  {
-    title: 'Tiered & contract pricing',
-    description: 'Published volume breaks plus contract lanes for annual programs and OEM demand.',
-  },
-];
-
-const engineeringResources = [
-  { label: 'CAD Library', href: '/resources' },
-  { label: 'Datasheet Library', href: '/resources' },
-  { label: 'Tech FAQ', href: '/tech-faq' },
-  { label: 'Glossary', href: '/glossary' },
-  { label: 'Wiring Diagrams', href: '/resources' },
-];
-
-function formatPublishedDate(value: string, formatter: Intl.DateTimeFormat) {
+function formatPublishedDate(value: string, formatter: Intl.DateTimeFormat, dateTbdLabel: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? 'Date TBD' : formatter.format(date);
+  return Number.isNaN(date.getTime()) ? dateTbdLabel : formatter.format(date);
 }
 
 export default async function HomePage() {
   const preferences = await getServerSitePreferences();
   const locale = preferences.locale;
+  const { t } = getServerTranslations(locale);
+
+  const heroTrustStats = [
+    { value: '10,000+', label: t('home.heroStatSkus') },
+    { value: '3', label: t('home.heroStatWarehouses') },
+    { value: '24h', label: t('home.heroStatDispatch') },
+    { value: 'CE / UL / RoHS', label: t('home.heroStatCertified') },
+  ];
+
+  const whyHighlights = [
+    { title: t('home.whyManufacturingTitle'), description: t('home.whyManufacturingDesc') },
+    { title: t('home.whyDispatchTitle'), description: t('home.whyDispatchDesc') },
+    { title: t('home.whyEngineeringTitle'), description: t('home.whyEngineeringDesc') },
+    { title: t('home.whyPricingTitle'), description: t('home.whyPricingDesc') },
+  ];
+
+  const engineeringResources = [
+    { label: t('home.cadLibrary'), href: '/resources' },
+    { label: t('home.datasheetLibrary'), href: '/resources' },
+    { label: t('home.techFaq'), href: '/tech-faq' },
+    { label: t('home.glossary'), href: '/glossary' },
+    { label: t('home.wiringDiagrams'), href: '/resources' },
+  ];
 
   const [homeData, featuredResult, blogBoard] = await Promise.all([
     getHomeData(),
@@ -92,18 +81,15 @@ export default async function HomePage() {
         <div className="section-inner">
           <article className="hero-panel home-hero-panel">
             <div className="hero-copy">
-              <span className="eyebrow">Precision motion, ready to ship</span>
-              <h1 className="hero-title">Engineering-grade motion. Ready to ship worldwide.</h1>
-              <p className="hero-description">
-                Stepper, BLDC, and servo motors with drivers, gearboxes, and matched kits — backed by CAD,
-                datasheets, tiered pricing, and engineering support from a single self-owned brand.
-              </p>
+              <span className="eyebrow">{t('home.heroEyebrow')}</span>
+              <h1 className="hero-title">{t('home.heroTitle')}</h1>
+              <p className="hero-description">{t('home.heroDescription')}</p>
               <div className="hero-actions">
                 <Link href={withLocalePath('/products', locale)} className="button-primary">
-                  Browse Catalog
+                  {t('home.browseCatalog')}
                 </Link>
                 <Link href={withLocalePath('/selector', locale)} className="button-secondary">
-                  Run Selector
+                  {t('home.runSelector')}
                 </Link>
               </div>
               <dl className="hero-trust-grid">
@@ -136,11 +122,11 @@ export default async function HomePage() {
         <div className="section-inner">
           <div className="section-header">
             <div>
-              <h2 className="section-title">Shop by Category</h2>
-              <p className="section-description">Jump straight into the motion category you are sourcing.</p>
+              <h2 className="section-title">{t('home.shopByCategoryTitle')}</h2>
+              <p className="section-description">{t('home.shopByCategoryDesc')}</p>
             </div>
             <Link href={withLocalePath('/products', locale)} className="section-link">
-              View all categories
+              {t('home.viewAllCategories')}
             </Link>
           </div>
 
@@ -171,11 +157,11 @@ export default async function HomePage() {
         <div className="section-inner">
           <div className="home-selector-strip">
             <div>
-              <strong>Not sure which motor?</strong>
-              <span>Use our 5-step Selector to match torque, frame, voltage, and feedback to your application.</span>
+              <strong>{t('home.selectorStripTitle')}</strong>
+              <span>{t('home.selectorStripDesc')}</span>
             </div>
             <Link href={withLocalePath('/selector', locale)} className="button-primary">
-              Run Selector
+              {t('home.runSelector')}
             </Link>
           </div>
         </div>
@@ -186,21 +172,21 @@ export default async function HomePage() {
         <div className="section-inner">
           <div className="section-header">
             <div>
-              <h2 className="section-title">Solutions by Industry</h2>
-              <p className="section-description">Application-led motion stacks mapped to selector, catalog, and RFQ handoff.</p>
+              <h2 className="section-title">{t('home.solutionsTitle')}</h2>
+              <p className="section-description">{t('home.solutionsDesc')}</p>
             </div>
             <Link href={withLocalePath('/solutions', locale)} className="section-link">
-              All solutions
+              {t('home.allSolutions')}
             </Link>
           </div>
 
           <div className="home-solutions-grid">
             {featuredIndustries.map((industry) => (
               <Link key={industry.slug} href={withLocalePath(`/solutions/${industry.slug}`, locale)} className="home-solution-card">
-                <span className="card-kicker">Industry</span>
+                <span className="card-kicker">{t('home.industryKicker')}</span>
                 <h3>{industry.title}</h3>
                 <p className="section-description compact-copy">{industry.summary}</p>
-                <span className="section-link">Explore solution</span>
+                <span className="section-link">{t('home.exploreSolution')}</span>
               </Link>
             ))}
           </div>
@@ -212,11 +198,11 @@ export default async function HomePage() {
         <div className="section-inner">
           <div className="section-header">
             <div>
-              <h2 className="section-title">Featured products</h2>
-              <p className="section-description">Direct-buy best sellers ready for checkout, tier pricing, and fast dispatch.</p>
+              <h2 className="section-title">{t('home.featuredProducts')}</h2>
+              <p className="section-description">{t('home.featuredDesc')}</p>
             </div>
             <Link href={withLocalePath('/products', locale)} className="section-link">
-              Browse catalog
+              {t('home.browseCatalogLink')}
             </Link>
           </div>
 
@@ -237,8 +223,8 @@ export default async function HomePage() {
         <div className="section-inner">
           <div className="section-header">
             <div>
-              <h2 className="section-title">Why STEPMOTECH</h2>
-              <p className="section-description">A single source for engineered motion, fast fulfillment, and commercial flexibility.</p>
+              <h2 className="section-title">{t('home.whyTitle')}</h2>
+              <p className="section-description">{t('home.whyDesc')}</p>
             </div>
           </div>
 
@@ -272,11 +258,11 @@ export default async function HomePage() {
         <div className="section-inner">
           <div className="section-header">
             <div>
-              <h2 className="section-title">Latest applications</h2>
-              <p className="section-description">Recent motion programs across packaging, robotics, and medical builds.</p>
+              <h2 className="section-title">{t('home.latestApplications')}</h2>
+              <p className="section-description">{t('home.latestApplicationsDesc')}</p>
             </div>
             <Link href={withLocalePath('/applications', locale)} className="section-link">
-              All case studies
+              {t('home.allCaseStudies')}
             </Link>
           </div>
 
@@ -289,7 +275,7 @@ export default async function HomePage() {
                   <h3>{caseStudy ? caseStudy.title : industry.title}</h3>
                   <p className="section-description compact-copy">{caseStudy ? caseStudy.summary : industry.summary}</p>
                   <Link href={withLocalePath(`/solutions/${industry.slug}`, locale)} className="section-link">
-                    Read more
+                    {t('home.readMore')}
                   </Link>
                 </article>
               );
@@ -303,11 +289,11 @@ export default async function HomePage() {
         <div className="section-inner">
           <div className="section-header">
             <div>
-              <h2 className="section-title">From the Resources Hub</h2>
-              <p className="section-description">Latest engineering articles, sizing guidance, and commissioning notes.</p>
+              <h2 className="section-title">{t('home.resourcesHubTitle')}</h2>
+              <p className="section-description">{t('home.resourcesHubDesc')}</p>
             </div>
             <Link href={withLocalePath('/blog', locale)} className="section-link">
-              Visit the blog
+              {t('home.visitBlog')}
             </Link>
           </div>
 
@@ -319,7 +305,7 @@ export default async function HomePage() {
                   <Link href={withLocalePath(`/blog/${article.slug}`, locale)}>{article.title}</Link>
                 </h3>
                 <p className="section-description compact-copy">{article.summary ?? ''}</p>
-                <p className="product-meta">{article.publishedAt ? formatPublishedDate(article.publishedAt, dateFormatter) : 'Date TBD'}</p>
+                <p className="product-meta">{article.publishedAt ? formatPublishedDate(article.publishedAt, dateFormatter, t('home.dateTbd')) : t('home.dateTbd')}</p>
               </article>
             ))}
           </div>
@@ -330,7 +316,7 @@ export default async function HomePage() {
       <section className="section">
         <div className="section-inner">
           <div className="home-eng-strip">
-            <strong className="home-eng-strip-title">Engineering resources</strong>
+            <strong className="home-eng-strip-title">{t('home.engineeringResources')}</strong>
             <div className="home-eng-strip-links">
               {engineeringResources.map((resource) => (
                 <Link key={resource.label} href={withLocalePath(resource.href, locale)} className="filter-chip filter-chip-link">
@@ -350,9 +336,9 @@ export default async function HomePage() {
               <h2 className="section-title">{homeData.newsletter.title}</h2>
               <p className="section-description">{homeData.newsletter.description}</p>
               <p className="product-meta">
-                By subscribing you agree to our{' '}
+                {t('home.privacyAgree')}{' '}
                 <Link href={withLocalePath('/legal/privacy', locale)} className="section-link">
-                  Privacy Policy
+                  {t('home.privacyPolicy')}
                 </Link>
                 .
               </p>

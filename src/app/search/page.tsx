@@ -8,7 +8,7 @@ import { AddToCompareButton } from '@/components/storefront/add-to-compare-butto
 import { CatalogProductCard } from '@/components/storefront/catalog-product-card';
 import { applicationCaseStudies } from '@/lib/applications';
 import { withLocalePath, type Locale } from '@/lib/i18n';
-import { getServerSitePreferences } from '@/lib/i18n-server';
+import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-server';
 import { glossaryTermToPlainText, techFaqEntryToPlainText } from '@/lib/knowledge';
 import { getResourceSectionMeta, resourceItems } from '@/lib/resources';
 import { buildMetadata } from '@/lib/seo';
@@ -85,9 +85,10 @@ function normalizeLocalePath(path: string, locale: Locale) {
 
 export async function generateMetadata() {
   const { locale } = await getServerSitePreferences();
+  const { t } = getServerTranslations(locale);
   return buildMetadata({
-    title: 'Search results — STEPMOTECH',
-    description: 'Search products, support content, technical FAQ answers, glossary terms, applications, blog posts, and documents from one page.',
+    title: t('search.metaTitle'),
+    description: t('search.metaDescription'),
     path: '/search',
     noIndex: true,
     locale,
@@ -98,6 +99,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   const preferences = await getServerSitePreferences();
   const params = await searchParams;
   const locale = preferences.locale;
+  const { t } = getServerTranslations(locale);
   const query = params.q ?? params.keyword ?? '';
   const selectedType = params.type ?? 'all';
   const currentPage = Math.max(1, Number.parseInt(params.page ?? '1', 10) || 1);
@@ -290,11 +292,11 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   const categoryShortcuts = (featuredCategories.length ? featuredCategories : categories).slice(0, 6);
 
   const resultTabs = [
-    { id: 'all', label: 'All results' },
-    { id: 'products', label: 'Products' },
-    { id: 'resources', label: 'Resources' },
-    { id: 'faq', label: 'FAQ' },
-    { id: 'docs', label: 'Documents' },
+    { id: 'all', label: t('search.tabAll') },
+    { id: 'products', label: t('search.tabProducts') },
+    { id: 'resources', label: t('search.tabResources') },
+    { id: 'faq', label: t('search.tabFaq') },
+    { id: 'docs', label: t('search.tabDocs') },
   ] as const;
 
   return (
@@ -302,33 +304,31 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
       <section className="section catalog-page-section">
         <div className="section-inner catalog-stack">
           <nav className="detail-breadcrumbs" aria-label="Breadcrumb">
-            <Link href={normalizeLocalePath('/', locale)}>Home</Link>
+            <Link href={normalizeLocalePath('/', locale)}>{t('navigation.home')}</Link>
             <span>/</span>
-            <span>Search</span>
+            <span>{t('search.breadcrumb')}</span>
           </nav>
 
           <article className="info-card category-hero-band">
             <div>
-              <div className="card-kicker">Catalog search</div>
+              <div className="card-kicker">{t('search.kicker')}</div>
               <h1 className="section-title category-hero-title">
-                {query ? `Results for “${query}”` : 'Search the catalog'}
+                {query ? t('search.titleWithQuery', { query }) : t('search.titleDefault')}
               </h1>
-              <p className="section-description">
-                Product matches use the same grid and row layouts as category browse. Content, FAQ, and document hits stay grouped below the product shelf.
-              </p>
+              <p className="section-description">{t('search.description')}</p>
             </div>
 
             <div className="category-kpi-strip">
               <article className="summary-stat">
-                <span className="summary-label">Products</span>
+                <span className="summary-label">{t('search.kpiProducts')}</span>
                 <strong>{listing.meta.total}</strong>
               </article>
               <article className="summary-stat">
-                <span className="summary-label">From</span>
-                <strong>{startPrice === null ? 'Request quote' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(startPrice)}</strong>
+                <span className="summary-label">{t('search.kpiFrom')}</span>
+                <strong>{startPrice === null ? t('search.requestQuote') : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(startPrice)}</strong>
               </article>
               <article className="summary-stat">
-                <span className="summary-label">Content hits</span>
+                <span className="summary-label">{t('search.kpiContentHits')}</span>
                 <strong>{contentMatches.length + faqMatches.length + documentMatches.length}</strong>
               </article>
             </div>
@@ -336,7 +336,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
 
           {querySuggestion ? (
             <article className="info-card search-suggestion-card">
-              <strong>Did you mean</strong>
+              <strong>{t('search.didYouMean')}</strong>
               <Link href={buildSearchHref({ q: querySuggestion, page: 1 })} className="section-link">
                 {querySuggestion}
               </Link>
@@ -346,26 +346,26 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
           {showProducts ? (
             <div className="catalog-results-toolbar info-card">
               <div className="catalog-results-toolbar-group">
-                <strong className="catalog-toolbar-heading">Sort</strong>
+                <strong className="catalog-toolbar-heading">{t('search.sortLabel')}</strong>
                 <div className="filter-chip-list">
-                  <Link href={buildSearchHref({ sort: 'featured', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'featured' ? ' is-active' : ''}`}>Bestseller</Link>
-                  <Link href={buildSearchHref({ sort: 'price-asc', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'price-asc' ? ' is-active' : ''}`}>Price asc</Link>
-                  <Link href={buildSearchHref({ sort: 'price-desc', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'price-desc' ? ' is-active' : ''}`}>Price desc</Link>
-                  <Link href={buildSearchHref({ sort: 'newest', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'newest' ? ' is-active' : ''}`}>Newest</Link>
+                  <Link href={buildSearchHref({ sort: 'featured', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'featured' ? ' is-active' : ''}`}>{t('search.bestseller')}</Link>
+                  <Link href={buildSearchHref({ sort: 'price-asc', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'price-asc' ? ' is-active' : ''}`}>{t('search.priceAsc')}</Link>
+                  <Link href={buildSearchHref({ sort: 'price-desc', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'price-desc' ? ' is-active' : ''}`}>{t('search.priceDesc')}</Link>
+                  <Link href={buildSearchHref({ sort: 'newest', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'newest' ? ' is-active' : ''}`}>{t('search.newest')}</Link>
                 </div>
               </div>
 
               <div className="catalog-results-toolbar-group">
-                <strong className="catalog-toolbar-heading">View</strong>
+                <strong className="catalog-toolbar-heading">{t('search.viewLabel')}</strong>
                 <div className="filter-chip-list">
-                  <Link href={buildSearchHref({ view: 'grid' })} className={`filter-chip filter-chip-link${selectedView === 'grid' ? ' is-active' : ''}`}>Grid</Link>
-                  <Link href={buildSearchHref({ view: 'row' })} className={`filter-chip filter-chip-link${selectedView === 'row' ? ' is-active' : ''}`}>Row</Link>
-                  <Link href={buildSearchHref({ stock: !inStockOnly, page: 1 })} className={`filter-chip filter-chip-link${inStockOnly ? ' is-active' : ''}`}>In stock only</Link>
+                  <Link href={buildSearchHref({ view: 'grid' })} className={`filter-chip filter-chip-link${selectedView === 'grid' ? ' is-active' : ''}`}>{t('search.grid')}</Link>
+                  <Link href={buildSearchHref({ view: 'row' })} className={`filter-chip filter-chip-link${selectedView === 'row' ? ' is-active' : ''}`}>{t('search.row')}</Link>
+                  <Link href={buildSearchHref({ stock: !inStockOnly, page: 1 })} className={`filter-chip filter-chip-link${inStockOnly ? ' is-active' : ''}`}>{t('search.inStockOnly')}</Link>
                 </div>
               </div>
 
               <div className="catalog-results-toolbar-group">
-                <strong className="catalog-toolbar-heading">Per page</strong>
+                <strong className="catalog-toolbar-heading">{t('search.perPageLabel')}</strong>
                 <div className="filter-chip-list">
                   {[24, 48, 96].map((value) => (
                     <Link key={value} href={buildSearchHref({ pageSize: value, page: 1 })} className={`filter-chip filter-chip-link${pageSize === value ? ' is-active' : ''}`}>
@@ -380,7 +380,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
           <div className="catalog-page-grid">
             <aside className="info-card catalog-sidebar catalog-filter-card">
               <div className="catalog-filter-group">
-                <h2 className="catalog-filter-title">Search</h2>
+                <h2 className="catalog-filter-title">{t('search.searchPanelTitle')}</h2>
                 <form action={normalizeLocalePath('/search', locale)} className="search-inline-form catalog-search-form" role="search">
                   <input type="hidden" name="sort" value={selectedSort} />
                   <input type="hidden" name="view" value={selectedView} />
@@ -388,13 +388,13 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                   {selectedType !== 'all' ? <input type="hidden" name="type" value={selectedType} /> : null}
                   {selectedMode ? <input type="hidden" name="mode" value={selectedMode} /> : null}
                   {inStockOnly ? <input type="hidden" name="stock" value="in-stock" /> : null}
-                  <input name="q" defaultValue={query} className="newsletter-input" placeholder="Product name, SPU, or spec phrase" />
-                  <button type="submit" className="button-primary">Search</button>
+                  <input name="q" defaultValue={query} className="newsletter-input" placeholder={t('search.searchPlaceholder')} />
+                  <button type="submit" className="button-primary">{t('search.searchButton')}</button>
                 </form>
               </div>
 
               <div className="catalog-filter-group">
-                <h3 className="catalog-filter-subtitle">Result type</h3>
+                <h3 className="catalog-filter-subtitle">{t('search.resultTypeLabel')}</h3>
                 <div className="filter-chip-list">
                   {resultTabs.map((tab) => (
                     <Link
@@ -410,9 +410,9 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
 
               {showProducts && listing.facets.length ? (
                 <div className="catalog-filter-group">
-                  <h3 className="catalog-filter-subtitle">Purchase mode</h3>
+                  <h3 className="catalog-filter-subtitle">{t('search.purchaseModeLabel')}</h3>
                   <div className="filter-chip-list">
-                    <Link href={buildSearchHref({ mode: null, page: 1 })} className={`filter-chip filter-chip-link${!selectedMode ? ' is-active' : ''}`}>All</Link>
+                    <Link href={buildSearchHref({ mode: null, page: 1 })} className={`filter-chip filter-chip-link${!selectedMode ? ' is-active' : ''}`}>{t('search.all')}</Link>
                     {listing.facets.flatMap((facet) =>
                       facet.options.map((option) => (
                         <Link
@@ -432,7 +432,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
               ) : null}
 
               <div className="catalog-filter-group">
-                <h3 className="catalog-filter-subtitle">Browse families</h3>
+                <h3 className="catalog-filter-subtitle">{t('search.browseFamilies')}</h3>
                 <div className="inline-link-list">
                   {categoryShortcuts.map((item) => (
                     <Link key={item.id} href={normalizeLocalePath(`/c/${item.slug}`, locale)} className="sidebar-link">
@@ -449,25 +449,27 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                 <>
                   <div className="catalog-results-header">
                     <div>
-                      <h2 className="section-title catalog-results-title">Product matches</h2>
+                      <h2 className="section-title catalog-results-title">{t('search.productMatchesTitle')}</h2>
                       <p className="section-description">
-                        {listing.meta.total} products for “{query || 'all catalog'}”. Toolbar and filters stay encoded in the URL for sharing.
+                        {query
+                          ? t('search.productMatchesDesc', { count: listing.meta.total, query })
+                          : t('search.productMatchesDescAll', { count: listing.meta.total })}
                       </p>
                     </div>
                     <div className="catalog-toolbar-card">
-                      <strong>{listing.meta.total} products</strong>
+                      <strong>{t('search.productsCount', { count: listing.meta.total })}</strong>
                       <span className="section-description compact-copy">
-                        Page {listing.meta.page} of {listing.meta.totalPages}
+                        {t('search.pageOf', { page: listing.meta.page, totalPages: listing.meta.totalPages })}
                       </span>
                     </div>
                   </div>
 
                   <div className="catalog-meta-row">
-                    {query ? <span className="filter-chip">Query: {query}</span> : null}
-                    {selectedMode ? <span className="filter-chip">Mode: {selectedMode === 'buy' ? 'Direct Buy' : 'Inquiry'}</span> : null}
-                    {inStockOnly ? <span className="filter-chip">Stock: In stock only</span> : null}
+                    {query ? <span className="filter-chip">{t('search.queryChip', { query })}</span> : null}
+                    {selectedMode ? <span className="filter-chip">{selectedMode === 'buy' ? t('search.modeChipBuy') : t('search.modeChipInquiry')}</span> : null}
+                    {inStockOnly ? <span className="filter-chip">{t('search.stockChip')}</span> : null}
                     <Link href={buildSearchHref({ q: null, mode: null, stock: false, page: 1 })} className="section-link">
-                      Clear filters
+                      {t('search.clearFilters')}
                     </Link>
                   </div>
 
@@ -502,8 +504,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
 
                               <div className="catalog-row-main">
                                 <div className="catalog-row-topline">
-                                  <span className="product-badge">{product.inStock ? 'In Stock' : 'Lead time on request'}</span>
-                                  <span className="catalog-row-model">SPU {highlightText(product.spu, query)}</span>
+                                  <span className="product-badge">{product.inStock ? t('catalog.inStock') : t('search.leadTimeOnRequest')}</span>
+                                  <span className="catalog-row-model">{t('product.spu')} {highlightText(product.spu, query)}</span>
                                 </div>
 
                                 <h2 className="catalog-row-title">
@@ -511,14 +513,14 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                                 </h2>
 
                                 <p className="catalog-row-description">
-                                  {highlightText(product.shortDescription ?? 'Factory-direct motion product with configurable specification support.', query)}
+                                  {highlightText(product.shortDescription ?? t('search.factoryDirectFallback'), query)}
                                 </p>
 
                                 <div className="catalog-row-footer">
                                   <div className="catalog-row-price-block">
-                                    <p className="product-price">{product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote'}</p>
+                                    <p className="product-price">{product.purchaseMode === 'buy' ? product.price.formatted : t('catalog.requestQuote')}</p>
                                     <p className="product-status">
-                                      {product.inStock ? 'Stock available for standard orders' : 'Quote-based sourcing workflow'}
+                                      {product.inStock ? t('search.stockAvailable') : t('search.quoteWorkflow')}
                                     </p>
                                   </div>
 
@@ -527,11 +529,11 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                                       <AddToCartButton productId={product.id} redirectToCart={false} />
                                     ) : (
                                       <Link href={normalizeLocalePath(`/products/${product.slug}`, locale)} className="button-primary">
-                                        Request Quote
+                                        {t('catalog.requestQuote')}
                                       </Link>
                                     )}
                                     <Link href={normalizeLocalePath(`/products/${product.slug}`, locale)} className="button-secondary catalog-row-secondary">
-                                      View Details
+                                      {t('search.viewDetails')}
                                     </Link>
                                     <AddToCompareButton
                                       item={{
@@ -539,7 +541,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                                         name: product.name,
                                         slug: product.slug,
                                         spu: product.spu,
-                                        priceLabel: product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote',
+                                        priceLabel: product.purchaseMode === 'buy' ? product.price.formatted : t('catalog.requestQuote'),
                                         purchaseMode: product.purchaseMode,
                                         inStock: product.inStock,
                                         shortDescription: product.shortDescription,
@@ -555,20 +557,20 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                       )}
 
                       <div className="pagination-bar">
-                        <p className="section-description">Page through product matches while keeping the active search phrase and filters.</p>
+                        <p className="section-description">{t('search.paginationHint')}</p>
                         <Pagination page={listing.meta.page} totalPages={listing.meta.totalPages} buildHref={(page) => buildSearchHref({ page })} />
                       </div>
                     </>
                   ) : (
                     <article className="info-card empty-state-card">
-                      <h3 style={{ margin: 0 }}>No products match this search.</h3>
-                      <p className="section-description">Try a shorter phrase, clear stock-only, or browse a product family from the sidebar.</p>
+                      <h3 style={{ margin: 0 }}>{t('search.noProductsTitle')}</h3>
+                      <p className="section-description">{t('search.noProductsDesc')}</p>
                       <div className="inline-link-list">
                         <Link href={buildSearchHref({ q: null, mode: null, stock: false, page: 1 })} className="section-link">
-                          Clear filters
+                          {t('search.clearFilters')}
                         </Link>
                         <Link href={normalizeLocalePath('/selector', locale)} className="section-link">
-                          Try selector path
+                          {t('search.trySelector')}
                         </Link>
                       </div>
                     </article>
@@ -580,8 +582,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                 <article className="info-card search-section-card">
                   <div className="section-header trade-card-header">
                     <div>
-                      <h3 className="cart-section-title">Resources & content</h3>
-                      <p className="section-description">Support pages, downloads, applications, blog posts, and glossary entries.</p>
+                      <h3 className="cart-section-title">{t('search.resourcesTitle')}</h3>
+                      <p className="section-description">{t('search.resourcesDesc')}</p>
                     </div>
                   </div>
                   <div className="search-card-grid">
@@ -600,8 +602,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                 <article className="info-card search-section-card">
                   <div className="section-header trade-card-header">
                     <div>
-                      <h3 className="cart-section-title">FAQ answers</h3>
-                      <p className="section-description">Operational and engineering answers with deep links to the source entry.</p>
+                      <h3 className="cart-section-title">{t('search.faqTitle')}</h3>
+                      <p className="section-description">{t('search.faqDesc')}</p>
                     </div>
                   </div>
                   <div className="search-faq-list">
@@ -609,7 +611,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                       <article key={item.id} className="category-faq-item pdp-faq-item">
                         <div className="product-card-top">
                           <span className="product-badge">{item.meta}</span>
-                          <Link href={item.href} className="section-link">Open</Link>
+                          <Link href={item.href} className="section-link">{t('search.openLink')}</Link>
                         </div>
                         <strong>
                           <Link href={item.href}>{highlightText(item.question, query)}</Link>
@@ -625,8 +627,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                 <article className="info-card search-section-card">
                   <div className="section-header trade-card-header">
                     <div>
-                      <h3 className="cart-section-title">Documents</h3>
-                      <p className="section-description">Attachment hits from matched product detail pages.</p>
+                      <h3 className="cart-section-title">{t('search.docsTitle')}</h3>
+                      <p className="section-description">{t('search.docsDesc')}</p>
                     </div>
                   </div>
                   <div className="search-card-grid">
@@ -643,14 +645,14 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
 
               {selectedType !== 'all' && selectedType !== 'products' && !selectedCount ? (
                 <article className="info-card empty-state-card search-empty-card">
-                  <h3 style={{ margin: 0 }}>No {selectedType} results for “{query}”.</h3>
-                  <p className="section-description">Switch result type, broaden the phrase, or browse a category family.</p>
+                  <h3 style={{ margin: 0 }}>{t('search.noTypeResults', { type: selectedType, query })}</h3>
+                  <p className="section-description">{t('search.noTypeResultsDesc')}</p>
                   <div className="inline-link-list">
                     <Link href={buildSearchHref({ type: null, page: 1 })} className="section-link">
-                      Show all results
+                      {t('search.showAllResults')}
                     </Link>
                     <Link href={normalizeLocalePath('/products', locale)} className="section-link">
-                      Browse full catalog
+                      {t('search.browseCatalog')}
                     </Link>
                   </div>
                 </article>
@@ -658,11 +660,11 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
 
               {selectedType === 'all' && !listing.items.length && !resources.length && !faqResults.length && !documents.length ? (
                 <article className="info-card empty-state-card search-empty-card">
-                  <h3 style={{ margin: 0 }}>No matches for “{query}”.</h3>
-                  <p className="section-description">Try broader terminology, switch to a family browse, or start from the selector path.</p>
+                  <h3 style={{ margin: 0 }}>{t('search.noMatchesTitle', { query })}</h3>
+                  <p className="section-description">{t('search.noMatchesDesc')}</p>
                   <div className="inline-link-list">
                     <Link href={normalizeLocalePath('/selector', locale)} className="section-link">
-                      Try selector path
+                      {t('search.trySelector')}
                     </Link>
                     {categoryShortcuts.map((category) => (
                       <Link key={category.id} href={normalizeLocalePath(`/c/${category.slug}`, locale)} className="section-link">

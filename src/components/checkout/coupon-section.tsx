@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 
 import { applyCartCoupon, syncCartResponse } from '@/lib/cart-api';
+import { useTranslation } from '@/lib/i18n-context';
 import type { CartDetail } from '@/lib/storefront-types';
 
 type CouponSectionProps = {
@@ -12,6 +13,7 @@ type CouponSectionProps = {
 };
 
 export function CouponSection({ cart, onCartChange, onMessage }: CouponSectionProps) {
+  const { t } = useTranslation();
   const [couponCode, setCouponCode] = useState(cart.couponCode ?? '');
   const [isPending, startTransition] = useTransition();
 
@@ -25,36 +27,36 @@ export function CouponSection({ cart, onCartChange, onMessage }: CouponSectionPr
         setCouponCode(nextCart.couponCode ?? '');
         const submittedCode = nextCouponCode ?? (couponCode.trim() || null);
         if (!submittedCode) {
-          onMessage?.('Coupon removed.');
+          onMessage?.(t('checkout.couponRemoved'));
         } else if (nextCart.coupon?.isApplied) {
-          onMessage?.('Coupon applied.');
+          onMessage?.(t('checkout.couponApplied'));
         } else if (nextCart.coupon?.message) {
           onMessage?.(nextCart.coupon.message);
         }
       } catch (error) {
-        onMessage?.(error instanceof Error ? error.message : 'Unable to update coupon code.');
+        onMessage?.(error instanceof Error ? error.message : t('checkout.couponUpdateFailed'));
       }
     });
   }
 
   return (
     <article className="info-card checkout-coupon-card" id="checkout-coupon">
-      <h2 className="cart-section-title">Coupon</h2>
+      <h2 className="cart-section-title">{t('checkout.coupon')}</h2>
       <div className="coupon-form-row">
         <input
           type="text"
           className="form-input"
-          placeholder="Enter coupon code"
+          placeholder={t('checkout.couponPlaceholder')}
           value={couponCode}
           onChange={(event) => setCouponCode(event.target.value)}
           disabled={isPending}
         />
         <button type="button" className="button-secondary cart-action-button" onClick={() => applyCoupon()} disabled={isPending}>
-          Apply
+          {t('checkout.apply')}
         </button>
         {cart.couponCode ? (
           <button type="button" className="button-secondary cart-action-button" onClick={() => applyCoupon(null)} disabled={isPending}>
-            Remove
+            {t('checkout.remove')}
           </button>
         ) : null}
       </div>

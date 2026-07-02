@@ -3,16 +3,17 @@ import Link from 'next/link';
 import { StorefrontFrame } from '@/components/layout/storefront-frame';
 import { JsonLdScript } from '@/components/seo/json-ld';
 import { withLocalePath } from '@/lib/i18n';
-import { getServerSitePreferences } from '@/lib/i18n-server';
+import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-server';
 import { buildBreadcrumbJsonLd, buildMetadata } from '@/lib/seo';
 import { SITE_NAME, SITE_URL } from '@/lib/site-config';
 import { getBoardFaqs, type BoardFaqItem } from '@/lib/storefront-api';
 
 export async function generateMetadata() {
   const { locale } = await getServerSitePreferences();
+  const { t } = getServerTranslations(locale);
   return buildMetadata({
-    title: 'FAQ — STEPMOTECH',
-    description: 'Frequently asked questions about products, ordering, technical specifications, and industrial motion control sourcing.',
+    title: t('faqPage.metaTitle'),
+    description: t('faqPage.metaDescription'),
     path: '/faq',
     locale,
   });
@@ -55,6 +56,7 @@ function buildFaqJsonLdEntity(items: BoardFaqItem[]) {
 
 export default async function FaqPage() {
   const { locale } = await getServerSitePreferences();
+  const { t } = getServerTranslations(locale);
   const [faqBoard, glossaryBoard] = await Promise.all([
     getBoardFaqs('faq', locale),
     getBoardFaqs('glossary', locale),
@@ -64,7 +66,10 @@ export default async function FaqPage() {
   const glossaryItems = mapBoardItems(glossaryBoard.items);
 
   const pageUrl = `${SITE_URL}${withLocalePath('/faq', locale)}`;
-  const breadcrumbJsonLd = buildBreadcrumbJsonLd([{ name: 'Home', path: '/' }, { name: 'FAQ', path: '/faq' }], locale);
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd(
+    [{ name: t('navigation.home'), path: '/' }, { name: t('faqPage.eyebrow'), path: '/faq' }],
+    locale,
+  );
 
   const faqJsonLd = {
     '@context': 'https://schema.org',
@@ -80,16 +85,16 @@ export default async function FaqPage() {
 
   return (
     <StorefrontFrame
-      eyebrow="Support"
-      title="Frequently Asked Questions"
-      description="Find answers about ordering, technical specs, lead times, and industrial motion control sourcing."
+      eyebrow={t('faqPage.eyebrow')}
+      title={t('faqPage.title')}
+      description={t('faqPage.description')}
     >
       <JsonLdScript id="faq-breadcrumb-jsonld" data={breadcrumbJsonLd} />
       <JsonLdScript id="faq-jsonld" data={faqJsonLd} />
 
       <section className="section">
         <div className="section-inner">
-          <FaqList faqs={faqItems} />
+          <FaqList faqs={faqItems} generalFaqLabel={t('faqPage.generalFaq')} />
         </div>
       </section>
 
@@ -98,11 +103,11 @@ export default async function FaqPage() {
           <div className="section-inner">
             <div className="section-header">
               <div>
-                <h2 className="section-title">Technical Terms Explained</h2>
-                <p className="section-description">Motion control terminology referenced across the catalog and support content.</p>
+                <h2 className="section-title">{t('faqPage.glossaryTitle')}</h2>
+                <p className="section-description">{t('faqPage.glossaryDesc')}</p>
               </div>
             </div>
-            <FaqList faqs={glossaryItems} showTabs={false} />
+            <FaqList faqs={glossaryItems} showTabs={false} generalFaqLabel={t('faqPage.generalFaq')} />
           </div>
         </section>
       ) : null}
@@ -110,12 +115,12 @@ export default async function FaqPage() {
       <section className="section">
         <div className="section-inner story-grid">
           <article className="story-card story-card-accent">
-            <div className="card-kicker">Still have questions?</div>
-            <h2 className="section-title">Our engineering team is ready to help.</h2>
-            <p className="section-description">Can&apos;t find what you&apos;re looking for? Contact us directly for personalized support.</p>
+            <div className="card-kicker">{t('faqPage.stillHaveQuestions')}</div>
+            <h2 className="section-title">{t('faqPage.ctaTitle')}</h2>
+            <p className="section-description">{t('faqPage.ctaDesc')}</p>
             <div className="trade-empty-actions">
-              <Link href={withLocalePath('/contact', locale)} className="button-primary">Contact Support</Link>
-              <Link href={withLocalePath('/faq', locale)} className="button-secondary page-button-secondary-dark">Browse FAQ</Link>
+              <Link href={withLocalePath('/contact', locale)} className="button-primary">{t('faqPage.contactSupport')}</Link>
+              <Link href={withLocalePath('/faq', locale)} className="button-secondary page-button-secondary-dark">{t('faqPage.browseFaq')}</Link>
             </div>
           </article>
         </div>
@@ -127,9 +132,11 @@ export default async function FaqPage() {
 function FaqList({
   faqs,
   showTabs = true,
+  generalFaqLabel,
 }: {
   faqs: FaqListItem[];
   showTabs?: boolean;
+  generalFaqLabel: string;
 }) {
   const categories = ['General', 'Stepper', 'BLDC', 'Servo', 'Drivers', 'Wiring', 'Sizing', 'Compliance', 'Shipping'];
   const tabs = categories.filter((cat) => faqs.some((f) => f.category === cat));
@@ -148,7 +155,7 @@ function FaqList({
               aria-selected={cat === 'General'}
               style={{ cursor: 'default' }}
             >
-              {cat === 'General' ? 'General FAQ' : cat}
+              {cat === 'General' ? generalFaqLabel : cat}
             </button>
           ))}
         </div>

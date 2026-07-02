@@ -13,6 +13,7 @@ import {
 } from '@/lib/compare-api';
 import type { Locale } from '@/lib/i18n';
 import { withLocalePath } from '@/lib/i18n';
+import { useTranslation } from '@/lib/i18n-context';
 import {
   COMPARE_ITEMS_UPDATED_EVENT,
   readCompareItems,
@@ -65,6 +66,7 @@ function CompareBoardMessage({ children }: { children: ReactNode }) {
 
 export function CompareClient({ locale }: CompareClientProps) {
   const { user, isLoading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const [items, setItems] = useState<CompareItem[]>([]);
   const [compareResult, setCompareResult] = useState<CompareResult | null>(null);
   const [matrixLoading, setMatrixLoading] = useState(false);
@@ -97,7 +99,7 @@ export function CompareClient({ locale }: CompareClientProps) {
         name: fresh.name,
         slug: fresh.slug,
         spu: fresh.spu,
-        priceLabel: fresh.purchaseMode === 'buy' ? fresh.price.formatted : 'Request Quote',
+        priceLabel: fresh.purchaseMode === 'buy' ? fresh.price.formatted : t('product.requestQuote'),
         purchaseMode: fresh.purchaseMode === 'buy' ? ('buy' as const) : ('inquiry' as const),
         inStock: fresh.inStock,
         categories: fresh.category ? [fresh.category] : item.categories,
@@ -164,7 +166,7 @@ export function CompareClient({ locale }: CompareClientProps) {
       .catch(() => {
         if (!cancelled) {
           setCompareResult(null);
-          setMatrixError('Specification comparison could not be loaded. Try again in a moment.');
+          setMatrixError(t('comparePage.matrixError'));
         }
       })
       .finally(() => {
@@ -188,14 +190,14 @@ export function CompareClient({ locale }: CompareClientProps) {
   if (!items.length) {
     return (
       <article className="info-card empty-state-card">
-        <h3 style={{ margin: 0 }}>No products in the compare list yet.</h3>
-        <p className="section-description">Browse the catalog and use Add to Compare on any product page or listing card.</p>
+        <h3 style={{ margin: 0 }}>{t('comparePage.emptyTitle')}</h3>
+        <p className="section-description">{t('comparePage.emptyDesc')}</p>
         <div className="inline-link-list">
           <Link href={withLocalePath('/products', locale)} className="section-link">
-            Browse Products
+            {t('comparePage.browseProducts')}
           </Link>
           <Link href={withLocalePath('/search', locale)} className="section-link">
-            Search Catalog
+            {t('comparePage.searchCatalog')}
           </Link>
         </div>
       </article>
@@ -206,10 +208,10 @@ export function CompareClient({ locale }: CompareClientProps) {
     <div className="compare-page-stack" style={compareLayoutStyle}>
       <div className="compare-page-intro">
         <p className="section-description">
-          Comparing {items.length} of 4 products. Specifications are loaded from the catalog.
+          {t('comparePage.intro', { count: items.length })}
         </p>
         <Link href={withLocalePath('/products', locale)} className="section-link">
-          Browse more products
+          {t('comparePage.browseMore')}
         </Link>
       </div>
 
@@ -221,14 +223,14 @@ export function CompareClient({ locale }: CompareClientProps) {
             {displayItems.map((item) => (
               <section key={item.id} className="compare-product-col">
                 <div className="compare-product-top">
-                  <span className="product-badge">{item.purchaseMode === 'buy' ? 'Direct Buy' : 'Inquiry'}</span>
+                  <span className="product-badge">{item.purchaseMode === 'buy' ? t('comparePage.directBuy') : t('comparePage.inquiry')}</span>
                 </div>
                 <h3 className="compare-product-title">
                   <Link href={withLocalePath(`/products/${item.slug}`, locale)}>{item.name}</Link>
                 </h3>
                 <p className="product-meta">{item.spu || '—'}</p>
                 <p className="product-price">{item.priceLabel}</p>
-                <span className="product-status">{item.inStock ? 'In stock' : 'Lead time on request'}</span>
+                <span className="product-status">{item.inStock ? t('comparePage.inStock') : t('comparePage.leadTimeOnRequest')}</span>
                 {item.categories.length ? (
                   <p className="section-description compact-copy">{item.categories.join(' · ')}</p>
                 ) : null}
@@ -237,22 +239,22 @@ export function CompareClient({ locale }: CompareClientProps) {
                     <AddToCartButton productId={item.id} redirectToCart={false} />
                   ) : (
                     <Link href={`${withLocalePath('/quote', locale)}?addSpu=${encodeURIComponent(item.spu)}`} className="button-secondary product-back-link">
-                      Add to Quote
+                      {t('product.addToQuote')}
                     </Link>
                   )}
                   <button type="button" className="button-secondary compare-remove-action" onClick={() => handleRemoveItem(item.id)}>
-                    Remove
+                    {t('comparePage.remove')}
                   </button>
                 </div>
               </section>
             ))}
 
             {items.length < 2 ? (
-              <CompareBoardMessage>Add at least one more product to load the live specification matrix.</CompareBoardMessage>
+              <CompareBoardMessage>{t('comparePage.needMore')}</CompareBoardMessage>
             ) : null}
 
             {items.length >= 2 && matrixLoading ? (
-              <CompareBoardMessage>Loading specification comparison…</CompareBoardMessage>
+              <CompareBoardMessage>{t('comparePage.loadingMatrix')}</CompareBoardMessage>
             ) : null}
 
             {items.length >= 2 && matrixError ? <CompareBoardMessage>{matrixError}</CompareBoardMessage> : null}

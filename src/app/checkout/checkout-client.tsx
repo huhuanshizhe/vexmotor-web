@@ -23,6 +23,7 @@ import { buildCheckoutPayPath } from '@/lib/checkout-pay-path';
 import { syncCartResponse } from '@/lib/cart-api';
 import type { CommerceConfig } from '@/lib/commerce-config';
 import { parseLocaleFromPathname, withLocalePath } from '@/lib/i18n';
+import { useTranslation } from '@/lib/i18n-context';
 import { useCheckoutPricing } from '@/lib/use-checkout-pricing';
 import type { CartDetail } from '@/lib/storefront-types';
 
@@ -49,6 +50,7 @@ export function CheckoutClient({
   const router = useRouter();
   const pathname = usePathname();
   const locale = useMemo(() => parseLocaleFromPathname(pathname).locale, [pathname]);
+  const { t } = useTranslation();
 
   const isLoggedIn = Boolean(user);
   const isGuestCheckout = !isLoggedIn;
@@ -178,31 +180,31 @@ export function CheckoutClient({
   const paymentComplete = Boolean(paymentMethod);
 
   const reviewBlockingMessage = !contactComplete
-    ? 'Add a contact email for guest checkout.'
+    ? t('checkout.needContactEmail')
     : !addressComplete
-      ? 'Complete shipping and billing details before placing the order.'
+      ? t('checkout.needAddress')
       : !shippingComplete
         ? isShippingAddressReady
-          ? 'Select a shipping method.'
-          : 'Select or enter a shipping address first.'
+          ? t('checkout.selectShippingMethod')
+          : t('checkout.selectShippingAddress')
         : !paymentComplete
-          ? 'Select a payment method.'
+          ? t('checkout.selectPaymentMethod')
           : null;
 
   const canPlaceOrder = !reviewBlockingMessage && shippingComplete && paymentComplete;
 
   const stepItems = [
-    { label: 'Items', complete: Boolean(cart?.items.length) },
-    { label: 'Account', complete: isLoggedIn || contactComplete },
-    { label: 'Address', complete: addressComplete },
-    { label: 'Shipping', complete: shippingComplete },
-    { label: 'Payment', complete: paymentComplete },
+    { label: t('checkout.stepItems'), complete: Boolean(cart?.items.length) },
+    { label: t('checkout.stepAccount'), complete: isLoggedIn || contactComplete },
+    { label: t('checkout.stepAddress'), complete: addressComplete },
+    { label: t('checkout.stepShipping'), complete: shippingComplete },
+    { label: t('checkout.stepPayment'), complete: paymentComplete },
   ];
 
   const paymentOptions = [
-    { value: 'Credit Card', title: 'Credit Card', note: 'Fastest for smaller catalog transactions.', disabled: false },
-    { value: 'PayPal', title: 'PayPal', note: 'Useful for small orders with buyer protection.', disabled: true },
-    { value: 'Wire transfer', title: 'Wire transfer', note: 'Preferred for larger B2B orders.', disabled: true },
+    { value: 'Credit Card', title: t('checkout.creditCard'), note: t('checkout.paymentCreditCardNote'), disabled: false },
+    { value: 'PayPal', title: t('checkout.paymentPayPal'), note: t('checkout.paymentPayPalNote'), disabled: true },
+    { value: 'Wire transfer', title: t('checkout.paymentWire'), note: t('checkout.paymentWireNote'), disabled: true },
   ];
 
   async function handleAuthSuccess() {
@@ -317,7 +319,7 @@ export function CheckoutClient({
           }),
         });
       } catch (error) {
-        setMessage(error instanceof Error ? error.message : 'Unable to place order.');
+        setMessage(error instanceof Error ? error.message : t('checkout.placeOrderFailed'));
         return;
       }
 
@@ -326,14 +328,14 @@ export function CheckoutClient({
   }
 
   if (isBootstrapping) {
-    return <p className="section-description">Loading checkout…</p>;
+    return <p className="section-description">{t('checkoutPage.loading')}</p>;
   }
 
   if (isQuoteMode && !user) {
     return (
       <article className="info-card">
-        <h2 style={{ marginTop: 0 }}>Sign in to complete quote checkout</h2>
-        <p className="section-description">Negotiated quote checkout requires an authenticated account.</p>
+        <h2 style={{ marginTop: 0 }}>{t('checkoutPage.signInForQuoteTitle')}</h2>
+        <p className="section-description">{t('checkoutPage.signInForQuoteDesc')}</p>
       </article>
     );
   }
@@ -341,8 +343,8 @@ export function CheckoutClient({
   if (!cart || !cart.items.length) {
     return (
       <article className="info-card">
-        <h2 style={{ marginTop: 0 }}>Your cart is empty</h2>
-        <p className="section-description">Add at least one product before checking out.</p>
+        <h2 style={{ marginTop: 0 }}>{t('checkoutPage.emptyCartTitle')}</h2>
+        <p className="section-description">{t('checkoutPage.emptyCartDesc')}</p>
       </article>
     );
   }
@@ -352,8 +354,8 @@ export function CheckoutClient({
   const shippingEta = selectedShippingOption?.eta;
   const shippingFreightLabel = selectedShippingOption
     ? selectedShippingOption.price === 0
-      ? 'Freight: Free'
-      : `Freight: ${new Intl.NumberFormat(locale, { style: 'currency', currency: cart.shipping.currency }).format(selectedShippingOption.price)}`
+      ? t('checkout.freightFree')
+      : `${t('checkout.freight')}: ${new Intl.NumberFormat(locale, { style: 'currency', currency: cart.shipping.currency }).format(selectedShippingOption.price)}`
     : undefined;
 
   const freeShippingThresholdAmount = cart.freeShippingThreshold.amount;
@@ -367,11 +369,11 @@ export function CheckoutClient({
       <div className="trade-main-stack">
         {isQuoteMode && fromQuoteNumber ? (
           <article className="checkout-quote-banner account-quote-checkout-banner">
-            <p className="account-quote-checkout-banner__eyebrow">Quote checkout</p>
+            <p className="account-quote-checkout-banner__eyebrow">{t('checkout.quoteCheckoutEyebrow')}</p>
             <p className="account-quote-checkout-banner__title">
-              Converting quote <span className="account-quote-mono">{fromQuoteNumber}</span> · quantities locked
+              {t('checkout.quoteCheckoutTitle', { quoteNumber: fromQuoteNumber })}
             </p>
-            <p className="account-quote-checkout-banner__desc">Line items use your negotiated quote pricing. Catalog list prices are shown for reference where available.</p>
+            <p className="account-quote-checkout-banner__desc">{t('checkout.quoteCheckoutDesc')}</p>
           </article>
         ) : null}
         <CheckoutFreeShippingBanner
@@ -437,11 +439,11 @@ export function CheckoutClient({
         <article className="info-card checkout-step-card checkout-section-anchor" id="checkout-shipping">
           <div className="section-header trade-card-header">
             <div>
-              <h2 className="cart-section-title">Shipping method</h2>
+              <h2 className="cart-section-title">{t('checkout.shippingMethod')}</h2>
               <p className="section-description">
                 {isShippingAddressReady
-                  ? 'Choose delivery mode for the selected destination.'
-                  : 'Select or enter a shipping address first. Shipping options and rates depend on the destination country.'}
+                  ? t('checkout.shippingMethodReady')
+                  : t('checkout.shippingMethodNeedAddress')}
               </p>
             </div>
           </div>
@@ -459,8 +461,8 @@ export function CheckoutClient({
                     </div>
                     <span className="section-description">{option.note}</span>
                     <div className="option-choice-foot">
-                      <span>Freight</span>
-                      <strong>{option.price === 0 ? 'Free' : new Intl.NumberFormat(locale, { style: 'currency', currency: cart.shipping.currency }).format(option.price)}</strong>
+                      <span>{t('checkout.freight')}</span>
+                      <strong>{option.price === 0 ? t('checkoutPage.free') : new Intl.NumberFormat(locale, { style: 'currency', currency: cart.shipping.currency }).format(option.price)}</strong>
                     </div>
                   </div>
                 </label>
@@ -473,7 +475,7 @@ export function CheckoutClient({
           <article className="info-card checkout-step-card checkout-section-anchor" id="checkout-payment">
             <div className="section-header trade-card-header">
               <div>
-                <h2 className="cart-section-title">Payment method</h2>
+                <h2 className="cart-section-title">{t('checkout.paymentMethod')}</h2>
               </div>
             </div>
             <div className="option-choice-grid">
@@ -517,34 +519,34 @@ export function CheckoutClient({
         ) : null}
 
         <article className="info-card checkout-step-card checkout-section-anchor" id="checkout-buyer-refs">
-          <h2 className="cart-section-title">Buyer references</h2>
+          <h2 className="cart-section-title">{t('checkout.buyerReferences')}</h2>
           <div className="inquiry-form-grid checkout-reference-grid">
             <label className="form-field">
-              <span>PO Number</span>
+              <span>{t('checkout.poNumber')}</span>
               <input
                 className="form-input"
                 value={purchaseOrderNumber}
                 onChange={(e) => setPurchaseOrderNumber(e.target.value)}
-                placeholder="Optional purchase order reference"
+                placeholder={t('checkout.poPlaceholder')}
               />
             </label>
             <label className="form-field">
-              <span>Tax ID / VAT</span>
+              <span>{t('checkout.taxId')}</span>
               <input
                 className="form-input"
                 value={taxId}
                 onChange={(e) => setTaxId(e.target.value)}
-                placeholder="Optional tax identifier"
+                placeholder={t('checkout.taxIdPlaceholder')}
               />
             </label>
           </div>
         </article>
 
         <article className="info-card checkout-step-card checkout-section-anchor" id="checkout-order-comment">
-          <h2 className="cart-section-title">Order comment</h2>
+          <h2 className="cart-section-title">{t('checkout.orderComment')}</h2>
           <label className="form-field">
-            <span>Notes for warehouse or fulfillment</span>
-            <textarea className="form-input form-textarea" rows={3} value={orderComment} onChange={(e) => setOrderComment(e.target.value)} placeholder="Packaging, labels, or receiving instructions" />
+            <span>{t('checkout.orderCommentLabel')}</span>
+            <textarea className="form-input form-textarea" rows={3} value={orderComment} onChange={(e) => setOrderComment(e.target.value)} placeholder={t('checkout.orderCommentPlaceholder')} />
           </label>
         </article>
       </div>

@@ -12,7 +12,7 @@ import { AddToCompareButton } from '@/components/storefront/add-to-compare-butto
 import { AddToWishlistButton } from '@/components/storefront/add-to-wishlist-button';
 import { withLocalePath } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
-import { getServerSitePreferences } from '@/lib/i18n-server';
+import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-server';
 import { buildBreadcrumbJsonLd, buildMetadata } from '@/lib/seo';
 import { SITE_URL } from '@/lib/site-config';
 import { listShellCatalogCategories, mergeCategoriesWithShell, resolveStorefrontCategory } from '@/lib/catalog-categories';
@@ -78,6 +78,7 @@ export default async function CategoryPage({
   searchParams: CategoryPageSearchParams;
 }) {
   const [{ locale }, routeParams, query] = await Promise.all([getServerSitePreferences(), params, searchParams]);
+  const { t } = getServerTranslations(locale);
   const apiCategories = await getCategories().catch(() => []);
   const categories = mergeCategoriesWithShell(apiCategories);
   const selectedCategory = resolveStorefrontCategory(routeParams.categorySlug, apiCategories);
@@ -173,18 +174,18 @@ export default async function CategoryPage({
   const relatedCategories = categories.filter((item) => item.slug !== category.slug).slice(0, 6);
   const faqItems = [
     {
-      question: `How do I narrow ${category.name} by stock and purchase mode?`,
-      answer: 'Use the toolbar and left-side chips to combine in-stock-only with direct-buy or inquiry models, then share the resulting URL with your team.',
+      question: t('catalog.faqNarrowQuestion', { category: category.name }),
+      answer: t('catalog.faqNarrowAnswer'),
     },
     {
-      question: `Can I compare ${category.name} SKUs before ordering?`,
-      answer: 'Yes. Add up to four SKUs to the compare drawer and open the compare page when you are ready for side-by-side review.',
+      question: t('catalog.faqCompareQuestion', { category: category.name }),
+      answer: t('catalog.faqCompareAnswer'),
     },
   ];
   const breadcrumbJsonLd = buildBreadcrumbJsonLd(
     [
-      { name: 'Home', path: '/' },
-      { name: 'Products', path: '/products' },
+      { name: t('catalog.breadcrumbHome'), path: '/' },
+      { name: t('catalog.breadcrumbProducts'), path: '/products' },
       { name: category.name, path: `/c/${category.slug}` },
     ],
     locale,
@@ -212,38 +213,38 @@ export default async function CategoryPage({
       <section className="section catalog-page-section">
         <div className="section-inner catalog-stack">
           <nav className="detail-breadcrumbs" aria-label="Breadcrumb">
-            <Link href={normalizeLocalePath('/', locale)}>Home</Link>
+            <Link href={normalizeLocalePath('/', locale)}>{t('catalog.breadcrumbHome')}</Link>
             <span>/</span>
-            <Link href={normalizeLocalePath('/products', locale)}>Products</Link>
+            <Link href={normalizeLocalePath('/products', locale)}>{t('catalog.breadcrumbProducts')}</Link>
             <span>/</span>
             <span>{selectedCategory.name}</span>
           </nav>
 
           <article className="info-card category-hero-band">
             <div>
-              <div className="card-kicker">Category</div>
+              <div className="card-kicker">{t('catalog.categoryKicker')}</div>
               <h1 className="section-title category-hero-title">{selectedCategory.name}</h1>
-              <p className="section-description">{selectedCategory.description ?? 'Engineering-grade product family with direct-buy and RFQ support.'}</p>
+              <p className="section-description">{selectedCategory.description ?? t('catalog.heroFallbackDesc')}</p>
             </div>
 
             <div className="category-kpi-strip">
               <article className="summary-stat">
-                <span className="summary-label">SKUs</span>
+                <span className="summary-label">{t('catalog.kpiSkus')}</span>
                 <strong>{listing.meta.total}</strong>
               </article>
               <article className="summary-stat">
-                <span className="summary-label">From</span>
-                <strong>{startPrice === null ? 'Request quote' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(startPrice)}</strong>
+                <span className="summary-label">{t('catalog.kpiFrom')}</span>
+                <strong>{startPrice === null ? t('catalog.requestQuote') : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(startPrice)}</strong>
               </article>
               <article className="summary-stat">
-                <span className="summary-label">Lead time</span>
-                <strong>{listing.items.some((item) => item.inStock) ? 'Ships today to 5 business days' : '3 to 15 business days'}</strong>
+                <span className="summary-label">{t('catalog.kpiLeadTime')}</span>
+                <strong>{listing.items.some((item) => item.inStock) ? t('catalog.leadTimeInStock') : t('catalog.leadTimeDefault')}</strong>
               </article>
             </div>
           </article>
 
           <div className="catalog-related-chip-row">
-            <span className="summary-label">Related families</span>
+            <span className="summary-label">{t('catalog.relatedFamilies')}</span>
             <div className="filter-chip-list">
               {relatedCategories.map((item) => (
                 <Link key={item.slug} href={normalizeLocalePath(`/c/${item.slug}`, locale)} className="filter-chip filter-chip-link">
@@ -255,27 +256,27 @@ export default async function CategoryPage({
 
           <div className="catalog-results-toolbar info-card">
             <div className="catalog-results-toolbar-group">
-              <strong className="catalog-toolbar-heading">Controls</strong>
+              <strong className="catalog-toolbar-heading">{t('catalog.controlsLabel')}</strong>
               <div className="filter-chip-list">
-                <Link href={buildCategoryHref({ sort: 'featured', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'featured' ? ' is-active' : ''}`}>Bestseller</Link>
-                <Link href={buildCategoryHref({ sort: 'price-asc', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'price-asc' ? ' is-active' : ''}`}>Price asc</Link>
-                <Link href={buildCategoryHref({ sort: 'price-desc', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'price-desc' ? ' is-active' : ''}`}>Price desc</Link>
-                <Link href={buildCategoryHref({ sort: 'newest', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'newest' ? ' is-active' : ''}`}>Newest</Link>
+                <Link href={buildCategoryHref({ sort: 'featured', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'featured' ? ' is-active' : ''}`}>{t('catalog.bestseller')}</Link>
+                <Link href={buildCategoryHref({ sort: 'price-asc', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'price-asc' ? ' is-active' : ''}`}>{t('catalog.priceAsc')}</Link>
+                <Link href={buildCategoryHref({ sort: 'price-desc', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'price-desc' ? ' is-active' : ''}`}>{t('catalog.priceDesc')}</Link>
+                <Link href={buildCategoryHref({ sort: 'newest', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'newest' ? ' is-active' : ''}`}>{t('catalog.newest')}</Link>
               </div>
             </div>
 
             <div className="catalog-results-toolbar-group">
-              <strong className="catalog-toolbar-heading">View</strong>
+              <strong className="catalog-toolbar-heading">{t('catalog.viewLabel')}</strong>
               <div className="filter-chip-list">
-                <Link href={buildCategoryHref({ view: 'grid' })} className={`filter-chip filter-chip-link${selectedView === 'grid' ? ' is-active' : ''}`}>Grid</Link>
-                <Link href={buildCategoryHref({ view: 'row' })} className={`filter-chip filter-chip-link${selectedView === 'row' ? ' is-active' : ''}`}>Row</Link>
-                <Link href={buildCategoryHref({ stock: !inStockOnly, page: 1 })} className={`filter-chip filter-chip-link${inStockOnly ? ' is-active' : ''}`}>In stock only</Link>
-                <Link href={buildCategoryHref({ compare: !compareMode })} className={`filter-chip filter-chip-link${compareMode ? ' is-active' : ''}`}>Compare mode</Link>
+                <Link href={buildCategoryHref({ view: 'grid' })} className={`filter-chip filter-chip-link${selectedView === 'grid' ? ' is-active' : ''}`}>{t('catalog.grid')}</Link>
+                <Link href={buildCategoryHref({ view: 'row' })} className={`filter-chip filter-chip-link${selectedView === 'row' ? ' is-active' : ''}`}>{t('catalog.row')}</Link>
+                <Link href={buildCategoryHref({ stock: !inStockOnly, page: 1 })} className={`filter-chip filter-chip-link${inStockOnly ? ' is-active' : ''}`}>{t('catalog.inStockOnly')}</Link>
+                <Link href={buildCategoryHref({ compare: !compareMode })} className={`filter-chip filter-chip-link${compareMode ? ' is-active' : ''}`}>{t('catalog.compareMode')}</Link>
               </div>
             </div>
 
             <div className="catalog-results-toolbar-group">
-              <strong className="catalog-toolbar-heading">Per page</strong>
+              <strong className="catalog-toolbar-heading">{t('catalog.perPageLabel')}</strong>
               <div className="filter-chip-list">
                 {[24, 48, 96].map((value) => (
                   <Link key={value} href={buildCategoryHref({ pageSize: value, page: 1 })} className={`filter-chip filter-chip-link${pageSize === value ? ' is-active' : ''}`}>
@@ -289,7 +290,7 @@ export default async function CategoryPage({
           <div className="catalog-page-grid">
             <aside className="info-card catalog-sidebar catalog-filter-card">
               <div className="catalog-filter-group">
-                <h2 className="catalog-filter-title">Filter panel</h2>
+                <h2 className="catalog-filter-title">{t('catalog.filterPanelTitle')}</h2>
                 <form action={normalizeLocalePath(`/c/${selectedCategory.slug}`, locale)} className="search-inline-form catalog-search-form">
                   <input type="hidden" name="sort" value={selectedSort} />
                   <input type="hidden" name="view" value={selectedView} />
@@ -297,15 +298,15 @@ export default async function CategoryPage({
                   {selectedMode ? <input type="hidden" name="mode" value={selectedMode} /> : null}
                   {inStockOnly ? <input type="hidden" name="stock" value="in-stock" /> : null}
                   {compareMode ? <input type="hidden" name="compare" value="1" /> : null}
-                  <input name="keyword" defaultValue={query.keyword ?? ''} className="newsletter-input" placeholder={`Search within ${selectedCategory.name}`} />
-                  <button type="submit" className="button-primary">Apply</button>
+                  <input name="keyword" defaultValue={query.keyword ?? ''} className="newsletter-input" placeholder={t('catalog.searchWithin', { category: selectedCategory.name })} />
+                  <button type="submit" className="button-primary">{t('catalog.apply')}</button>
                 </form>
               </div>
 
               <div className="catalog-filter-group">
-                <h3 className="catalog-filter-subtitle">Purchase mode</h3>
+                <h3 className="catalog-filter-subtitle">{t('catalog.purchaseModeLabel')}</h3>
                 <div className="filter-chip-list">
-                  <Link href={buildCategoryHref({ mode: null, page: 1 })} className={`filter-chip filter-chip-link${!selectedMode ? ' is-active' : ''}`}>All</Link>
+                  <Link href={buildCategoryHref({ mode: null, page: 1 })} className={`filter-chip filter-chip-link${!selectedMode ? ' is-active' : ''}`}>{t('catalog.all')}</Link>
                   {listing.facets.flatMap((facet) =>
                     facet.options.map((option) => (
                       <Link key={`${facet.key}-${option.value}`} href={buildCategoryHref({ mode: selectedMode === option.value ? null : (option.value as 'buy' | 'inquiry'), page: 1 })} className={`filter-chip filter-chip-link${selectedMode === option.value ? ' is-active' : ''}`}>
@@ -317,7 +318,7 @@ export default async function CategoryPage({
               </div>
 
               <div className="catalog-filter-group">
-                <h3 className="catalog-filter-subtitle">Family shortcuts</h3>
+                <h3 className="catalog-filter-subtitle">{t('catalog.familyShortcuts')}</h3>
                 <div className="inline-link-list">
                   {relatedCategories.map((item) => (
                     <Link key={item.slug} href={normalizeLocalePath(`/c/${item.slug}`, locale)} className="sidebar-link">
@@ -333,20 +334,20 @@ export default async function CategoryPage({
               <div className="catalog-results-header">
                 <div>
                   <h2 className="section-title catalog-results-title">{selectedCategory.name}</h2>
-                  <p className="section-description">{listing.meta.total} matching products. Filters and toolbar state stay encoded in the URL for team sharing.</p>
+                  <p className="section-description">{t('catalog.matchingProducts', { count: listing.meta.total })}</p>
                 </div>
                 <div className="catalog-toolbar-card">
-                  <strong>{listing.meta.total} products</strong>
-                  <span className="section-description compact-copy">Page {listing.meta.page} of {listing.meta.totalPages}</span>
+                  <strong>{t('catalog.productsCount', { count: listing.meta.total })}</strong>
+                  <span className="section-description compact-copy">{t('catalog.pageOf', { page: listing.meta.page, totalPages: listing.meta.totalPages })}</span>
                 </div>
               </div>
 
               <div className="catalog-meta-row">
-                {query.keyword ? <span className="filter-chip">Keyword: {query.keyword}</span> : null}
-                {selectedMode ? <span className="filter-chip">Mode: {selectedMode === 'buy' ? 'Direct Buy' : 'Inquiry'}</span> : null}
-                {inStockOnly ? <span className="filter-chip">Stock: In stock only</span> : null}
+                {query.keyword ? <span className="filter-chip">{t('catalog.keywordChip', { keyword: query.keyword })}</span> : null}
+                {selectedMode ? <span className="filter-chip">{selectedMode === 'buy' ? t('catalog.modeChipBuy') : t('catalog.modeChipInquiry')}</span> : null}
+                {inStockOnly ? <span className="filter-chip">{t('catalog.stockChip')}</span> : null}
                 <Link href={normalizeLocalePath(`/c/${selectedCategory.slug}`, locale)} className="section-link">
-                  Clear filters
+                  {t('catalog.clearFilters')}
                 </Link>
               </div>
 
@@ -375,20 +376,20 @@ export default async function CategoryPage({
 
                           <div className="catalog-row-main">
                             <div className="catalog-row-topline">
-                              <span className="product-badge">{product.inStock ? 'In Stock' : 'Lead time on request'}</span>
-                              <span className="catalog-row-model">Model: {product.spu}</span>
+                              <span className="product-badge">{product.inStock ? t('catalog.inStock') : t('catalog.leadTimeOnRequest')}</span>
+                              <span className="catalog-row-model">{t('catalog.modelSpu', { spu: product.spu })}</span>
                             </div>
 
                             <h2 className="catalog-row-title">
                               <Link href={normalizeLocalePath(`/products/${product.slug}`, locale)}>{product.name}</Link>
                             </h2>
 
-                            <p className="catalog-row-description">{product.shortDescription ?? 'Factory-direct motion product with configurable specification support.'}</p>
+                            <p className="catalog-row-description">{product.shortDescription ?? t('catalog.rowFallbackDesc')}</p>
 
                             <div className="catalog-row-footer">
                               <div className="catalog-row-price-block">
-                                <p className="product-price">{product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote'}</p>
-                                <p className="product-status">{product.inStock ? 'Stock available for standard orders' : 'Quote-based sourcing workflow'}</p>
+                                <p className="product-price">{product.purchaseMode === 'buy' ? product.price.formatted : t('catalog.requestQuote')}</p>
+                                <p className="product-status">{product.inStock ? t('catalog.stockAvailable') : t('catalog.quoteWorkflow')}</p>
                               </div>
 
                               <div className="catalog-row-buttons">
@@ -396,12 +397,12 @@ export default async function CategoryPage({
                                   <AddToCartButton productId={product.id} redirectToCart={false} />
                                 ) : (
                                   <Link href={normalizeLocalePath(`/products/${product.slug}`, locale)} className="button-primary">
-                                    Request Quote
+                                    {t('catalog.requestQuote')}
                                   </Link>
                                 )}
 
                                 <Link href={normalizeLocalePath(`/products/${product.slug}`, locale)} className="button-secondary catalog-row-secondary">
-                                  View Details
+                                  {t('catalog.viewDetails')}
                                 </Link>
                                 <AddToCompareButton
                                   item={{
@@ -409,7 +410,7 @@ export default async function CategoryPage({
                                     name: product.name,
                                     slug: product.slug,
                                     spu: product.spu,
-                                    priceLabel: product.purchaseMode === 'buy' ? product.price.formatted : 'Request Quote',
+                                    priceLabel: product.purchaseMode === 'buy' ? product.price.formatted : t('catalog.requestQuote'),
                                     purchaseMode: product.purchaseMode,
                                     inStock: product.inStock,
                                     shortDescription: product.shortDescription,
@@ -425,16 +426,16 @@ export default async function CategoryPage({
                   )}
 
                   <div className="pagination-bar">
-                    <p className="section-description">Switch page sizes or continue paging while preserving the active filter set.</p>
+                    <p className="section-description">{t('catalog.paginationHint')}</p>
                     <Pagination page={listing.meta.page} totalPages={listing.meta.totalPages} buildHref={(page) => buildCategoryHref({ page })} />
                   </div>
                 </>
               ) : (
                 <article className="info-card empty-state-card">
-                  <h3 style={{ margin: 0 }}>No SKUs match this combination.</h3>
-                  <p className="section-description">Try widening the keyword, clearing stock-only, or switching back to all purchase modes.</p>
+                  <h3 style={{ margin: 0 }}>{t('catalog.emptyTitle')}</h3>
+                  <p className="section-description">{t('catalog.emptyDesc')}</p>
                   <Link href={normalizeLocalePath(`/c/${selectedCategory.slug}`, locale)} className="section-link">
-                    Reset filters
+                    {t('catalog.resetFilters')}
                   </Link>
                 </article>
               )}
@@ -442,8 +443,8 @@ export default async function CategoryPage({
               <article className="info-card category-seo-card">
                 <div className="section-header">
                   <div>
-                    <h2 className="section-title">About {selectedCategory.name}</h2>
-                    <p className="section-description">{selectedCategory.description ?? 'This category groups engineering-grade components suitable for repeatable production workflows, CAD-backed validation, and mixed direct-buy or RFQ procurement.'}</p>
+                    <h2 className="section-title">{t('catalog.aboutCategoryTitle', { category: selectedCategory.name })}</h2>
+                    <p className="section-description">{selectedCategory.description ?? t('catalog.aboutFallback')}</p>
                   </div>
                 </div>
 

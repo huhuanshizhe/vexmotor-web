@@ -3,25 +3,23 @@
  * Similar to next-intl functionality but using our existing translation system
  */
 
-import { type Locale, DEFAULT_LOCALE } from '@/lib/i18n';
+import { SUPPORTED_LOCALES, type Locale, DEFAULT_LOCALE } from '@/lib/i18n';
+import { getRegistryDefault } from '@/ui-strings/registry';
 import enTranslations from '@/locales/en.json';
-import deTranslations from '@/locales/de.json';
-import esTranslations from '@/locales/es.json';
 
 type TranslationObject = Record<string, any>;
 type TranslationParams = Record<string, string | number | boolean>;
 
-const translations: Record<Locale, TranslationObject> = {
-  en: enTranslations,
-  de: deTranslations,
-  es: esTranslations,
-};
-
-/**
- * Get nested value from object using dot notation
- */
 function getNestedValue(obj: TranslationObject, path: string): any {
   return path.split('.').reduce((current, key) => current?.[key], obj);
+}
+
+function resolveEnglishTemplate(key: string): string | undefined {
+  const fromEn = getNestedValue(enTranslations, key);
+  if (typeof fromEn === 'string') {
+    return fromEn;
+  }
+  return getRegistryDefault(key);
 }
 
 /**
@@ -84,13 +82,11 @@ export function handlePluralization(
 ): string {
   const pluralForm = pluralRules[locale](count);
   
-  // Match plural syntax: {count, plural, one {...} other {...}}
   const pluralRegex = /\{(\w+),\s*plural,\s*(.+?)\}/g;
   
   return template.replace(pluralRegex, (match, param, forms) => {
     if (param !== 'count') return match;
     
-    // Parse forms: one {item} other {items}
     const formRegex = /(zero|one|two|few|many|other)\s*\{([^}]*)\}/g;
     let result: string | null = null;
     
@@ -101,13 +97,12 @@ export function handlePluralization(
         break;
       }
       if (formMatch[1] === 'other') {
-        result = formMatch[2]; // Fallback to 'other'
+        result = formMatch[2];
       }
     }
     
     if (!result) return match;
     
-    // Replace count in result
     return result.replace(/\{count\}/g, String(count));
   });
 }
@@ -122,23 +117,16 @@ export function formatRichText(
   components?: Record<string, React.ComponentType<any>>
 ): string | React.ReactNode {
   if (!components) {
-    // Return plain text if no components provided
     return interpolateString(template, params);
   }
   
-  // Simple rich text processing
   let result = interpolateString(template, params);
-  
-  // Replace <b>...</b> with <strong>...</strong>
   result = result.replace(/<b>(.*?)<\/b>/g, '<strong>$1</strong>');
   result = result.replace(/<i>(.*?)<\/i>/g, '<em>$1</em>');
   
   return result;
 }
 
-/**
- * Interpolate params into string
- */
 function interpolateString(template: string, params?: TranslationParams): string {
   if (!params) return template;
   
@@ -161,43 +149,39 @@ export function t(
 ): string {
   const { locale = DEFAULT_LOCALE, params, count, defaultValue } = options;
   
-  const translationObj = translations[locale] || translations[DEFAULT_LOCALE];
-  let template = getNestedValue(translationObj, key);
+  let template = resolveEnglishTemplate(key);
   
-  if (typeof template !== 'string') {
+  if (!template) {
     if (process.env.NODE_ENV === 'development') {
       console.warn(`Translation key not found: "${key}" for locale "${locale}"`);
     }
     return defaultValue || key;
   }
   
-  // Handle pluralization if count is provided
   if (count !== undefined) {
     template = handlePluralization(template, count, locale, params);
   }
   
-  // Interpolate params
   return interpolateString(template, params);
 }
 
 /**
- * Get all translations for a locale (for code splitting)
+ * Get English defaults (in-repo source for registry sync)
  */
-export function getTranslationsForLocale(locale: Locale): TranslationObject {
-  return translations[locale] || translations[DEFAULT_LOCALE];
+export function getTranslationsForLocale(_locale: Locale): TranslationObject {
+  return enTranslations as TranslationObject;
 }
 
 /**
  * Check if translation key exists
  */
-export function hasTranslation(key: string, locale: Locale = DEFAULT_LOCALE): boolean {
-  const translationObj = translations[locale] || translations[DEFAULT_LOCALE];
-  return getNestedValue(translationObj, key) !== undefined;
+export function hasTranslation(key: string): boolean {
+  return resolveEnglishTemplate(key) !== undefined;
 }
 
 /**
  * Get available locales
  */
 export function getAvailableLocales() {
-  return Object.keys(translations) as Locale[];
+  return [...SUPPORTED_LOCALES];
 }

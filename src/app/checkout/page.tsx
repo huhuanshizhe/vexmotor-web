@@ -1,5 +1,5 @@
 import { StorefrontFrame } from '@/components/layout/storefront-frame';
-import { getServerSitePreferences } from '@/lib/i18n-server';
+import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-server';
 import { buildMetadata } from '@/lib/seo';
 import { getCommerceConfig } from '@/lib/storefront-api';
 
@@ -7,9 +7,10 @@ import { CheckoutClient } from './checkout-client';
 
 export async function generateMetadata() {
   const { locale } = await getServerSitePreferences();
+  const { t } = getServerTranslations(locale);
   return buildMetadata({
-    title: 'Checkout — STEPMOTECH',
-    description: 'Secure one-page checkout for direct-buy orders.',
+    title: t('checkoutPage.metaTitle'),
+    description: t('checkoutPage.metaDescription'),
     path: '/checkout',
     noIndex: true,
     locale,

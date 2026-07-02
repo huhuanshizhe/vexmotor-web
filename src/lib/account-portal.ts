@@ -1,12 +1,12 @@
 export const accountNavLinks = [
-  { href: '/account', label: 'Overview' },
-  { href: '/account/orders', label: 'Orders' },
-  { href: '/account/quotes', label: 'Quotes' },
-  { href: '/account/addresses', label: 'Addresses' },
-  { href: '/account/company', label: 'Company' },
-  { href: '/account/invoices', label: 'Invoices' },
-  { href: '/account/downloads', label: 'Downloads' },
-  { href: '/account/settings', label: 'Settings' },
+  { href: '/account', labelKey: 'accountPortal.navOverview' },
+  { href: '/account/orders', labelKey: 'accountPortal.navOrders' },
+  { href: '/account/quotes', labelKey: 'accountPortal.navQuotes' },
+  { href: '/account/addresses', labelKey: 'accountPortal.navAddresses' },
+  { href: '/account/company', labelKey: 'accountPortal.navCompany' },
+  { href: '/account/invoices', labelKey: 'accountPortal.navInvoices' },
+  { href: '/account/downloads', labelKey: 'accountPortal.navDownloads' },
+  { href: '/account/settings', labelKey: 'accountPortal.navSettings' },
 ] as const;
 
 export type AccountQuoteStatus = 'Submitted' | 'Quoted' | 'Negotiating' | 'Won' | 'Expired';

@@ -14,7 +14,8 @@ import { ProductGallery } from '@/components/storefront/product-gallery';
 import { ProductInquiryForm } from '@/components/storefront/product-inquiry-form';
 import { RecentlyViewedProducts } from '@/components/storefront/recently-viewed-products';
 import { type Locale, withLocalePath } from '@/lib/i18n';
-import { getServerSitePreferences } from '@/lib/i18n-server';
+import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-server';
+import { fetchUiStringGroups } from '@/lib/ui-strings-client';
 import { buildCompatibleGroups, type DetailCompatibleGroup } from '@/lib/product-compatibility';
 import { buildApplicationCards, buildDocumentCards, buildFaqItems, buildOverviewBullets, buildTrustItems, matchesAttachmentAsset } from '@/lib/product-content';
 import { buildFaqJsonLd, buildProductJsonLd } from '@/lib/product-seo';
@@ -32,11 +33,12 @@ export const revalidate = 300;
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const { locale } = await getServerSitePreferences();
+  const { t } = getServerTranslations(locale);
   const p = await getProductBySlug(slug);
 
   if (!p) {
     return buildMetadata({
-      title: 'Product not found — STEPMOTECH',
+      title: t('productDetail.productNotFound'),
       path: '/products',
       locale,
       noIndex: true,
@@ -61,6 +63,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { locale } = await getServerSitePreferences();
+  const uiStrings = await fetchUiStringGroups(locale, ['productDetail', 'product', 'navigation', 'catalog']).catch(() => ({}));
+  const { t } = getServerTranslations(locale, uiStrings);
   const [product, homeData, commerceConfig] = await Promise.all([
     getProductBySlug(slug),
     getHomeData(),
@@ -106,18 +110,20 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const topSpecs = specGroups.flatMap((g) => g.rows).slice(0, 5);
   const heroSpecs = topSpecs.filter((item) => item.label !== 'SKU' && item.label !== 'SPU').slice(0, 4);
 
-  const priceHeadline = p.purchaseMode === 'buy' ? p.price.formatted : 'Request Quote';
+  const priceHeadline = p.purchaseMode === 'buy' ? p.price.formatted : t('product.requestQuote');
   const productCode = resolveProductSpu(p);
 
   const lifecycleBadge = (() => {
     if (!p.lifecycleStatus || p.lifecycleStatus === 'active') return null;
-    const map: Record<string, { label: string; className: string }> = {
-      new: { label: 'New', className: 'is-accent' },
-      nfd: { label: 'End of Life Notice', className: 'is-warning' },
-      eol: { label: 'Discontinued', className: 'is-critical' },
-      last_time_buy: { label: 'Last Time Buy', className: 'is-critical' },
+    const map: Record<string, { key: string; className: string }> = {
+      new: { key: 'productDetail.lifecycleNew', className: 'is-accent' },
+      nfd: { key: 'productDetail.lifecycleNFD', className: 'is-warning' },
+      eol: { key: 'productDetail.lifecycleEOL', className: 'is-critical' },
+      last_time_buy: { key: 'productDetail.lifecycleLTB', className: 'is-critical' },
     };
-    return map[p.lifecycleStatus] ?? null;
+    const entry = map[p.lifecycleStatus];
+    if (!entry) return null;
+    return { label: t(entry.key), className: entry.className };
   })();
 
   const eolDeadline = p.eolDate ? new Date(p.eolDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : null;
@@ -198,9 +204,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       <section className="section product-detail-section">
         <div className="section-inner">
           <nav className="detail-breadcrumbs" aria-label="Breadcrumb">
-            <Link href={withLocalePath('/', locale)}>Home</Link>
+            <Link href={withLocalePath('/', locale)}>{t('navigation.home')}</Link>
             <span>/</span>
-            <Link href={productsPath}>Products</Link>
+            <Link href={productsPath}>{t('navigation.products')}</Link>
             {category ? (
               <>
                 <span>/</span>
@@ -217,9 +223,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 {category ? (
                   <Link href={categoryPath} className="pdp-top-eyebrow">{category.name}</Link>
                 ) : (
-                  <span className="pdp-top-eyebrow">Catalog product</span>
+                  <span className="pdp-top-eyebrow">{t('productDetail.catalogProduct')}</span>
                 )}
-                <span className="pdp-top-sku">SPU {p.spu}</span>
+                <span className="pdp-top-sku">{t('product.spu')} {p.spu}</span>
               </div>
               <h1 className="pdp-top-title">{p.name}</h1>
               {lifecycleBadge ? (
@@ -232,13 +238,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <div className="product-gallery-column">
               <ProductGallery images={galleryImages} productName={p.name} />
               <div className="detail-share-row pdp-share-row">
-                <span className="summary-label">Share & docs</span>
+                <span className="summary-label">{t('productDetail.shareDocs')}</span>
                 <div className="detail-share-chips">
-                  <CopyActionButton value={productUrl} idleLabel="Copy link" copiedLabel="Link copied" toastTitle="Product link copied" className="button-secondary" />
+                  <CopyActionButton value={productUrl} idleLabel={t('productDetail.copyLink')} copiedLabel={t('productDetail.linkCopied')} toastTitle={t('productDetail.linkCopiedToast')} className="button-secondary" />
                   {datasheetAttachment ? (
-                    <a href={datasheetAttachment.url} target="_blank" rel="noreferrer" className="button-secondary">Datasheet</a>
+                    <a href={datasheetAttachment.url} target="_blank" rel="noreferrer" className="button-secondary">{t('productDetail.datasheet')}</a>
                   ) : null}
-                  <Link href={quoteHref} className="button-secondary">Engineering support</Link>
+                  <Link href={quoteHref} className="button-secondary">{t('productDetail.engineeringSupport')}</Link>
                 </div>
               </div>
             </div>
@@ -255,17 +261,17 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 >
               <div className="pdp-header-stack">
                 <div className="pdp-sku-row">
-                  <p className="product-meta">SPU {p.spu}</p>
+                  <p className="product-meta">{t('product.spu')} {p.spu}</p>
                   <div className="pdp-sku-actions">
-                    <CopyActionButton value={p.spu} idleLabel="Copy SPU" copiedLabel="SPU copied" toastTitle="SPU copied" className="button-secondary" />
+                    <CopyActionButton value={p.spu} idleLabel={t('productDetail.copySpu')} copiedLabel={t('productDetail.spuCopied')} toastTitle={t('productDetail.spuCopied')} className="button-secondary" />
                     {datasheetAttachment ? (
-                      <a href={datasheetAttachment.url} target="_blank" rel="noreferrer" className="button-secondary">View datasheet</a>
+                      <a href={datasheetAttachment.url} target="_blank" rel="noreferrer" className="button-secondary">{t('productDetail.viewDatasheet')}</a>
                     ) : null}
                   </div>
                 </div>
                 <div className="pdp-stock-row">
                   <span className={`pdp-stock-status${p.inStock ? ' is-available' : ' is-unavailable'}`}>
-                    {p.inStock ? `In stock · ${p.stockQuantity} available` : 'Out of stock'}
+                    {p.inStock ? t('productDetail.inStockAvailable', { count: p.stockQuantity }) : t('productDetail.outOfStock')}
                   </span>
                 </div>
               </div>
@@ -286,9 +292,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               </div>
 
               <div className="pdp-logistics-bar">
-                <span className="pdp-logistics-item">{p.moq > 1 ? `MOQ ${p.moq}` : 'No MOQ'}</span>
+                <span className="pdp-logistics-item">{p.moq > 1 ? t('productDetail.moqLabel', { moq: p.moq }) : t('productDetail.noMinimum')}</span>
                 <span className="pdp-logistics-divider" aria-hidden="true" />
-                <span className="pdp-logistics-item">{p.inStock ? `${p.stockQuantity} in stock` : 'Build to order'}</span>
+                <span className="pdp-logistics-item">{p.inStock ? t('productDetail.inStockCount', { count: p.stockQuantity }) : t('productDetail.buildToOrder')}</span>
                 <span className="pdp-logistics-divider" aria-hidden="true" />
                 <span className="pdp-logistics-item">{p.leadTimeMin}–{p.leadTimeMax} {p.leadTimeUnit.replace(/_/g, ' ')}</span>
                 {p.efficiencyClass ? (
@@ -301,9 +307,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
               {p.paidSampleEnabled ? (
                 <div className="pdp-sample-banner">
-                  <span className="pdp-sample-badge">Pay-for-Shipping Sample</span>
-                  <p className="pdp-sample-desc">Try before you buy — order 1 unit as a sample, pay only shipping. Our team will review and confirm your sample request.</p>
-                  <Link href={`${sampleHref}&sample=1`} className="button-primary pdp-sample-cta">Request Sample — Shipping Only</Link>
+                  <span className="pdp-sample-badge">{t('productDetail.sampleBadge')}</span>
+                  <p className="pdp-sample-desc">{t('productDetail.sampleDesc')}</p>
+                  <Link href={`${sampleHref}&sample=1`} className="button-primary pdp-sample-cta">{t('productDetail.sampleCta')}</Link>
                 </div>
               ) : null}
 
@@ -319,8 +325,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   listUnitPrice={{ amount: p.price.amount, currency: p.price.currency, formatted: p.price.formatted }}
                 />
                 <div className="pdp-support-links">
-                  <Link href={customHref} className="detail-inline-link">Discuss a custom variant</Link>
-                  <Link href={contactPath} className="detail-inline-link">Talk to engineering support</Link>
+                  <Link href={customHref} className="detail-inline-link">{t('productDetail.discussCustom')}</Link>
+                  <Link href={contactPath} className="detail-inline-link">{t('productDetail.talkToEngineer')}</Link>
                 </div>
               </div>
 
@@ -345,17 +351,17 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 <>
               <div className="pdp-header-stack">
                 <div className="pdp-sku-row">
-                  <p className="product-meta">SPU {p.spu}</p>
+                  <p className="product-meta">{t('product.spu')} {p.spu}</p>
                   <div className="pdp-sku-actions">
-                    <CopyActionButton value={p.spu} idleLabel="Copy SPU" copiedLabel="SPU copied" toastTitle="SPU copied" className="button-secondary" />
+                    <CopyActionButton value={p.spu} idleLabel={t('productDetail.copySpu')} copiedLabel={t('productDetail.spuCopied')} toastTitle={t('productDetail.spuCopied')} className="button-secondary" />
                     {datasheetAttachment ? (
-                      <a href={datasheetAttachment.url} target="_blank" rel="noreferrer" className="button-secondary">View datasheet</a>
+                      <a href={datasheetAttachment.url} target="_blank" rel="noreferrer" className="button-secondary">{t('productDetail.viewDatasheet')}</a>
                     ) : null}
                   </div>
                 </div>
                 <div className="pdp-stock-row">
                   <span className={`pdp-stock-status${p.inStock ? ' is-available' : ' is-unavailable'}`}>
-                    {p.inStock ? `In stock · ${p.stockQuantity} available` : 'Out of stock'}
+                    {p.inStock ? t('productDetail.inStockAvailable', { count: p.stockQuantity }) : t('productDetail.outOfStock')}
                   </span>
                 </div>
               </div>
@@ -374,9 +380,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               </div>
 
               <div className="pdp-logistics-bar">
-                <span className="pdp-logistics-item">{p.moq > 1 ? `MOQ ${p.moq}` : 'No MOQ'}</span>
+                <span className="pdp-logistics-item">{p.moq > 1 ? t('productDetail.moqLabel', { moq: p.moq }) : t('productDetail.noMinimum')}</span>
                 <span className="pdp-logistics-divider" aria-hidden="true" />
-                <span className="pdp-logistics-item">{p.inStock ? `${p.stockQuantity} in stock` : 'Build to order'}</span>
+                <span className="pdp-logistics-item">{p.inStock ? t('productDetail.inStockCount', { count: p.stockQuantity }) : t('productDetail.buildToOrder')}</span>
                 <span className="pdp-logistics-divider" aria-hidden="true" />
                 <span className="pdp-logistics-item">{p.leadTimeMin}–{p.leadTimeMax} {p.leadTimeUnit.replace(/_/g, ' ')}</span>
                 {p.efficiencyClass ? (
@@ -389,9 +395,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
               {p.paidSampleEnabled ? (
                 <div className="pdp-sample-banner">
-                  <span className="pdp-sample-badge">Pay-for-Shipping Sample</span>
-                  <p className="pdp-sample-desc">Try before you buy — order 1 unit as a sample, pay only shipping. Our team will review and confirm your sample request.</p>
-                  <Link href={`${sampleHref}&sample=1`} className="button-primary pdp-sample-cta">Request Sample — Shipping Only</Link>
+                  <span className="pdp-sample-badge">{t('productDetail.sampleBadge')}</span>
+                  <p className="pdp-sample-desc">{t('productDetail.sampleDesc')}</p>
+                  <Link href={`${sampleHref}&sample=1`} className="button-primary pdp-sample-cta">{t('productDetail.sampleCta')}</Link>
                 </div>
               ) : null}
 
@@ -400,8 +406,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   <ProductInquiryForm productId={p.id} productName={p.name} />
                 </div>
                 <div className="pdp-support-links">
-                  <Link href={customHref} className="detail-inline-link">Discuss a custom variant</Link>
-                  <Link href={contactPath} className="detail-inline-link">Talk to engineering support</Link>
+                  <Link href={customHref} className="detail-inline-link">{t('productDetail.discussCustom')}</Link>
+                  <Link href={contactPath} className="detail-inline-link">{t('productDetail.talkToEngineer')}</Link>
                 </div>
                 <div className="pdp-utility-actions">
                   <AddToCompareButton
@@ -410,7 +416,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                       name: p.name,
                       slug: p.slug,
                       spu: productCode,
-                      priceLabel: 'Request Quote',
+                      priceLabel: t('product.requestQuote'),
                       purchaseMode: p.purchaseMode,
                       inStock: p.inStock,
                       shortDescription: p.shortDescription,
@@ -438,9 +444,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               ) : null}
 
               <article className="pdp-custom-note">
-                <span className="summary-label">Custom program</span>
-                <strong>Need changes to shaft, winding, gearbox, or environment?</strong>
-                <Link href={customHref} className="section-link">Start custom development with this SKU</Link>
+                <span className="summary-label">{t('productDetail.customProgram')}</span>
+                <strong>{t('productDetail.customNoteTitle')}</strong>
+                <Link href={customHref} className="section-link">{t('productDetail.customDevLink')}</Link>
               </article>
             </article>
           </div>
@@ -469,14 +475,14 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <article id="detail-compatible" className="info-card detail-panel-card">
               <div className="detail-panel-heading">
                 <div className="detail-panel-copy">
-                  <span className="card-kicker">Compatible planning</span>
-                  <h2 className="detail-panel-title">Compatible and recommended products already paired with this SKU.</h2>
+                  <span className="card-kicker">{t('productDetail.compatiblePlanning')}</span>
+                  <h2 className="detail-panel-title">{t('productDetail.compatibleDescription')}</h2>
                 </div>
                 <div className="detail-panel-badges">
-                  <span className="detail-panel-badge">{compatibleProductCount} matches</span>
+                  <span className="detail-panel-badge">{t('productDetail.matches', { count: compatibleProductCount })}</span>
                 </div>
               </div>
-              <CompatibleGroupsSection groups={visibleCompatibleGroups} locale={locale} />
+              <CompatibleGroupsSection groups={visibleCompatibleGroups} locale={locale} t={t} />
             </article>
           ) : null}
 
@@ -484,11 +490,11 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <article className="info-card detail-panel-card detail-faq-card">
               <div className="detail-panel-heading">
                 <div className="detail-panel-copy">
-                  <span className="card-kicker">Support briefing</span>
-                  <h2 className="detail-panel-title">Quick answers on ordering, documents and fulfillment.</h2>
+                  <span className="card-kicker">{t('productDetail.supportBriefing')}</span>
+                  <h2 className="detail-panel-title">{t('productDetail.supportBriefingTitle')}</h2>
                 </div>
                 <div className="detail-panel-badges">
-                  <span className="detail-panel-badge">{faqItems.length} answers</span>
+                  <span className="detail-panel-badge">{t('productDetail.answersCount', { count: faqItems.length })}</span>
                 </div>
               </div>
               <div className="pdp-faq-list">
@@ -512,7 +518,15 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   );
 }
 
-function CompatibleGroupsSection({ groups, locale }: { groups: DetailCompatibleGroup[]; locale: Locale }) {
+function CompatibleGroupsSection({
+  groups,
+  locale,
+  t,
+}: {
+  groups: DetailCompatibleGroup[];
+  locale: Locale;
+  t: (key: string, params?: Record<string, string | number | boolean>) => string;
+}) {
   return (
     <div className="compatible-groups-container">
       {groups.map((group) => (
@@ -531,15 +545,15 @@ function CompatibleGroupsSection({ groups, locale }: { groups: DetailCompatibleG
                   {item.coverImage ? (
                     <img src={item.coverImage.url} alt={item.coverImage.alt || item.name} loading="lazy" />
                   ) : (
-                    <div className="compatible-product-placeholder" aria-hidden="true">No image</div>
+                    <div className="compatible-product-placeholder" aria-hidden="true">{t('productDetail.noImage')}</div>
                   )}
                 </div>
                 <div className="compatible-product-info">
-                  <p className="product-meta">SPU {item.spu}</p>
+                  <p className="product-meta">{t('product.spu')} {item.spu}</p>
                   <h4 className="compatible-product-name">{item.name}</h4>
                   <div className="compatible-product-footer">
-                    <span className="compatible-product-price">{item.purchaseMode === 'buy' ? item.price.formatted : 'Request Quote'}</span>
-                    <span className="compatible-product-mode">{item.purchaseMode === 'buy' ? (item.inStock ? 'In stock' : 'Lead time') : 'RFQ'}</span>
+                    <span className="compatible-product-price">{item.purchaseMode === 'buy' ? item.price.formatted : t('product.requestQuote')}</span>
+                    <span className="compatible-product-mode">{item.purchaseMode === 'buy' ? (item.inStock ? t('product.inStock') : t('productDetail.leadTimeShort')) : t('productDetail.rfqShort')}</span>
                   </div>
                 </div>
               </Link>

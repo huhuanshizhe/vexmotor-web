@@ -9,6 +9,7 @@ import {
 } from '@/components/addresses/address-form-fields';
 import { AddressPicker } from '@/components/addresses/address-picker';
 import type { AccountAddress } from '@/lib/account-api';
+import { useTranslation } from '@/lib/i18n-context';
 
 type CheckoutAddressSectionProps = {
   isGuest: boolean;
@@ -43,13 +44,15 @@ export function CheckoutAddressSection({
   onGuestBillingFormChange,
   onAddressesChange,
 }: CheckoutAddressSectionProps) {
+  const { t } = useTranslation();
+
   return (
     <article className="info-card checkout-step-card checkout-section-anchor" id="checkout-address">
       <div className="section-header trade-card-header">
         <div>
-          <h2 className="cart-section-title">Shipping address</h2>
+          <h2 className="cart-section-title">{t('checkout.shippingAddressTitle')}</h2>
           <p className="section-description">
-            {isGuest ? 'Enter the delivery destination for this order.' : 'Select a saved address or add a new one.'}
+            {isGuest ? t('checkout.shippingAddressGuest') : t('checkout.shippingAddressSaved')}
           </p>
         </div>
       </div>
@@ -74,12 +77,12 @@ export function CheckoutAddressSection({
           checked={billingSameAsShipping}
           onChange={(event) => onBillingSameAsShippingChange(event.target.checked)}
         />
-        <span>Use the same address for billing</span>
+        <span>{t('checkout.billingSameAsShipping')}</span>
       </label>
 
       {!billingSameAsShipping ? (
         <div className="checkout-billing-address-block">
-          <h3 className="cart-section-title">Invoice address</h3>
+          <h3 className="cart-section-title">{t('checkout.invoiceAddress')}</h3>
           {isGuest ? (
             <AddressFormFields form={guestBillingForm} onChange={onGuestBillingFormChange} variant="checkout" />
           ) : (
@@ -91,7 +94,7 @@ export function CheckoutAddressSection({
               name="checkout-billing-address"
               defaultCountryCode={defaultCountryCode}
               variant="checkout"
-              addLabel="Add billing address"
+              addLabel={t('checkout.addBillingAddress')}
             />
           )}
         </div>

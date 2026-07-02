@@ -6,6 +6,7 @@ import { useMemo } from 'react';
 import { LoginForm } from '@/components/storefront/login-form';
 import { RegisterBusinessForm } from '@/components/storefront/register-business-form';
 import { parseLocaleFromPathname } from '@/lib/i18n';
+import { useTranslation } from '@/lib/i18n-context';
 
 export type CheckoutAuthMode = 'guest' | 'sign-in' | 'register' | 'logged-in';
 
@@ -40,22 +41,23 @@ export function CheckoutAuthPanel({
 }: CheckoutAuthPanelProps) {
   const pathname = usePathname();
   const locale = useMemo(() => parseLocaleFromPathname(pathname).locale, [pathname]);
+  const { t } = useTranslation();
 
   if (mode === 'logged-in') {
     return (
       <article className="info-card checkout-account-bar checkout-section-anchor" id="checkout-account">
-        <div className="card-kicker">Account</div>
+        <div className="card-kicker">{t('checkout.account')}</div>
         <div className="checkout-account-logged-in">
           <div className="checkout-account-summary">
             <p className="checkout-account-greeting">
-              <span className="checkout-account-greeting-label">Logged in as</span>
+              <span className="checkout-account-greeting-label">{t('checkout.loggedInAs')}</span>
               <span className="checkout-account-greeting-name">{userDisplayName}</span>
             </p>
             {userEmail ? <span className="section-description">{userEmail}</span> : null}
           </div>
           {onSignOut ? (
             <button type="button" className="checkout-sign-out-link" onClick={onSignOut}>
-              Not you? Sign out
+              {t('checkout.notYouSignOut')}
             </button>
           ) : null}
         </div>
@@ -67,12 +69,12 @@ export function CheckoutAuthPanel({
     <article className="info-card checkout-account-bar checkout-auth-panel checkout-section-anchor" id="checkout-account">
       <div className="section-header trade-card-header">
         <div>
-          <h2 className="cart-section-title">Account</h2>
-          <p className="section-description">Continue as guest, sign in, or create a business account without leaving checkout.</p>
+          <h2 className="cart-section-title">{t('checkout.account')}</h2>
+          <p className="section-description">{t('checkout.accountDesc')}</p>
         </div>
       </div>
 
-      <div className="checkout-auth-segmented" role="tablist" aria-label="Checkout account mode">
+      <div className="checkout-auth-segmented" role="tablist" aria-label={t('checkout.accountModeNav')}>
         {(['guest', 'sign-in', 'register'] as const).map((tab) => (
           <button
             key={tab}
@@ -82,7 +84,7 @@ export function CheckoutAuthPanel({
             className={`checkout-auth-segment${mode === tab ? ' is-active' : ''}`}
             onClick={() => onModeChange(tab)}
           >
-            {tab === 'guest' ? 'Guest' : tab === 'sign-in' ? 'Sign in' : 'Register'}
+            {tab === 'guest' ? t('checkout.guest') : tab === 'sign-in' ? t('checkout.signIn') : t('checkout.register')}
           </button>
         ))}
       </div>
@@ -91,16 +93,16 @@ export function CheckoutAuthPanel({
         <div className="checkout-auth-body">
           <div className="checkout-address-form-grid">
             <label className="form-field">
-              <span>Contact email</span>
-              <input className="form-input" type="email" value={contactEmail} onChange={(e) => onContactEmailChange(e.target.value)} placeholder="buyer@company.com" />
+              <span>{t('checkout.contactEmail')}</span>
+              <input className="form-input" type="email" value={contactEmail} onChange={(e) => onContactEmailChange(e.target.value)} placeholder={t('checkout.contactEmailPlaceholder')} />
             </label>
             <label className="form-field">
-              <span>Contact phone</span>
-              <input className="form-input" value={contactPhone} onChange={(e) => onContactPhoneChange(e.target.value)} placeholder="Optional" />
+              <span>{t('checkout.contactPhone')}</span>
+              <input className="form-input" value={contactPhone} onChange={(e) => onContactPhoneChange(e.target.value)} placeholder={t('checkout.optional')} />
             </label>
             <label className="checkout-toggle-row checkout-toggle-card">
               <input type="checkbox" checked={subscribeToUpdates} onChange={(e) => onSubscribeToUpdatesChange(e.target.checked)} />
-              <span>Subscribe to engineering updates and product launches.</span>
+              <span>{t('checkout.subscribeUpdates')}</span>
             </label>
           </div>
         </div>

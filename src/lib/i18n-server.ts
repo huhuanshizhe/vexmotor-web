@@ -14,19 +14,10 @@ import {
 } from '@/lib/i18n';
 import { getRegistryDefault } from '@/ui-strings/registry';
 
-// Server-side translation JSON imports (no 'use client' boundary)
 import enTranslations from '@/locales/en.json';
-import deTranslations from '@/locales/de.json';
-import esTranslations from '@/locales/es.json';
 
 type TranslationObject = Record<string, any>;
 type TranslationParams = Record<string, string | number | boolean>;
-
-const translations: Record<Locale, TranslationObject> = {
-  en: enTranslations,
-  de: deTranslations,
-  es: esTranslations,
-};
 
 function getNestedValue(obj: TranslationObject, path: string): any {
   return path.split('.').reduce((current, key) => current?.[key], obj);
@@ -39,10 +30,17 @@ function interpolateString(template: string, params?: TranslationParams): string
   }, template);
 }
 
+function resolveEnglishTemplate(key: string): string | undefined {
+  const fromEn = getNestedValue(enTranslations, key);
+  if (typeof fromEn === 'string') {
+    return fromEn;
+  }
+  return getRegistryDefault(key);
+}
+
 /**
  * Server-side translation helper — safe to use in Server Components.
- * Unlike the `getTranslations` in i18n-context.tsx (which is 'use client'),
- * this version imports JSON directly and has no client boundary.
+ * Resolution order: API uiStrings → en.json / registry English defaults.
  */
 export function getServerTranslations(locale: Locale = DEFAULT_LOCALE, uiStrings: Record<string, string> = {}) {
   return {
@@ -52,15 +50,9 @@ export function getServerTranslations(locale: Locale = DEFAULT_LOCALE, uiStrings
         return interpolateString(fromRuntime, params);
       }
 
-      const translationObj = translations[locale] || translations[DEFAULT_LOCALE];
-      const template = getNestedValue(translationObj, key);
-      if (typeof template === 'string') {
+      const template = resolveEnglishTemplate(key);
+      if (template) {
         return interpolateString(template, params);
-      }
-
-      const registryDefault = getRegistryDefault(key);
-      if (registryDefault) {
-        return interpolateString(registryDefault, params);
       }
 
       return key;

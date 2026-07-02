@@ -15,22 +15,24 @@ import {
 } from '@/lib/i18n';
 import { getRegistryDefault } from '@/ui-strings/registry';
 
-// Import translations
+// Import English defaults only — de/es translations come from Admin ui_string_translations via API.
 import enTranslations from '@/locales/en.json';
-import deTranslations from '@/locales/de.json';
-import esTranslations from '@/locales/es.json';
 
 // Translation type
 type TranslationValue = string | number | boolean;
 type TranslationParams = Record<string, TranslationValue>;
 type TranslationObject = Record<string, any>;
 
-// All translations map
-const translations: Record<Locale, TranslationObject> = {
-  en: enTranslations,
-  de: deTranslations,
-  es: esTranslations,
-};
+// All translations map — English file is the in-repo fallback; other locales use API uiStrings.
+const enDefaults = enTranslations as TranslationObject;
+
+function resolveEnglishTemplate(key: string): string | undefined {
+  const template = getNestedValue(enDefaults, key);
+  if (typeof template === 'string') {
+    return template;
+  }
+  return getRegistryDefault(key);
+}
 
 // Context type
 type I18nContextType = {
@@ -78,16 +80,10 @@ export function I18nProvider({
       return interpolateString(fromRuntime, params);
     }
 
-    const translationObj = translations[locale] || translations[DEFAULT_LOCALE];
-    const template = getNestedValue(translationObj, key);
+    const template = resolveEnglishTemplate(key);
 
-    if (typeof template === 'string') {
+    if (template) {
       return interpolateString(template, params);
-    }
-
-    const registryDefault = getRegistryDefault(key);
-    if (registryDefault) {
-      return interpolateString(registryDefault, params);
     }
 
     // Fallback: return key if translation not found
@@ -140,13 +136,12 @@ export function useTranslation() {
 export function getTranslations(locale: Locale = DEFAULT_LOCALE) {
   return {
     t: (key: string, params?: TranslationParams): string => {
-      const translationObj = translations[locale] || translations[DEFAULT_LOCALE];
-      const template = getNestedValue(translationObj, key);
-      
-      if (typeof template === 'string') {
+      const template = resolveEnglishTemplate(key);
+
+      if (template) {
         return interpolateString(template, params);
       }
-      
+
       return key;
     },
     locale,

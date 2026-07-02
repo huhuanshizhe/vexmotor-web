@@ -1,14 +1,15 @@
 import { StorefrontFrame } from '@/components/layout/storefront-frame';
-import { getServerSitePreferences } from '@/lib/i18n-server';
+import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-server';
 import { buildMetadata } from '@/lib/seo';
 
 import { QuoteClient } from './quote-client';
 
 export async function generateMetadata() {
   const { locale } = await getServerSitePreferences();
+  const { t } = getServerTranslations(locale);
   return buildMetadata({
-    title: 'Request a Quote — STEPMOTECH',
-    description: 'Submit RFQ lines with quantity, target market, and engineering notes.',
+    title: t('quotePage.metaTitle'),
+    description: t('quotePage.metaDescription'),
     path: '/quote',
     noIndex: true,
     locale,

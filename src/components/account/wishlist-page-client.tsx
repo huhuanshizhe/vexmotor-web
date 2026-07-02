@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState, useTransition } from 'react';
 import { useAuth } from '@/components/providers/auth-provider';
 import { AddToCartButton } from '@/components/storefront/add-to-cart-button';
 import { fetchWishlist, removeWishlistItem, type WishlistItem } from '@/lib/account-api';
+import { useTranslation } from '@/lib/i18n-context';
 import { useLocalizedPath } from '@/lib/use-localized-path';
 
 type PreviewImage = {
@@ -16,6 +17,7 @@ type PreviewImage = {
 
 export function WishlistPageClient() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const localizedPath = useLocalizedPath();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,8 +59,8 @@ export function WishlistPageClient() {
   if (isLoading) {
     return (
       <div className="account-panel-stack wishlist-page">
-        <h1 className="section-title">Wishlist</h1>
-        <p className="section-description">Loading saved products…</p>
+        <h1 className="section-title">{t('wishlist.title')}</h1>
+        <p className="section-description">{t('wishlist.loading')}</p>
       </div>
     );
   }
@@ -67,11 +69,13 @@ export function WishlistPageClient() {
     <div className="account-panel-stack wishlist-page">
       <div className="wishlist-page-header">
         <div>
-          <h1 className="section-title">Wishlist</h1>
+          <h1 className="section-title">{t('wishlist.title')}</h1>
           <p className="section-description">
             {items.length
-              ? `${items.length} saved ${items.length === 1 ? 'product' : 'products'}. Click a thumbnail to preview the cover image.`
-              : 'Save products from the catalog or product detail page to build a sourcing shortlist.'}
+              ? items.length === 1
+                ? t('wishlist.savedCountSingle')
+                : t('wishlist.savedCount', { count: items.length })
+              : t('wishlist.emptyDesc')}
           </p>
         </div>
         {items.length ? <span className="wishlist-count-badge">{items.length}</span> : null}
@@ -79,9 +83,9 @@ export function WishlistPageClient() {
 
       {!items.length ? (
         <div className="wishlist-empty-card">
-          <p className="section-description">No saved products yet.</p>
+          <p className="section-description">{t('wishlist.emptyTitle')}</p>
           <Link href={localizedPath('/products')} className="button-primary">
-            Browse catalog
+            {t('wishlist.browseCatalog')}
           </Link>
         </div>
       ) : (
@@ -102,7 +106,7 @@ export function WishlistPageClient() {
                       }
                     }}
                     disabled={!cover?.url}
-                    aria-label={cover?.url ? `Preview image for ${item.name}` : `No image for ${item.name}`}
+                    aria-label={cover?.url ? t('wishlist.previewFor', { name: item.name }) : t('wishlist.noImageFor', { name: item.name })}
                   >
                     {cover?.url ? (
                       <Image
@@ -115,16 +119,16 @@ export function WishlistPageClient() {
                       />
                     ) : (
                       <span className="wishlist-thumb-placeholder" aria-hidden="true">
-                        No image
+                        {t('wishlist.noImage')}
                       </span>
                     )}
                   </button>
 
                   <div className="wishlist-item-main">
                     <div className="wishlist-item-topline">
-                      <span className="product-badge">{item.inStock ? 'In Stock' : 'Lead time on request'}</span>
+                      <span className="product-badge">{item.inStock ? t('product.inStock') : t('catalog.leadTimeOnRequest')}</span>
                       <span className="wishlist-item-spu">
-                        <span className="catalog-grid-spu-label">SPU</span>
+                        <span className="catalog-grid-spu-label">{t('product.spu')}</span>
                         {item.spu}
                       </span>
                     </div>
@@ -135,19 +139,19 @@ export function WishlistPageClient() {
                       <p className="section-description compact-copy wishlist-item-description">{item.shortDescription}</p>
                     ) : null}
                     <p className="product-price wishlist-item-price">
-                      {item.purchaseMode === 'buy' ? item.price.formatted : 'Request Quote'}
+                      {item.purchaseMode === 'buy' ? item.price.formatted : t('product.requestQuote')}
                     </p>
                   </div>
 
                   <div className="wishlist-item-actions">
                     <Link href={productHref} className="button-secondary wishlist-action-btn">
-                      View product
+                      {t('wishlist.viewProduct')}
                     </Link>
                     {item.purchaseMode === 'buy' ? (
                       <AddToCartButton productId={item.productId} redirectToCart={false} bar />
                     ) : (
                       <Link href={productHref} className="catalog-add-to-cart-bar catalog-add-to-cart-bar-secondary">
-                        Request Quote
+                        {t('product.requestQuote')}
                       </Link>
                     )}
                     <button
@@ -156,7 +160,7 @@ export function WishlistPageClient() {
                       onClick={() => handleRemove(item.productId)}
                       disabled={isPending}
                     >
-                      Remove
+                      {t('wishlist.remove')}
                     </button>
                   </div>
                 </article>
@@ -171,10 +175,10 @@ export function WishlistPageClient() {
           className="wishlist-preview-backdrop"
           role="dialog"
           aria-modal="true"
-          aria-label="Product image preview"
+          aria-label={t('wishlist.previewDialog')}
           onClick={() => setPreviewImage(null)}
         >
-          <button type="button" className="wishlist-preview-close" onClick={() => setPreviewImage(null)} aria-label="Close preview">
+          <button type="button" className="wishlist-preview-close" onClick={() => setPreviewImage(null)} aria-label={t('wishlist.closePreview')}>
             ×
           </button>
           <div className="wishlist-preview-frame" onClick={(event) => event.stopPropagation()}>

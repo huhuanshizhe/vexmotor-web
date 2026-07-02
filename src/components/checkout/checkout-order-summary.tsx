@@ -63,7 +63,7 @@ export function CheckoutOrderSummary({
     <article className="info-card checkout-summary-card" id="checkout-summary">
       <h2 className="cart-section-title">{t('checkout.orderSummary')}</h2>
 
-      <nav className="checkout-progress-nav" aria-label="Checkout progress">
+      <nav className="checkout-progress-nav" aria-label={t('checkout.progressNav')}>
         {stepItems.map((step) => (
           <a
             key={step.label}
@@ -89,7 +89,7 @@ export function CheckoutOrderSummary({
         </div>
         {cart.discount.amount > 0 ? (
           <div className="cart-summary-row is-discount">
-            <span className="section-description">Discount</span>
+            <span className="section-description">{t('checkout.discount')}</span>
             <strong>-{cart.discount.formatted}</strong>
           </div>
         ) : null}
@@ -99,7 +99,7 @@ export function CheckoutOrderSummary({
             {!pricing.isShippingAddressReady
               ? '—'
               : pricing.shippingAmount === 0
-                ? 'Free'
+                ? t('checkout.free')
                 : formatMoney(pricing.shippingAmount, currency, locale)}
           </strong>
         </div>
@@ -118,7 +118,7 @@ export function CheckoutOrderSummary({
       {shippingComplete ? (
         <div className="checkout-selection-summary">
           <div className="checkout-selection-block">
-            <span className="checkout-selection-label">Shipping</span>
+            <span className="checkout-selection-label">{t('checkout.stepShipping')}</span>
             <strong>{shippingMethodLabel}</strong>
             {shippingEta || shippingFreightLabel ? (
               <span className="section-description">
@@ -132,7 +132,7 @@ export function CheckoutOrderSummary({
       {paymentComplete ? (
         <div className="checkout-selection-summary">
           <div className="checkout-selection-block">
-            <span className="checkout-selection-label">Payment</span>
+            <span className="checkout-selection-label">{t('checkout.paymentMethod')}</span>
             <strong>{paymentMethod}</strong>
           </div>
         </div>
