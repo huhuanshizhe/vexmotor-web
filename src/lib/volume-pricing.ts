@@ -34,15 +34,15 @@ export const volumePricingIllustrationBands = [
 
 export type { VolumePricingTier };
 
-export function buildVolumePricingTiers(basePrice: number, currency = 'USD', rules?: VolumePricingRuleConfig[]) {
+export function buildVolumePricingTiers(basePrice: number, currency: string, rules: VolumePricingRuleConfig[]) {
   return buildVolumePricingTiersFromConfig(basePrice, currency, rules);
 }
 
-export function getVolumePricingForQuantity(basePrice: number, currency: string, quantity: number, rules?: VolumePricingRuleConfig[]) {
+export function getVolumePricingForQuantity(basePrice: number, currency: string, quantity: number, rules: VolumePricingRuleConfig[]) {
   return getVolumePricingForQuantityFromConfig(basePrice, currency, quantity, rules);
 }
 
-export function getRetailVolumeTier(basePrice: number, currency = 'USD', rules?: VolumePricingRuleConfig[]) {
+export function getRetailVolumeTier(basePrice: number, currency: string, rules: VolumePricingRuleConfig[]) {
   return getRetailVolumeTierFromConfig(basePrice, currency, rules);
 }
 
@@ -50,15 +50,15 @@ export function getBulkVolumeTierForQuantity(
   basePrice: number,
   currency: string,
   quantity: number,
-  rules?: VolumePricingRuleConfig[],
+  rules: VolumePricingRuleConfig[],
 ) {
   return getBulkVolumeTierForQuantityFromConfig(basePrice, currency, quantity, rules);
 }
 
-export function getNextVolumeTier(basePrice: number, currency: string, quantity: number, rules?: VolumePricingRuleConfig[]) {
+export function getNextVolumeTier(basePrice: number, currency: string, quantity: number, rules: VolumePricingRuleConfig[]) {
   return getNextVolumeTierFromConfig(basePrice, currency, quantity, rules);
 }
 
-export function getVolumePricingEstimate(basePrice: number, currency: string, quantity: number, rules?: VolumePricingRuleConfig[]) {
+export function getVolumePricingEstimate(basePrice: number, currency: string, quantity: number, rules: VolumePricingRuleConfig[]) {
   return getVolumePricingEstimateFromConfig(basePrice, currency, quantity, rules);
 }

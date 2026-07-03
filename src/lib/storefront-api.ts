@@ -121,11 +121,6 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   return serverFetch<SiteSettings>('/api/front/site-settings');
 }
 
-export async function getCountryContinentByIso(): Promise<Record<string, string>> {
-  const payload = await serverFetch<{ countryContinentByIso: Record<string, string> }>('/api/front/geo/country-continents');
-  return payload.countryContinentByIso;
-}
-
 export async function getSupportCatalog(): Promise<SupportCatalog> {
   return getLocalSupportCatalog();
 }

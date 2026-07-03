@@ -1,6 +1,5 @@
 import { convertViaBase, type ExchangeRateSnapshot } from '@/lib/currency-exchange';
 import { resolveShippingRatesForCountry } from '@/lib/commerce-shipping-rate';
-import { defaultSiteSettings } from '@/lib/site-settings';
 
 export type VolumePricingRuleConfig = {
   id: string;
@@ -82,47 +81,6 @@ export type StorefrontShippingOption = {
   taxRate: number;
 };
 
-export const defaultCommerceConfig: CommerceConfig = {
-  currencyCode: 'USD',
-  defaultCountryCode: 'US',
-  defaultShippingMethodCode: 'dhl-express',
-  exchangeRateSnapshot: { baseCurrencyCode: 'USD', ratesByCurrency: { USD: 1 } },
-  countryContinentByIso: { CN: 'ASIA', US: 'NORTH_AMERICA', DE: 'EUROPE', GB: 'EUROPE', CA: 'NORTH_AMERICA', AU: 'OCEANIA' },
-  volumePricingRules: [
-    { id: 'tier-1', label: 'Tier 1', minQuantity: 1, priceFactor: 1, note: 'Sample, spare parts, and small validation orders.', enabled: true },
-    { id: 'tier-2', label: 'Tier 2', minQuantity: 5, priceFactor: 0.96, note: 'Suitable for small replenishment and pilot production.', enabled: true },
-    { id: 'tier-3', label: 'Tier 3', minQuantity: 10, priceFactor: 0.93, note: 'Suitable for repeat procurement and engineering projects.', enabled: true },
-    { id: 'tier-4', label: 'Tier 4', minQuantity: 50, priceFactor: 0.9, note: 'Suitable for project batches and regional stock replenishment.', enabled: true },
-    { id: 'tier-5', label: 'Tier 5', minQuantity: 100, priceFactor: 0.87, note: 'Suitable for annual frameworks and ongoing release plans.', enabled: true },
-  ],
-  shippingMethods: [],
-  shippingCountryRates: [
-    { id: 'rate-us-dhl', regionCode: 'NORTH_AMERICA', countryIsoCode: 'US', countryCode: 'US', countryName: 'United States', shippingMethodCode: 'dhl-express', currencyCode: 'USD', rate: 26, freeShippingThreshold: 299, taxRate: 0.08, enabled: true, note: 'Primary express option for the United States.' },
-    { id: 'rate-us-fedex', countryCode: 'US', countryName: 'United States', shippingMethodCode: 'fedex-priority', currencyCode: 'USD', rate: 29, freeShippingThreshold: null, taxRate: 0.08, enabled: true, note: 'Suitable for North American business deliveries.' },
-    { id: 'rate-us-ups', countryCode: 'US', countryName: 'United States', shippingMethodCode: 'ups-worldwide', currencyCode: 'USD', rate: 32, freeShippingThreshold: null, taxRate: 0.08, enabled: true, note: null },
-    { id: 'rate-us-sea', countryCode: 'US', countryName: 'United States', shippingMethodCode: 'sea-lcl', currencyCode: 'USD', rate: 18, freeShippingThreshold: null, taxRate: 0.08, enabled: true, note: 'Lower-cost LCL option with extended transit time.' },
-    { id: 'rate-us-pickup', countryCode: 'US', countryName: 'United States', shippingMethodCode: 'warehouse-pickup', currencyCode: 'USD', rate: 0, freeShippingThreshold: null, taxRate: 0.08, enabled: true, note: 'No platform shipping fee for warehouse pickup.' },
-    { id: 'rate-de-dhl', countryCode: 'DE', countryName: 'Germany', shippingMethodCode: 'dhl-express', currencyCode: 'USD', rate: 32, freeShippingThreshold: 399, taxRate: 0.19, enabled: true, note: 'Primary express option for the European Union.' },
-    { id: 'rate-de-fedex', countryCode: 'DE', countryName: 'Germany', shippingMethodCode: 'fedex-priority', currencyCode: 'USD', rate: 36, freeShippingThreshold: null, taxRate: 0.19, enabled: true, note: null },
-    { id: 'rate-de-ups', countryCode: 'DE', countryName: 'Germany', shippingMethodCode: 'ups-worldwide', currencyCode: 'USD', rate: 39, freeShippingThreshold: null, taxRate: 0.19, enabled: true, note: null },
-    { id: 'rate-de-sea', countryCode: 'DE', countryName: 'Germany', shippingMethodCode: 'sea-lcl', currencyCode: 'USD', rate: 24, freeShippingThreshold: null, taxRate: 0.19, enabled: true, note: null },
-    { id: 'rate-gb-dhl', countryCode: 'GB', countryName: 'United Kingdom', shippingMethodCode: 'dhl-express', currencyCode: 'USD', rate: 34, freeShippingThreshold: 399, taxRate: 0.2, enabled: true, note: null },
-    { id: 'rate-gb-fedex', countryCode: 'GB', countryName: 'United Kingdom', shippingMethodCode: 'fedex-priority', currencyCode: 'USD', rate: 37, freeShippingThreshold: null, taxRate: 0.2, enabled: true, note: null },
-    { id: 'rate-gb-ups', countryCode: 'GB', countryName: 'United Kingdom', shippingMethodCode: 'ups-worldwide', currencyCode: 'USD', rate: 40, freeShippingThreshold: null, taxRate: 0.2, enabled: true, note: null },
-    { id: 'rate-ca-dhl', countryCode: 'CA', countryName: 'Canada', shippingMethodCode: 'dhl-express', currencyCode: 'USD', rate: 30, freeShippingThreshold: 349, taxRate: 0.13, enabled: true, note: null },
-    { id: 'rate-ca-fedex', countryCode: 'CA', countryName: 'Canada', shippingMethodCode: 'fedex-priority', currencyCode: 'USD', rate: 34, freeShippingThreshold: null, taxRate: 0.13, enabled: true, note: null },
-    { id: 'rate-ca-ups', countryCode: 'CA', countryName: 'Canada', shippingMethodCode: 'ups-worldwide', currencyCode: 'USD', rate: 36, freeShippingThreshold: null, taxRate: 0.13, enabled: true, note: null },
-    { id: 'rate-au-dhl', countryCode: 'AU', countryName: 'Australia', shippingMethodCode: 'dhl-express', currencyCode: 'USD', rate: 36, freeShippingThreshold: 429, taxRate: 0.1, enabled: true, note: null },
-    { id: 'rate-au-fedex', countryCode: 'AU', countryName: 'Australia', shippingMethodCode: 'fedex-priority', currencyCode: 'USD', rate: 39, freeShippingThreshold: null, taxRate: 0.1, enabled: true, note: null },
-    { id: 'rate-au-ups', countryCode: 'AU', countryName: 'Australia', shippingMethodCode: 'ups-worldwide', currencyCode: 'USD', rate: 42, freeShippingThreshold: null, taxRate: 0.1, enabled: true, note: null },
-    { id: 'rate-other-dhl', countryCode: 'OTHER', countryName: 'Other', shippingMethodCode: 'dhl-express', currencyCode: 'USD', rate: 44, freeShippingThreshold: 499, taxRate: 0.08, enabled: true, note: 'Default export express lane.' },
-    { id: 'rate-other-fedex', countryCode: 'OTHER', countryName: 'Other', shippingMethodCode: 'fedex-priority', currencyCode: 'USD', rate: 48, freeShippingThreshold: null, taxRate: 0.08, enabled: true, note: null },
-    { id: 'rate-other-ups', countryCode: 'OTHER', countryName: 'Other', shippingMethodCode: 'ups-worldwide', currencyCode: 'USD', rate: 52, freeShippingThreshold: null, taxRate: 0.08, enabled: true, note: null },
-    { id: 'rate-other-sea', countryCode: 'OTHER', countryName: 'Other', shippingMethodCode: 'sea-lcl', currencyCode: 'USD', rate: 28, freeShippingThreshold: null, taxRate: 0.08, enabled: true, note: null },
-    { id: 'rate-other-pickup', countryCode: 'OTHER', countryName: 'Other', shippingMethodCode: 'warehouse-pickup', currencyCode: 'USD', rate: 0, freeShippingThreshold: null, taxRate: 0.08, enabled: true, note: 'No platform shipping fee for warehouse pickup.' },
-  ] as ShippingCountryRateConfig[],
-};
-
 function formatMoney(amount: number, currency = 'USD') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -142,7 +100,7 @@ function sortShippingMethods(methods: ShippingMethodConfig[]) {
   return [...methods].sort((left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name));
 }
 
-export function normalizeCommerceCountryCode(countryCode: string, fallback = defaultSiteSettings.defaultCountryCode) {
+export function normalizeCommerceCountryCode(countryCode: string, fallback = '') {
   const normalized = countryCode.trim().toUpperCase();
   return normalized || fallback;
 }
@@ -165,11 +123,13 @@ export function cloneCommerceConfig(config: CommerceConfig): CommerceConfig {
 
 export function buildVolumePricingTiers(
   basePrice: number,
-  currency = 'USD',
-  rules: VolumePricingRuleConfig[] = defaultCommerceConfig.volumePricingRules,
+  currency: string,
+  rules: VolumePricingRuleConfig[],
 ): VolumePricingTier[] {
-  const activeRules = sortVolumePricingRules(rules.filter((rule) => rule.enabled));
-  const sourceRules = activeRules.length ? activeRules : sortVolumePricingRules(defaultCommerceConfig.volumePricingRules.filter((rule) => rule.enabled));
+  const sourceRules = sortVolumePricingRules(rules.filter((rule) => rule.enabled));
+  if (!sourceRules.length) {
+    return [];
+  }
 
   return sourceRules.map((tier, index) => {
     const nextTier = sourceRules[index + 1];
@@ -193,18 +153,22 @@ export function getVolumePricingForQuantity(
   basePrice: number,
   currency: string,
   quantity: number,
-  rules: VolumePricingRuleConfig[] = defaultCommerceConfig.volumePricingRules,
+  rules: VolumePricingRuleConfig[],
 ) {
   const tiers = buildVolumePricingTiers(basePrice, currency, rules);
   const normalizedQuantity = Math.max(1, quantity);
+
+  if (!tiers.length) {
+    return getRetailVolumeTier(basePrice, currency, rules);
+  }
 
   return tiers.reduce((current, tier) => (normalizedQuantity >= tier.minQuantity ? tier : current), tiers[0]!);
 }
 
 export function getRetailVolumeTier(
   basePrice: number,
-  currency = 'USD',
-  rules: VolumePricingRuleConfig[] = defaultCommerceConfig.volumePricingRules,
+  currency: string,
+  rules: VolumePricingRuleConfig[],
 ): VolumePricingTier {
   const tiers = buildVolumePricingTiers(basePrice, currency, rules);
   const listTier = tiers.find((tier) => tier.minQuantity === 1);
@@ -233,7 +197,7 @@ export function getBulkVolumeTierForQuantity(
   basePrice: number,
   currency: string,
   quantity: number,
-  rules: VolumePricingRuleConfig[] = defaultCommerceConfig.volumePricingRules,
+  rules: VolumePricingRuleConfig[],
 ): VolumePricingTier | null {
   const tiers = buildVolumePricingTiers(basePrice, currency, rules);
   const bulkTiers = tiers.filter((tier) => tier.minQuantity > 1);
@@ -259,7 +223,7 @@ export function getNextVolumeTier(
   basePrice: number,
   currency: string,
   quantity: number,
-  rules: VolumePricingRuleConfig[] = defaultCommerceConfig.volumePricingRules,
+  rules: VolumePricingRuleConfig[],
 ) {
   const tiers = buildVolumePricingTiers(basePrice, currency, rules);
   const normalizedQuantity = Math.max(1, quantity);
@@ -279,7 +243,7 @@ export function getVolumePricingEstimate(
   basePrice: number,
   currency: string,
   quantity: number,
-  rules: VolumePricingRuleConfig[] = defaultCommerceConfig.volumePricingRules,
+  rules: VolumePricingRuleConfig[],
 ) {
   const normalizedQuantity = Math.max(1, quantity);
   const applicableTier = getVolumePricingForQuantity(basePrice, currency, normalizedQuantity, rules);
