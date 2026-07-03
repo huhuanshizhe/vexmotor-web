@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import 'antd/dist/reset.css';
 
 import { AuthProvider } from '@/components/providers/auth-provider';
+import { WishlistProvider } from '@/components/providers/wishlist-provider';
 import { AntdProvider } from '@/components/providers/antd-provider';
 import { UiStringsProvider } from '@/components/providers/ui-strings-provider';
 import { GoogleAnalytics } from '@/components/seo/google-analytics';
@@ -42,9 +43,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <UiStringsProvider initialStrings={uiStrings}>
           <I18nProvider initialLocale={preferences.locale} initialUiStrings={uiStrings}>
             <AuthProvider>
-              <AntdProvider>
-                <ToastProvider>{children}</ToastProvider>
-              </AntdProvider>
+              <WishlistProvider>
+                <AntdProvider>
+                  <ToastProvider>{children}</ToastProvider>
+                </AntdProvider>
+              </WishlistProvider>
             </AuthProvider>
           </I18nProvider>
         </UiStringsProvider>

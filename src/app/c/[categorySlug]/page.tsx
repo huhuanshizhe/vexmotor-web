@@ -20,6 +20,7 @@ import { SITE_URL } from '@/lib/site-config';
 import { listShellCatalogCategories, mergeCategoriesWithShell, resolveStorefrontCategory } from '@/lib/catalog-categories';
 import { redirectToCanonicalPathIfNeeded } from '@/lib/locale-path';
 import { getCategories, getProductList, type ProductListSort } from '@/lib/storefront-api';
+import { fetchUiStringGroups } from '@/lib/ui-strings-client';
 
 // ISR: revalidate category pages every 2 minutes
 export const revalidate = 120;
@@ -88,7 +89,8 @@ export default async function CategoryPage({
   searchParams: CategoryPageSearchParams;
 }) {
   const [{ locale }, routeParams, query] = await Promise.all([getServerSitePreferences(), params, searchParams]);
-  const { t } = getServerTranslations(locale);
+  const uiStrings = await fetchUiStringGroups(locale, ['catalog', 'search', 'product']).catch(() => ({}));
+  const { t } = getServerTranslations(locale, uiStrings);
   const apiCategories = await getCategories().catch(() => []);
   const categories = mergeCategoriesWithShell(apiCategories);
   const selectedCategory = resolveStorefrontCategory(routeParams.categorySlug, apiCategories);

@@ -12,7 +12,6 @@ import {
   PREFERENCE_COOKIE_MAX_AGE,
 } from '@/lib/i18n';
 import { resolveLocalePathForSwitch } from '@/lib/locale-path';
-import { getUiStringLocaleDefault } from '@/ui-strings/locale-defaults';
 import { getRegistryDefault } from '@/ui-strings/registry';
 
 // Import English defaults only — de/es translations come from Admin ui_string_translations via API.
@@ -88,13 +87,6 @@ export function I18nProvider({
     const fromRuntime = uiStrings[key];
     if (typeof fromRuntime === 'string' && fromRuntime.length > 0) {
       return interpolateString(fromRuntime, params);
-    }
-
-    if (locale !== 'en') {
-      const fromLocaleDefault = getUiStringLocaleDefault(locale, key);
-      if (fromLocaleDefault) {
-        return interpolateString(fromLocaleDefault, params);
-      }
     }
 
     const template = resolveEnglishTemplate(key);

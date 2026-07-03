@@ -12,7 +12,6 @@ import {
   type Locale,
   type SitePreferences,
 } from '@/lib/i18n';
-import { getUiStringLocaleDefault } from '@/ui-strings/locale-defaults';
 import { getRegistryDefault } from '@/ui-strings/registry';
 
 import enTranslations from '@/locales/en.json';
@@ -49,13 +48,6 @@ export function getServerTranslations(locale: Locale = DEFAULT_LOCALE, uiStrings
       const fromRuntime = uiStrings[key];
       if (typeof fromRuntime === 'string' && fromRuntime.length > 0) {
         return interpolateString(fromRuntime, params);
-      }
-
-      if (locale !== 'en') {
-        const fromLocaleDefault = getUiStringLocaleDefault(locale, key);
-        if (fromLocaleDefault) {
-          return interpolateString(fromLocaleDefault, params);
-        }
       }
 
       const template = resolveEnglishTemplate(key);

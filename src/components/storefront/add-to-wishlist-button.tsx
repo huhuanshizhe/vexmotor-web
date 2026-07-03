@@ -1,21 +1,17 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 
 import { useToast } from '@C/toast';
-import { parseLocaleFromPathname, withLocalePath } from '@/lib/i18n';
+import { useWishlist } from '@/components/providers/wishlist-provider';
 import { getAccessToken } from '@/lib/api-client';
-import { apiFetch } from '@/lib/api-client';
+import { parseLocaleFromPathname, withLocalePath } from '@/lib/i18n';
 import { useTranslation } from '@/lib/i18n-context';
 
 type AddToWishlistButtonProps = {
   productId: string;
   icon?: boolean;
-};
-
-type WishlistResponse = {
-  items: Array<{ productId: string }>;
 };
 
 function WishlistIcon({ className, filled = false }: { className?: string; filled?: boolean }) {
@@ -31,34 +27,14 @@ export function AddToWishlistButton({ productId, icon = false }: AddToWishlistBu
   const pathname = usePathname();
   const { pushToast } = useToast();
   const { t } = useTranslation();
+  const { isInWishlist, isLoading, addToWishlist } = useWishlist();
   const [message, setMessage] = useState<string | null>(null);
-  const [isInWishlist, setIsInWishlist] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
   const [isPending, startTransition] = useTransition();
 
-  const syncWishlistState = useCallback(async () => {
-    if (!getAccessToken()) {
-      setIsInWishlist(false);
-      setIsChecking(false);
-      return;
-    }
-
-    try {
-      const data = await apiFetch<WishlistResponse>('/api/front/wishlist');
-      setIsInWishlist(data.items.some((entry) => entry.productId === productId));
-    } catch {
-      setIsInWishlist(false);
-    } finally {
-      setIsChecking(false);
-    }
-  }, [productId]);
-
-  useEffect(() => {
-    void syncWishlistState();
-  }, [syncWishlistState]);
+  const inWishlist = isInWishlist(productId);
 
   function handleWishlist() {
-    if (isInWishlist) {
+    if (inWishlist) {
       return;
     }
 
@@ -72,12 +48,7 @@ export function AddToWishlistButton({ productId, icon = false }: AddToWishlistBu
       }
 
       try {
-        const data = await apiFetch<WishlistResponse>('/api/front/wishlist', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ productId }),
-        });
-        setIsInWishlist(data.items.some((entry) => entry.productId === productId));
+        await addToWishlist(productId);
         pushToast({
           title: t('product.addToWishlist'),
           description: t('product.inWishlist'),
@@ -91,21 +62,21 @@ export function AddToWishlistButton({ productId, icon = false }: AddToWishlistBu
     });
   }
 
-  const label = isInWishlist ? t('product.inWishlist') : t('product.addToWishlist');
-  const disabled = isPending || isChecking || isInWishlist;
+  const label = inWishlist ? t('product.inWishlist') : t('product.addToWishlist');
+  const disabled = isPending || isLoading || inWishlist;
 
   if (icon) {
     return (
       <button
         type="button"
-        className={`catalog-card-icon-btn${isInWishlist ? ' is-active' : ''}`}
+        className={`catalog-card-icon-btn${inWishlist ? ' is-active' : ''}`}
         onClick={handleWishlist}
         disabled={disabled}
         aria-label={label}
-        aria-pressed={isInWishlist}
+        aria-pressed={inWishlist}
         title={label}
       >
-        <WishlistIcon className="catalog-card-icon-svg" filled={isInWishlist} />
+        <WishlistIcon className="catalog-card-icon-svg" filled={inWishlist} />
       </button>
     );
   }
@@ -114,12 +85,12 @@ export function AddToWishlistButton({ productId, icon = false }: AddToWishlistBu
     <div style={{ display: 'grid', gap: 8 }}>
       <button
         type="button"
-        className={`button-secondary storefront-toggle-btn${isInWishlist ? ' is-added' : ''}`}
+        className={`button-secondary storefront-toggle-btn${inWishlist ? ' is-added' : ''}`}
         onClick={handleWishlist}
         disabled={disabled}
-        aria-pressed={isInWishlist}
+        aria-pressed={inWishlist}
       >
-        {isInWishlist ? (
+        {inWishlist ? (
           <span className="storefront-toggle-btn-inner">
             <WishlistIcon className="storefront-toggle-btn-icon" filled />
             {label}
