@@ -7,6 +7,7 @@ import { JsonLdScript } from '@/components/seo/json-ld';
 import { formatBoardBlogDate } from '@/lib/board-blog-helpers';
 import { type Locale, withLocalePath } from '@/lib/i18n';
 import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-server';
+import { redirectToCanonicalPathIfNeeded } from '@/lib/locale-path';
 import { buildBreadcrumbJsonLd, buildMetadata } from '@/lib/seo';
 import { SITE_URL } from '@/lib/site-config';
 import { getBoardBlogs, getProductBySlug, getStorefrontBlogDetail, type StorefrontProductDetail } from '@/lib/storefront-api';
@@ -78,6 +79,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const post = await getStorefrontBlogDetail(slug, locale);
 
   if (!post) {
+    await redirectToCanonicalPathIfNeeded(`/blog/${slug}`, locale);
     notFound();
   }
 

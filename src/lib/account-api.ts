@@ -84,8 +84,8 @@ export async function fetchInquiries() {
   return apiFetch('/api/front/inquiries');
 }
 
-export async function fetchCart<T = unknown>() {
-  return apiFetch<T>('/api/front/cart');
+export async function fetchCart<T = unknown>(locale?: string) {
+  return apiFetch<T>('/api/front/cart', { locale });
 }
 
 export async function fetchGuestOrderDetail(orderNumber: string, guestToken?: string) {

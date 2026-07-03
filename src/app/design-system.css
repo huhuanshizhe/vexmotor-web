@@ -429,6 +429,34 @@ body {
   transform: rotate(180deg);
 }
 
+.locale-switcher-trigger.is-loading {
+  cursor: wait;
+  border-color: rgba(214, 91, 34, 0.28);
+  background: rgba(214, 91, 34, 0.04);
+}
+
+.locale-switcher-trigger.is-loading:hover,
+.locale-switcher-trigger.is-loading:focus-visible {
+  border-color: rgba(214, 91, 34, 0.28);
+  box-shadow: none;
+}
+
+.locale-switcher-spinner {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border: 2px solid rgba(214, 91, 34, 0.2);
+  border-top-color: var(--brand-600, #d65b22);
+  border-radius: 50%;
+  animation: locale-switcher-spin 0.65s linear infinite;
+}
+
+@keyframes locale-switcher-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .locale-switcher-menu {
   position: absolute;
   top: calc(100% + 8px);

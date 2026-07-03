@@ -19,6 +19,7 @@ import { buildCompatibleGroups, type DetailCompatibleGroup } from '@/lib/product
 import { buildApplicationCards, buildDocumentCards, buildFaqItems, buildOverviewBullets, buildTrustItems, matchesAttachmentAsset } from '@/lib/product-content';
 import { buildFaqJsonLd, buildProductJsonLd } from '@/lib/product-seo';
 import { getProductTranslation } from '@/lib/product-translations';
+import { redirectToCanonicalPathIfNeeded } from '@/lib/locale-path';
 import { buildSpecGroups, formatSpecValue, type DetailSpecGroup } from '@/lib/product-specs';
 import { buildBreadcrumbJsonLd, buildMetadata } from '@/lib/seo';
 import { SITE_NAME, SITE_URL } from '@/lib/site-config';
@@ -71,6 +72,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   ]);
 
   if (!product) {
+    await redirectToCanonicalPathIfNeeded(`/products/${slug}`, locale);
     notFound();
   }
 
@@ -218,14 +220,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
           <header className="pdp-top-header">
             <div className="pdp-top-header-copy">
-              <div className="pdp-top-header-meta">
-                {category ? (
-                  <Link href={categoryPath} className="pdp-top-eyebrow">{category.name}</Link>
-                ) : (
-                  <span className="pdp-top-eyebrow">{t('productDetail.catalogProduct')}</span>
-                )}
-                <span className="pdp-top-sku">{t('product.spu')} {p.spu}</span>
-              </div>
               <h1 className="pdp-top-title">{p.name}</h1>
               {lifecycleBadge ? (
                 <span className={`pdp-top-badge ${lifecycleBadge.className}`} style={{ marginTop: 8 }}>{lifecycleBadge.label}</span>

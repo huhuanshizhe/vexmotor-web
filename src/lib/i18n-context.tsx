@@ -1,18 +1,18 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import {
   type Locale,
   DEFAULT_LOCALE,
-  stripLocaleFromPath,
-  withLocalePath,
   getMarketDefaults,
   LOCALE_COOKIE_NAME,
   CURRENCY_COOKIE_NAME,
   UNIT_SYSTEM_COOKIE_NAME,
   PREFERENCE_COOKIE_MAX_AGE,
 } from '@/lib/i18n';
+import { resolveLocalePathForSwitch } from '@/lib/locale-path';
+import { getUiStringLocaleDefault } from '@/ui-strings/locale-defaults';
 import { getRegistryDefault } from '@/ui-strings/registry';
 
 // Import English defaults only — de/es translations come from Admin ui_string_translations via API.
@@ -39,6 +39,7 @@ type I18nContextType = {
   locale: Locale;
   t: (key: string, params?: TranslationParams) => string;
   setLocale: (locale: Locale) => void;
+  isLocaleSwitching: boolean;
 };
 
 // Create context
@@ -70,14 +71,30 @@ export function I18nProvider({
   initialLocale?: Locale;
   initialUiStrings?: Record<string, string>;
 }) {
-  const router = useRouter();
   const pathname = usePathname();
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
+  const [uiStrings, setUiStrings] = useState(initialUiStrings);
+  const [isLocaleSwitching, setIsLocaleSwitching] = useState(false);
+
+  useEffect(() => {
+    setLocaleState(initialLocale);
+  }, [initialLocale]);
+
+  useEffect(() => {
+    setUiStrings(initialUiStrings);
+  }, [initialUiStrings]);
 
   const t = useCallback((key: string, params?: TranslationParams): string => {
-    const fromRuntime = initialUiStrings[key];
+    const fromRuntime = uiStrings[key];
     if (typeof fromRuntime === 'string' && fromRuntime.length > 0) {
       return interpolateString(fromRuntime, params);
+    }
+
+    if (locale !== 'en') {
+      const fromLocaleDefault = getUiStringLocaleDefault(locale, key);
+      if (fromLocaleDefault) {
+        return interpolateString(fromLocaleDefault, params);
+      }
     }
 
     const template = resolveEnglishTemplate(key);
@@ -92,30 +109,34 @@ export function I18nProvider({
     }
 
     return key;
-  }, [locale, initialUiStrings]);
+  }, [locale, uiStrings]);
 
   const setLocale = useCallback((newLocale: Locale) => {
+    if (newLocale === locale || isLocaleSwitching) {
+      return;
+    }
+
+    setIsLocaleSwitching(true);
+
     const defaults = getMarketDefaults(newLocale);
 
-    setLocaleState(newLocale);
     document.cookie = `${LOCALE_COOKIE_NAME}=${newLocale}; Path=/; Max-Age=${PREFERENCE_COOKIE_MAX_AGE}; SameSite=Lax`;
     document.cookie = `${CURRENCY_COOKIE_NAME}=${defaults.currency}; Path=/; Max-Age=${PREFERENCE_COOKIE_MAX_AGE}; SameSite=Lax`;
     document.cookie = `${UNIT_SYSTEM_COOKIE_NAME}=${defaults.unitSystem}; Path=/; Max-Age=${PREFERENCE_COOKIE_MAX_AGE}; SameSite=Lax`;
     document.body.dataset.currency = defaults.currency;
     document.body.dataset.unitSystem = defaults.unitSystem;
 
-    const strippedPath = stripLocaleFromPath(pathname);
-    const newPath = withLocalePath(strippedPath, newLocale);
-
-    if (newPath !== pathname) {
-      router.push(newPath);
-    } else {
-      router.refresh();
-    }
-  }, [router, pathname]);
+    void resolveLocalePathForSwitch(pathname, newLocale)
+      .then((newPath) => {
+        window.location.assign(newPath);
+      })
+      .catch(() => {
+        setIsLocaleSwitching(false);
+      });
+  }, [isLocaleSwitching, locale, pathname]);
 
   return (
-    <I18nContext.Provider value={{ locale, t, setLocale }}>
+    <I18nContext.Provider value={{ locale, t, setLocale, isLocaleSwitching }}>
       {children}
     </I18nContext.Provider>
   );

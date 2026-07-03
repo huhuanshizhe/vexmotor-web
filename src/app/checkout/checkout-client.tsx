@@ -84,13 +84,13 @@ export function CheckoutClient({
 
   const loadBuyNowCart = useCallback(async (quantity: number) => {
     if (!buyNowProductId) return null;
-    return fetchBuyNowPreview({ productId: buyNowProductId, quantity });
-  }, [buyNowProductId]);
+    return fetchBuyNowPreview({ productId: buyNowProductId, quantity }, locale);
+  }, [buyNowProductId, locale]);
 
   const loadQuoteCart = useCallback(async () => {
     if (!fromQuoteNumber) return null;
-    return fetchQuoteCheckoutPreview(fromQuoteNumber);
-  }, [fromQuoteNumber]);
+    return fetchQuoteCheckoutPreview(fromQuoteNumber, locale);
+  }, [fromQuoteNumber, locale]);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -133,7 +133,7 @@ export function CheckoutClient({
         }
 
         const [nextCart, nextAddresses] = await Promise.all([
-          initialCart ? Promise.resolve(initialCart) : fetchCart<CartDetail>(),
+          initialCart ? Promise.resolve(initialCart) : fetchCart<CartDetail>(locale),
           initialAddresses.length || !user ? Promise.resolve(initialAddresses) : fetchAddresses(),
         ]);
         setCart(nextCart);
@@ -144,7 +144,7 @@ export function CheckoutClient({
         setIsBootstrapping(false);
       }
     })();
-  }, [initialCart, initialAddresses, user, isBuyNowMode, buyNowProductId, buyNowQty, loadBuyNowCart, isQuoteMode, fromQuoteNumber, loadQuoteCart]);
+  }, [initialCart, initialAddresses, user, isBuyNowMode, buyNowProductId, buyNowQty, loadBuyNowCart, isQuoteMode, fromQuoteNumber, loadQuoteCart, locale]);
 
   const selectedShippingAddress = addresses.find((item) => item.id === shippingAddressId) ?? null;
   const resolvedShippingCountryCode = isGuestCheckout
@@ -221,7 +221,7 @@ export function CheckoutClient({
       setBillingAddressId(nextDefault);
     }
     if (!isBuyNowMode) {
-      const nextCart = await fetchCart<CartDetail>();
+      const nextCart = await fetchCart<CartDetail>(locale);
       setCart(nextCart);
     }
     setAuthMode('logged-in');
@@ -389,14 +389,13 @@ export function CheckoutClient({
         />
 
         <article className="info-card checkout-step-card checkout-section-anchor" id="checkout-items">
-          <h2 className="cart-section-title">Order items</h2>
+          <h2 className="cart-section-title">{t('checkout.orderItems')}</h2>
           <CartLineItemList
             cart={cart}
             locale={locale}
             commerceConfig={commerceConfig}
             onCartChange={(nextCart) => setCart(syncCartResponse(nextCart))}
             onMessage={setMessage}
-            compact
             mode={isQuoteMode ? 'quote' : isBuyNowMode ? 'buyNow' : 'cart'}
             readOnlyQuantities={isQuoteMode}
             onBuyNowQuantityChange={handleBuyNowQuantityChange}

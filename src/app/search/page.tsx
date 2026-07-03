@@ -12,6 +12,8 @@ import { applicationCaseStudies } from '@/lib/applications';
 import { listCatalogSidebarCategories } from '@/lib/catalog-categories';
 import { withLocalePath, type Locale } from '@/lib/i18n';
 import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-server';
+import { fetchUiStringGroups } from '@/lib/ui-strings-client';
+import { UI_STRING_PREFETCH_GROUPS } from '@/ui-strings/registry';
 import { glossaryTermToPlainText, techFaqEntryToPlainText } from '@/lib/knowledge';
 import { getResourceSectionMeta, resourceItems } from '@/lib/resources';
 import { buildMetadata } from '@/lib/seo';
@@ -99,7 +101,8 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata() {
   const { locale } = await getServerSitePreferences();
-  const { t } = getServerTranslations(locale);
+  const uiStrings = await fetchUiStringGroups(locale, ['search']).catch(() => ({}));
+  const { t } = getServerTranslations(locale, uiStrings);
   return buildMetadata({
     title: t('search.metaTitle'),
     description: t('search.metaDescription'),
@@ -113,7 +116,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   const preferences = await getServerSitePreferences();
   const params = await searchParams;
   const locale = preferences.locale;
-  const { t } = getServerTranslations(locale);
+  const uiStrings = await fetchUiStringGroups(locale, [...UI_STRING_PREFETCH_GROUPS]).catch(() => ({}));
+  const { t } = getServerTranslations(locale, uiStrings);
   const query = params.q ?? params.keyword ?? '';
   const selectedType = params.type ?? 'all';
   const currentPage = Math.max(1, Number.parseInt(params.page ?? '1', 10) || 1);

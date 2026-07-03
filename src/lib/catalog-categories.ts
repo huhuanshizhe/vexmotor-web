@@ -1,13 +1,72 @@
 import { catalogCategoryGroups } from '@/lib/site-shell';
-import type { StorefrontCategory } from '@/lib/storefront-types';
+import type { NavigationData, StorefrontCategory, StorefrontLink } from '@/lib/storefront-types';
 
 export type ShellCatalogCategory = {
   slug: string;
   name: string;
 };
 
+export type LocalizedCategoryNavEntry = {
+  name: string;
+  slug: string;
+};
+
 function slugFromHref(href: string) {
   return href.replace(/^\/c\//, '');
+}
+
+function shellSlugFromHref(href: string) {
+  const match = href.match(/^\/c\/([^/?#]+)/);
+  return match?.[1] ?? null;
+}
+
+/** Map shell /c/{en-slug} hrefs to locale-specific category labels and slugs. */
+export function buildCategoryLookupByShellSlug(
+  localizedCategories: StorefrontCategory[],
+  canonicalCategories: StorefrontCategory[],
+): Map<string, LocalizedCategoryNavEntry> {
+  const localizedById = new Map(localizedCategories.map((category) => [category.id, category]));
+  const lookup = new Map<string, LocalizedCategoryNavEntry>();
+
+  for (const category of canonicalCategories) {
+    if (!category.slug) continue;
+    const localized = localizedById.get(category.id) ?? category;
+    lookup.set(category.slug, {
+      name: localized.name || category.name,
+      slug: localized.slug || category.slug,
+    });
+  }
+
+  return lookup;
+}
+
+function localizeStorefrontNavLink(
+  link: StorefrontLink,
+  categoryLookup: Map<string, LocalizedCategoryNavEntry>,
+): StorefrontLink {
+  const shellSlug = shellSlugFromHref(link.href);
+  const match = shellSlug ? categoryLookup.get(shellSlug) : undefined;
+
+  return {
+    ...link,
+    href: match ? `/c/${match.slug}` : link.href,
+    label: match?.name ?? link.label,
+    children: link.children?.map((child) => localizeStorefrontNavLink(child, categoryLookup)),
+  };
+}
+
+export function localizeStorefrontNavigation(
+  navigation: NavigationData,
+  categoryLookup: Map<string, LocalizedCategoryNavEntry>,
+): NavigationData {
+  if (!categoryLookup.size) {
+    return navigation;
+  }
+
+  return {
+    ...navigation,
+    mainLinks: navigation.mainLinks.map((link) => localizeStorefrontNavLink(link, categoryLookup)),
+  };
 }
 
 /** All category slugs linked from navigation — web-owned catalog structure. */

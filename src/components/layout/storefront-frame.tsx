@@ -12,9 +12,10 @@ import type { SitePreferences } from '@/lib/i18n';
 import { withLocalePath } from '@/lib/i18n';
 import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-server';
 import { notificationBarConfig, NOTIFICATION_BAR_COOKIE_NAME } from '@/lib/site-config';
+import { buildCategoryLookupByShellSlug, localizeStorefrontNavigation } from '@/lib/catalog-categories';
 import { localizeHomeShell } from '@/lib/site-shell-localize';
 import { getStorefrontNavigation, homeShell } from '@/lib/site-shell';
-import { getHomeData } from '@/lib/storefront-api';
+import { getCategories, getHomeData } from '@/lib/storefront-api';
 import { fetchUiStringGroups } from '@/lib/ui-strings-client';
 import { UI_STRING_PREFETCH_GROUPS } from '@/ui-strings/registry';
 import { NewsletterSignupForm } from '@/components/storefront/newsletter-signup-form';
@@ -63,7 +64,15 @@ export async function StorefrontFrame({ title, description, eyebrow, actions, ch
   const uiStrings = await fetchUiStringGroups(preferences.locale, [...UI_STRING_PREFETCH_GROUPS]).catch(() => ({}));
   const { t } = getServerTranslations(preferences.locale, uiStrings);
   const homeData = localizeHomeShell(await getHomeData().catch(() => homeShell), t);
-  const navigation = getStorefrontNavigation();
+  const [localizedCategories, canonicalCategories] = await Promise.all([
+    getCategories(preferences.locale).catch(() => []),
+    preferences.locale === 'en' ? Promise.resolve([]) : getCategories('en').catch(() => []),
+  ]);
+  const categoryLookup = buildCategoryLookupByShellSlug(
+    localizedCategories,
+    canonicalCategories.length ? canonicalCategories : localizedCategories,
+  );
+  const navigation = localizeStorefrontNavigation(getStorefrontNavigation(), categoryLookup);
   const notificationDismissed = cookieStore.get(NOTIFICATION_BAR_COOKIE_NAME)?.value === notificationBarConfig.id;
   const cookieConsentAccepted = cookieStore.get(COOKIE_CONSENT_COOKIE_NAME)?.value === 'accepted';
 

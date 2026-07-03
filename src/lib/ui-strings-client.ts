@@ -2,7 +2,11 @@ import { unstable_cache } from 'next/cache';
 
 import { getApiBaseUrl } from '@/lib/api-client';
 
-const SEVEN_DAYS_SECONDS = 60 * 60 * 24 * 7;
+export const UI_STRINGS_CACHE_TAG = 'ui-strings';
+
+/** Dev: 30s. Production: 1h (admin save also triggers tag revalidation). */
+const UI_STRINGS_REVALIDATE_SECONDS =
+  process.env.NODE_ENV === 'development' ? 30 : 60 * 60;
 
 type FetchUiStringsOptions = {
   locale: string;
@@ -32,7 +36,7 @@ async function fetchUiStringsFromApi(options: FetchUiStringsOptions): Promise<Re
 
   const base = getApiBaseUrl().replace(/\/+$/, '');
   const response = await fetch(`${base}/api/front/ui-strings?${params.toString()}`, {
-    next: { revalidate: SEVEN_DAYS_SECONDS },
+    next: { revalidate: UI_STRINGS_REVALIDATE_SECONDS, tags: [UI_STRINGS_CACHE_TAG] },
   });
 
   if (!response.ok) {
@@ -49,7 +53,7 @@ export async function fetchUiStrings(options: FetchUiStringsOptions): Promise<Re
   return unstable_cache(
     async () => fetchUiStringsFromApi(options),
     ['ui-strings', cacheKey],
-    { revalidate: SEVEN_DAYS_SECONDS },
+    { revalidate: UI_STRINGS_REVALIDATE_SECONDS, tags: [UI_STRINGS_CACHE_TAG] },
   )();
 }
 

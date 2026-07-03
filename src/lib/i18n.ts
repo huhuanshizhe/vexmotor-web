@@ -209,3 +209,21 @@ export function withLocalePath(pathname: string, locale: Locale) {
 export function toPreferenceCookie(name: string, value: string, maxAge = PREFERENCE_COOKIE_MAX_AGE) {
   return `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
 }
+
+/** Read active locale from the browser cookie (client components / apiFetch). */
+export function readClientLocaleCookie(): Locale | undefined {
+  if (typeof document === 'undefined') {
+    return undefined;
+  }
+
+  const entry = document.cookie
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${LOCALE_COOKIE_NAME}=`));
+
+  if (!entry) {
+    return undefined;
+  }
+
+  return normalizeLocale(decodeURIComponent(entry.slice(LOCALE_COOKIE_NAME.length + 1)));
+}

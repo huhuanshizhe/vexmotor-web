@@ -86,8 +86,11 @@ export async function getNavigationData(): Promise<NavigationData> {
   return serverFetch<NavigationData>('/api/front/navigation');
 }
 
-export async function getCategories(): Promise<StorefrontCategory[]> {
-  const response = await serverFetch<StorefrontCategory[] | { categories?: StorefrontCategory[] }>('/api/front/categories');
+export async function getCategories(locale?: string): Promise<StorefrontCategory[]> {
+  const response = await serverFetch<StorefrontCategory[] | { categories?: StorefrontCategory[] }>(
+    '/api/front/categories',
+    locale ? { locale } : undefined,
+  );
   return Array.isArray(response) ? response : response.categories ?? [];
 }
 

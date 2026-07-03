@@ -109,6 +109,7 @@ export const UI_STRING_PREFETCH_GROUPS = [
   'cart',
   'checkout',
   'checkoutPage',
+  'checkoutPayment',
   'compare',
   'comparePage',
   'account',

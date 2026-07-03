@@ -25,8 +25,12 @@ function ChevronIcon({ open }: { open: boolean }) {
   );
 }
 
+function LocaleSwitcherSpinner() {
+  return <span className="locale-switcher-spinner" aria-hidden="true" />;
+}
+
 export function LanguageSwitcher() {
-  const { locale, setLocale, t } = useTranslation();
+  const { locale, setLocale, isLocaleSwitching, t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [localeOptions, setLocaleOptions] = useState(LOCALE_MARKET_OPTIONS);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -90,25 +94,35 @@ export function LanguageSwitcher() {
     }
   };
 
+  const triggerLabel = isLocaleSwitching ? t('common.loading') : current.label;
+
   return (
-    <div className="locale-switcher" ref={rootRef}>
+    <div className={`locale-switcher${isLocaleSwitching ? ' is-switching' : ''}`} ref={rootRef}>
       <button
         type="button"
-        className="locale-switcher-trigger"
-        onClick={() => setIsOpen((value) => !value)}
+        className={`locale-switcher-trigger${isLocaleSwitching ? ' is-loading' : ''}`}
+        onClick={() => {
+          if (!isLocaleSwitching) {
+            setIsOpen((value) => !value);
+          }
+        }}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        aria-label={t('header.selectLanguage')}
+        aria-busy={isLocaleSwitching}
+        aria-label={isLocaleSwitching ? t('common.loading') : t('header.selectLanguage')}
+        disabled={isLocaleSwitching}
       >
-        <GlobeIcon />
+        {isLocaleSwitching ? <LocaleSwitcherSpinner /> : <GlobeIcon />}
         <span className="locale-switcher-trigger-copy">
-          <span className="locale-switcher-trigger-label">{current.label}</span>
-          <span className="locale-switcher-trigger-meta">{current.currency}</span>
+          <span className="locale-switcher-trigger-label">{triggerLabel}</span>
+          {!isLocaleSwitching ? (
+            <span className="locale-switcher-trigger-meta">{current.currency}</span>
+          ) : null}
         </span>
-        <ChevronIcon open={isOpen} />
+        {!isLocaleSwitching ? <ChevronIcon open={isOpen} /> : null}
       </button>
 
-      {isOpen ? (
+      {isOpen && !isLocaleSwitching ? (
         <div className="locale-switcher-menu" role="listbox" aria-label={t('header.selectLanguage')}>
           <div className="locale-switcher-menu-head">{t('header.language')}</div>
           {localeOptions.map((option) => {

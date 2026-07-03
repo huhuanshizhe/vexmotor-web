@@ -40,7 +40,7 @@ export function CartClient({ initialCart, locale, crossSellProducts, emptyStateC
 
     let cancelled = false;
 
-    void apiFetch<CartDetail>('/api/front/cart')
+    void apiFetch<CartDetail>('/api/front/cart', { locale })
       .then((detail) => {
         if (!cancelled) {
           setCart(detail);
@@ -60,7 +60,7 @@ export function CartClient({ initialCart, locale, crossSellProducts, emptyStateC
     return () => {
       cancelled = true;
     };
-  }, [initialCart]);
+  }, [initialCart, locale]);
 
   const productsPath = withLocalePath('/products', locale);
   const quotePath = withLocalePath('/quote?cartOverlay=1', locale);
@@ -122,7 +122,6 @@ export function CartClient({ initialCart, locale, crossSellProducts, emptyStateC
                 commerceConfig={commerceConfig}
                 onCartChange={(nextCart) => setCart(nextCart)}
                 onMessage={setMessage}
-                compact
                 showStockStatus
               />
             </article>

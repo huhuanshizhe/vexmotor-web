@@ -18,6 +18,7 @@ import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-serv
 import { buildBreadcrumbJsonLd, buildMetadata } from '@/lib/seo';
 import { SITE_URL } from '@/lib/site-config';
 import { listShellCatalogCategories, mergeCategoriesWithShell, resolveStorefrontCategory } from '@/lib/catalog-categories';
+import { redirectToCanonicalPathIfNeeded } from '@/lib/locale-path';
 import { getCategories, getProductList, type ProductListSort } from '@/lib/storefront-api';
 
 // ISR: revalidate category pages every 2 minutes
@@ -93,6 +94,7 @@ export default async function CategoryPage({
   const selectedCategory = resolveStorefrontCategory(routeParams.categorySlug, apiCategories);
 
   if (!selectedCategory) {
+    await redirectToCanonicalPathIfNeeded(`/c/${routeParams.categorySlug}`, locale);
     notFound();
   }
 

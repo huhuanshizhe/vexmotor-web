@@ -1,5 +1,24 @@
+import { LOCALE_COOKIE_NAME, LOCALE_REQUEST_HEADER, normalizeLocale } from '@/lib/i18n';
+
 const ACCESS_TOKEN_KEY = 'vex_front_token';
 const CART_TOKEN_KEY = 'vex_cart_token';
+
+function readLocaleCookie(): string | undefined {
+  if (typeof document === 'undefined') {
+    return undefined;
+  }
+
+  const entry = document.cookie
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${LOCALE_COOKIE_NAME}=`));
+
+  if (!entry) {
+    return undefined;
+  }
+
+  return normalizeLocale(decodeURIComponent(entry.slice(LOCALE_COOKIE_NAME.length + 1)));
+}
 
 export const AUTH_TOKEN_CHANGED_EVENT = 'vex-auth-token-changed';
 
@@ -107,7 +126,12 @@ function buildHeaders(init?: FetchOptions, includeAuth = false): Headers {
     headers.set('Content-Type', 'application/json');
   }
   if (init?.locale) {
-    headers.set('x-vex-locale', init.locale);
+    headers.set(LOCALE_REQUEST_HEADER, init.locale);
+  } else {
+    const cookieLocale = readLocaleCookie();
+    if (cookieLocale) {
+      headers.set(LOCALE_REQUEST_HEADER, cookieLocale);
+    }
   }
   if (includeAuth && typeof window !== 'undefined') {
     const token = getAccessToken();
@@ -127,14 +151,14 @@ export async function serverFetch<T>(path: string, init?: FetchOptions): Promise
   const headers = new Headers(requestInit.headers);
 
   if (locale) {
-    headers.set('x-vex-locale', locale);
+    headers.set(LOCALE_REQUEST_HEADER, locale);
   } else {
     try {
       const { headers: nextHeaders } = await import('next/headers');
       const headerStore = await nextHeaders();
-      const requestLocale = headerStore.get('x-vex-locale');
+      const requestLocale = headerStore.get(LOCALE_REQUEST_HEADER);
       if (requestLocale) {
-        headers.set('x-vex-locale', requestLocale);
+        headers.set(LOCALE_REQUEST_HEADER, requestLocale);
       }
     } catch {
       // Not in a server context.
@@ -185,7 +209,12 @@ export async function apiUploadForm<T>(path: string, formData: FormData, init?: 
   const { locale, ...requestInit } = init ?? {};
   const headers = new Headers(requestInit.headers);
   if (locale) {
-    headers.set('x-vex-locale', locale);
+    headers.set(LOCALE_REQUEST_HEADER, locale);
+  } else {
+    const cookieLocale = readLocaleCookie();
+    if (cookieLocale) {
+      headers.set(LOCALE_REQUEST_HEADER, cookieLocale);
+    }
   }
 
   const url = joinUrl(path);

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 import { useTranslation } from '@/lib/i18n-context';
+import { t as formatMessage } from '@/lib/i18n-formatter';
 import type { CartDetail } from '@/lib/storefront-types';
 
 type CartTotalsPanelProps = {
@@ -22,7 +23,7 @@ export function CartTotalsPanel({
   contactPath,
   message,
 }: CartTotalsPanelProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const hasAdjustments =
     (cart.volumeDiscount && cart.volumeDiscount.amount > 0) ||
     (cart.coupon?.isApplied && cart.discount.amount > 0);
@@ -41,7 +42,7 @@ export function CartTotalsPanel({
         <div className="cart-totals-panel__intro">
           <h2 className="cart-totals-panel__title">{t('cart.totalsTitle')}</h2>
           <p className="cart-totals-panel__meta">
-            {cart.itemCount} {cart.itemCount === 1 ? 'item' : 'items'} · {t('cart.estimatedShipping')}
+            {formatMessage('cart.itemCount', { locale, count: cart.itemCount })} · {t('cart.estimatedShipping')}
           </p>
         </div>
       </header>
@@ -55,13 +56,13 @@ export function CartTotalsPanel({
         <dl className="cart-totals-panel__adjustments">
           {cart.volumeDiscount && cart.volumeDiscount.amount > 0 ? (
             <div className="cart-totals-panel__adjustment-row">
-              <dt>Volume discount</dt>
+              <dt>{t('cart.volumeDiscount')}</dt>
               <dd>-{cart.volumeDiscount.formatted}</dd>
             </div>
           ) : null}
           {cart.coupon?.isApplied && cart.discount.amount > 0 ? (
             <div className="cart-totals-panel__adjustment-row">
-              <dt>Coupon ({cart.coupon.code})</dt>
+              <dt>{t('cart.couponDiscount', { code: cart.coupon.code })}</dt>
               <dd>-{cart.discount.formatted}</dd>
             </div>
           ) : null}
@@ -73,7 +74,7 @@ export function CartTotalsPanel({
           {t('cart.proceedToCheckout')}
         </Link>
         <Link href={quotePath} className="button-secondary cart-totals-panel__cta cart-totals-panel__cta-secondary">
-          Convert to RFQ
+          {t('cart.convertToRfq')}
         </Link>
       </div>
 
@@ -82,7 +83,7 @@ export function CartTotalsPanel({
           {t('cart.continueShopping')}
         </Link>
         <Link href={contactPath} className="cart-totals-panel__link">
-          Need quote support?
+          {t('cart.needQuoteSupport')}
         </Link>
       </div>
 

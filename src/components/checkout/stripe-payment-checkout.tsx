@@ -10,6 +10,7 @@ type StripePaymentCheckoutProps = {
   publicKey: string;
   clientSecret: string;
   returnUrl: string;
+  locale?: string;
   onSuccess: (paymentIntentStatus: string) => void;
   onError: (message: string) => void;
 };
@@ -18,6 +19,7 @@ export function StripePaymentCheckout({
   publicKey,
   clientSecret,
   returnUrl,
+  locale = 'en',
   onSuccess,
   onError,
 }: StripePaymentCheckoutProps) {
@@ -26,11 +28,12 @@ export function StripePaymentCheckout({
   const options = useMemo(
     () => ({
       clientSecret,
+      locale: (locale === 'de' || locale === 'es' ? locale : 'en') as 'en' | 'de' | 'es',
       appearance: {
         theme: 'stripe' as const,
       },
     }),
-    [clientSecret],
+    [clientSecret, locale],
   );
 
   return (
