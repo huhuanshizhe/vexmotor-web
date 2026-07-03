@@ -2,9 +2,9 @@ import { unstable_cache } from 'next/cache';
 
 import { getApiBaseUrl } from '@/lib/api-client';
 
-export const UI_STRINGS_CACHE_TAG = 'ui-strings';
+const UI_STRINGS_CACHE_TAG = 'ui-strings';
 
-/** Dev: 30s. Production: 1h (admin save also triggers tag revalidation). */
+/** Dev: 30s. Production: 1h. */
 const UI_STRINGS_REVALIDATE_SECONDS =
   process.env.NODE_ENV === 'development' ? 30 : 60 * 60;
 
