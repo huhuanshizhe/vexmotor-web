@@ -1,33 +1,50 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { calculateOrderPricing, getShippingCountryOptions, type CommerceConfig } from '@/lib/commerce-config';
+import {
+  buildCommercePricingContext,
+  calculateOrderPricing,
+  getShippingCountryOptions,
+  type CommerceConfig,
+} from '@/lib/commerce-config';
+import type { SiteSettings } from '@/lib/site-settings';
 import { buildShippingOptions } from '@/lib/shipping';
 
 type ShippingEstimatorClientProps = {
   currency?: string;
   defaultSubtotal?: number;
   commerceConfig: CommerceConfig;
+  siteSettings: SiteSettings;
 };
 
 function formatMoney(amount: number, currency = 'USD') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
 }
 
-export function ShippingEstimatorClient({ currency = 'USD', defaultSubtotal = 180, commerceConfig }: ShippingEstimatorClientProps) {
-  const [shippingCountry, setShippingCountry] = useState(commerceConfig.defaultCountryCode);
+export function ShippingEstimatorClient({
+  currency = 'USD',
+  defaultSubtotal = 180,
+  commerceConfig,
+  siteSettings,
+}: ShippingEstimatorClientProps) {
+  const [shippingCountry, setShippingCountry] = useState(siteSettings.defaultCountryCode);
   const [subtotalInput, setSubtotalInput] = useState(String(defaultSubtotal));
   const [postalCode, setPostalCode] = useState('');
   const [selectedShippingOptionId, setSelectedShippingOptionId] = useState(commerceConfig.defaultShippingMethodCode);
 
   const merchandiseSubtotal = Math.max(0, Number.parseFloat(subtotalInput) || 0);
+  const pricingContext = useMemo(
+    () => buildCommercePricingContext(commerceConfig, currency),
+    [commerceConfig, currency],
+  );
   const shippingCountryOptions = getShippingCountryOptions(commerceConfig);
-  const shippingOptions = buildShippingOptions(shippingCountry, merchandiseSubtotal, commerceConfig);
+  const shippingOptions = buildShippingOptions(shippingCountry, merchandiseSubtotal, commerceConfig, pricingContext);
   const pricing = calculateOrderPricing(commerceConfig, {
     subtotal: merchandiseSubtotal,
     countryCode: shippingCountry,
     shippingMethodCode: selectedShippingOptionId,
+    pricingContext,
   });
   const selectedShippingOption = shippingOptions.find((option) => option.id === selectedShippingOptionId) ?? pricing.selectedShippingOption ?? shippingOptions[0] ?? null;
   const estimatedTaxRate = pricing.taxRate;

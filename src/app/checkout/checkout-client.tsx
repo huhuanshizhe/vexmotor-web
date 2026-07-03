@@ -22,6 +22,7 @@ import { fetchBuyNowPreview, fetchQuoteCheckoutPreview } from '@/lib/checkout-ap
 import { buildCheckoutPayPath } from '@/lib/checkout-pay-path';
 import { syncCartResponse } from '@/lib/cart-api';
 import type { CommerceConfig } from '@/lib/commerce-config';
+import type { SiteSettings } from '@/lib/site-settings';
 import { parseLocaleFromPathname, withLocalePath } from '@/lib/i18n';
 import { useTranslation } from '@/lib/i18n-context';
 import { useCheckoutPricing } from '@/lib/use-checkout-pricing';
@@ -32,6 +33,7 @@ export function CheckoutClient({
   addresses: initialAddresses,
   guestMode = false,
   commerceConfig,
+  siteSettings,
   buyNowProductId,
   buyNowQuantity = 1,
   fromQuoteNumber,
@@ -40,6 +42,7 @@ export function CheckoutClient({
   addresses: AccountAddress[];
   guestMode?: boolean;
   commerceConfig: CommerceConfig;
+  siteSettings: SiteSettings;
   buyNowProductId?: string;
   buyNowQuantity?: number;
   fromQuoteNumber?: string;
@@ -65,8 +68,8 @@ export function CheckoutClient({
   const [shippingAddressId, setShippingAddressId] = useState(defaultAddressId);
   const [billingAddressId, setBillingAddressId] = useState(defaultAddressId);
   const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
-  const [guestShippingForm, setGuestShippingForm] = useState(() => createGuestAddressForm(commerceConfig.defaultCountryCode));
-  const [guestBillingForm, setGuestBillingForm] = useState(() => createGuestAddressForm(commerceConfig.defaultCountryCode));
+  const [guestShippingForm, setGuestShippingForm] = useState(() => createGuestAddressForm(siteSettings.defaultCountryCode));
+  const [guestBillingForm, setGuestBillingForm] = useState(() => createGuestAddressForm(siteSettings.defaultCountryCode));
 
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
@@ -428,7 +431,7 @@ export function CheckoutClient({
           billingSameAsShipping={billingSameAsShipping}
           guestShippingForm={guestShippingForm}
           guestBillingForm={guestBillingForm}
-          defaultCountryCode={commerceConfig.defaultCountryCode}
+          defaultCountryCode={siteSettings.defaultCountryCode}
           onShippingAddressIdChange={setShippingAddressId}
           onBillingAddressIdChange={setBillingAddressId}
           onBillingSameAsShippingChange={setBillingSameAsShipping}

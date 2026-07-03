@@ -1,5 +1,6 @@
 import { serverFetch } from '@/lib/api-client';
 import type { CommerceConfig } from '@/lib/commerce-config';
+import type { SiteSettings } from '@/lib/site-settings';
 import type { GlossaryTerm, StorefrontFaq, TechFaqCategory, TechFaqEntry } from '@/lib/knowledge';
 import type { PressRelease } from '@/lib/press';
 import { getLocalSupportCatalog, getSupportPageBySlug as getLocalSupportPageBySlug } from '@/lib/support-content';
@@ -114,6 +115,15 @@ export async function getProductBySlug(slug: string): Promise<StorefrontProductD
 
 export async function getCommerceConfig(locale?: string): Promise<CommerceConfig> {
   return serverFetch<CommerceConfig>('/api/front/commerce', { locale });
+}
+
+export async function getSiteSettings(): Promise<SiteSettings> {
+  return serverFetch<SiteSettings>('/api/front/site-settings');
+}
+
+export async function getCountryContinentByIso(): Promise<Record<string, string>> {
+  const payload = await serverFetch<{ countryContinentByIso: Record<string, string> }>('/api/front/geo/country-continents');
+  return payload.countryContinentByIso;
 }
 
 export async function getSupportCatalog(): Promise<SupportCatalog> {

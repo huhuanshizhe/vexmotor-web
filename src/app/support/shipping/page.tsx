@@ -7,8 +7,7 @@ import { getShippingCountryOptions } from '@/lib/commerce-config';
 import { withLocalePath } from '@/lib/i18n';
 import { getServerSitePreferences } from '@/lib/i18n-server';
 import { buildBreadcrumbJsonLd, buildMetadata } from '@/lib/seo';
-import { getEstimatedTaxRate } from '@/lib/shipping';
-import { getCommerceConfig } from '@/lib/storefront-api';
+import { getCommerceConfig, getSiteSettings } from '@/lib/storefront-api';
 
 const shippingLanes = [
   {
@@ -75,39 +74,6 @@ const incoterms = [
   },
 ] as const;
 
-const regionalPolicies = [
-  {
-    region: 'United States',
-    taxLabel: `${(getEstimatedTaxRate('US') * 100).toFixed(0)}% estimator basis`,
-    note: 'Priority DHL/FedEx lanes are common for urgent stocked demand. Standard courier or DAP-style lanes may still require buyer-side state tax or import coordination.',
-  },
-  {
-    region: 'Canada',
-    taxLabel: `${(getEstimatedTaxRate('CA') * 100).toFixed(0)}% estimator basis`,
-    note: 'DDP handling is preferred when GST/HST predictability matters. Standard courier may require local broker coordination on arrival.',
-  },
-  {
-    region: 'United Kingdom',
-    taxLabel: `${(getEstimatedTaxRate('GB') * 100).toFixed(0)}% estimator basis`,
-    note: 'UK-bound lanes often mirror EU express timing, but import documents and VAT treatment should be confirmed before release on non-DDP lanes.',
-  },
-  {
-    region: 'European Union',
-    taxLabel: `${(getEstimatedTaxRate('DE') * 100).toFixed(0)}% estimator basis`,
-    note: 'EU deliveries often route through customs-cleared lanes or regional forward stock. DDP or broker-standardized lanes reduce clearance surprises.',
-  },
-  {
-    region: 'Australia',
-    taxLabel: `${(getEstimatedTaxRate('AU') * 100).toFixed(0)}% estimator basis`,
-    note: 'Express lanes are common for pilot and service demand; DDP is preferred when the buyer wants import cost settled before dispatch.',
-  },
-  {
-    region: 'Other destinations',
-    taxLabel: `${(getEstimatedTaxRate('OTHER') * 100).toFixed(0)}% planning basis`,
-    note: 'Destination-specific review is required for customs treatment, final tax, and restricted-destination checks before release.',
-  },
-] as const;
-
 const restrictedDestinations = [
   'Customers shipping into India, Türkiye, Brazil, South Africa, and other stricter customs markets should confirm importer readiness before release.',
   'Sanctioned, embargoed, or export-controlled destinations require manual compliance review before the order can move into logistics execution.',
@@ -154,9 +120,12 @@ export async function generateMetadata() {
 
 export default async function SupportShippingPage() {
   const { locale } = await getServerSitePreferences();
-  const commerceConfig = await getCommerceConfig(locale);
+  const [commerceConfig, siteSettings] = await Promise.all([
+    getCommerceConfig(locale),
+    getSiteSettings(),
+  ]);
   const primaryLaneRate = commerceConfig.shippingCountryRates.find(
-    (rate) => rate.countryCode === commerceConfig.defaultCountryCode && rate.shippingMethodCode === commerceConfig.defaultShippingMethodCode && rate.enabled,
+    (rate) => rate.countryCode === siteSettings.defaultCountryCode && rate.shippingMethodCode === commerceConfig.defaultShippingMethodCode && rate.enabled,
   );
   const overviewStats = [
     { label: 'Processing window', value: '1-2 business days', note: 'Weekend and holiday orders move to the next working day before carrier handoff.' },
@@ -369,7 +338,10 @@ export default async function SupportShippingPage() {
 
       <section className="section">
         <div className="section-inner trade-flow-grid">
-          <ShippingEstimatorClient commerceConfig={commerceConfig} />
+          <ShippingEstimatorClient
+            commerceConfig={commerceConfig}
+            siteSettings={siteSettings}
+          />
 
           <aside className="trade-side-stack">
             <article className="info-card shipping-note-card">

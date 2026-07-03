@@ -1,7 +1,7 @@
 import { StorefrontFrame } from '@/components/layout/storefront-frame';
 import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-server';
 import { buildMetadata } from '@/lib/seo';
-import { getCommerceConfig } from '@/lib/storefront-api';
+import { getCommerceConfig, getSiteSettings } from '@/lib/storefront-api';
 
 import { CheckoutClient } from './checkout-client';
 
@@ -23,7 +23,10 @@ export default async function CheckoutPage({
   searchParams: Promise<{ buyNow?: string; productId?: string; qty?: string; fromQuote?: string }>;
 }) {
   const { locale } = await getServerSitePreferences();
-  const commerceConfig = await getCommerceConfig(locale);
+  const [commerceConfig, siteSettings] = await Promise.all([
+    getCommerceConfig(locale),
+    getSiteSettings(),
+  ]);
   const params = await searchParams;
   const buyNowProductId = params.buyNow === '1' && params.productId ? params.productId : undefined;
   const buyNowQuantity = buyNowProductId ? Math.max(1, Number(params.qty) || 1) : undefined;
@@ -38,6 +41,7 @@ export default async function CheckoutPage({
             addresses={[]}
             guestMode={true}
             commerceConfig={commerceConfig}
+            siteSettings={siteSettings}
             buyNowProductId={buyNowProductId}
             buyNowQuantity={buyNowQuantity}
             fromQuoteNumber={fromQuoteNumber}

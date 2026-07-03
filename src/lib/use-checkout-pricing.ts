@@ -2,7 +2,11 @@
 
 import { useMemo } from 'react';
 
-import { calculateOrderPricing, type CommerceConfig } from '@/lib/commerce-config';
+import {
+  buildCommercePricingContext,
+  calculateOrderPricing,
+  type CommerceConfig,
+} from '@/lib/commerce-config';
 import type { CartDetail } from '@/lib/storefront-types';
 
 export type CheckoutPricingInput = {
@@ -36,6 +40,8 @@ export function useCheckoutPricing({
     const subtotal = cart?.subtotal.amount ?? 0;
     const discountAmount = cart?.discount.amount ?? 0;
     const isShippingAddressReady = Boolean(shippingCountryCode?.trim());
+    const targetCurrency = cart?.subtotal.currency ?? commerceConfig.currencyCode;
+    const pricingContext = buildCommercePricingContext(commerceConfig, targetCurrency);
 
     if (!cart || !isShippingAddressReady) {
       const taxableSubtotal = Math.max(subtotal - discountAmount, 0);
@@ -58,6 +64,7 @@ export function useCheckoutPricing({
       discountAmount,
       countryCode: shippingCountryCode!,
       shippingMethodCode,
+      pricingContext,
     });
 
     return {
