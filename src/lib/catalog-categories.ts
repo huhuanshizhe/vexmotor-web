@@ -57,6 +57,7 @@ export function resolveStorefrontCategory(
     image: fromApi?.image,
     parentId: fromApi?.parentId,
     productCount: fromApi?.productCount,
+    rollupProductCount: fromApi?.rollupProductCount,
     isFeatured: fromApi?.isFeatured,
     featuredOrder: fromApi?.featuredOrder,
   };
@@ -82,10 +83,58 @@ export function mergeCategoriesWithShell(apiCategories: StorefrontCategory[]): S
       image: existing?.image,
       parentId: existing?.parentId,
       productCount: existing?.productCount,
+      rollupProductCount: existing?.rollupProductCount,
       isFeatured: existing?.isFeatured,
       featuredOrder: existing?.featuredOrder,
     });
   }
 
   return Array.from(merged.values());
+}
+
+function topLevelRollupCount(entry: StorefrontCategory | undefined, rollupBySlug: Map<string, number>, slug: string) {
+  return rollupBySlug.get(slug) ?? entry?.rollupProductCount ?? entry?.productCount ?? 0;
+}
+
+export function buildTopLevelRollupBySlug(apiCategories: StorefrontCategory[]): Map<string, number> {
+  const rollupBySlug = new Map<string, number>();
+
+  for (const category of apiCategories) {
+    if (!category.slug || category.parentId) {
+      continue;
+    }
+    rollupBySlug.set(category.slug, category.rollupProductCount ?? category.productCount ?? 0);
+  }
+
+  return rollupBySlug;
+}
+
+/** Top-level sidebar categories in navigation order, with rollup product counts. */
+export function listCatalogSidebarCategories(
+  apiCategories: StorefrontCategory[],
+  options?: { excludeSlug?: string },
+): StorefrontCategory[] {
+  const merged = new Map(
+    mergeCategoriesWithShell(apiCategories)
+      .filter((item) => item.slug)
+      .map((item) => [item.slug, item]),
+  );
+  const rollupBySlug = buildTopLevelRollupBySlug(apiCategories);
+
+  return catalogCategoryGroups.flatMap((group) => {
+    const slug = slugFromHref(group.href);
+    if (slug === options?.excludeSlug) {
+      return [];
+    }
+
+    const entry = merged.get(slug);
+    return [
+      {
+        id: entry?.id ?? slug,
+        name: entry?.name || group.label,
+        slug,
+        productCount: topLevelRollupCount(entry, rollupBySlug, slug),
+      },
+    ];
+  });
 }

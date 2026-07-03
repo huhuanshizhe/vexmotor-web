@@ -68,6 +68,7 @@ function toLocaleHeader(locale?: string) {
 function buildProductListQuery(params: ProductListParams) {
   const search = new URLSearchParams();
   if (params.keyword) search.set('keyword', params.keyword);
+  if (params.categorySlug) search.set('category', params.categorySlug);
   if (params.purchaseMode) search.set('purchaseMode', params.purchaseMode);
   if (params.page) search.set('page', String(params.page));
   if (params.pageSize) search.set('pageSize', String(params.pageSize));
@@ -91,14 +92,16 @@ export async function getCategories(): Promise<StorefrontCategory[]> {
 
 export async function getProductList(params: ProductListParams = {}): Promise<ProductListResult> {
   const query = buildProductListQuery(params);
+  const fetchOptions = { cache: 'no-store' as const };
+
+  if (params.keyword) {
+    return serverFetch<ProductListResult>(`/api/front/search${query ? `?${query}` : ''}`, fetchOptions);
+  }
   if (params.categorySlug) {
     const path = `/api/front/categories/${encodeURIComponent(params.categorySlug)}/products${query ? `?${query}` : ''}`;
-    return serverFetch<ProductListResult>(path);
+    return serverFetch<ProductListResult>(path, fetchOptions);
   }
-  if (params.keyword) {
-    return serverFetch<ProductListResult>(`/api/front/search${query ? `?${query}` : ''}`);
-  }
-  return serverFetch<ProductListResult>(`/api/front/products${query ? `?${query}` : ''}`);
+  return serverFetch<ProductListResult>(`/api/front/products${query ? `?${query}` : ''}`, fetchOptions);
 }
 
 export async function getProductBySlug(slug: string): Promise<StorefrontProductDetail | null> {

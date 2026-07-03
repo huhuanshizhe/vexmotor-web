@@ -11,7 +11,6 @@ import { AddToWishlistButton } from '@/components/storefront/add-to-wishlist-but
 import { CopyActionButton } from '@/components/storefront/copy-action-button';
 import { ProductDetailTabs } from '@/components/storefront/product-detail-tabs';
 import { ProductGallery } from '@/components/storefront/product-gallery';
-import { ProductInquiryForm } from '@/components/storefront/product-inquiry-form';
 import { RecentlyViewedProducts } from '@/components/storefront/recently-viewed-products';
 import { type Locale, withLocalePath } from '@/lib/i18n';
 import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-server';
@@ -401,30 +400,37 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 </div>
               ) : null}
 
-              <div className="product-action-stack pdp-action-cluster">
-                <div className="inquiry-form-wrap">
-                  <ProductInquiryForm productId={p.id} productName={p.name} />
-                </div>
+              <div className="pdp-primary-cta">
+                <AddToQuoteButton
+                  productId={p.id}
+                  name={p.name}
+                  slug={p.slug}
+                  spu={productCode}
+                  coverImage={p.coverImage ? { url: p.coverImage.url, alt: p.coverImage.alt || p.name } : null}
+                  listUnitPrice={{ amount: p.price.amount, currency: p.price.currency, formatted: p.price.formatted }}
+                  className="button-primary pdp-quote-button"
+                />
                 <div className="pdp-support-links">
                   <Link href={customHref} className="detail-inline-link">{t('productDetail.discussCustom')}</Link>
                   <Link href={contactPath} className="detail-inline-link">{t('productDetail.talkToEngineer')}</Link>
                 </div>
-                <div className="pdp-utility-actions">
-                  <AddToCompareButton
-                    item={{
-                      id: p.id,
-                      name: p.name,
-                      slug: p.slug,
-                      spu: productCode,
-                      priceLabel: t('product.requestQuote'),
-                      purchaseMode: p.purchaseMode,
-                      inStock: p.inStock,
-                      shortDescription: p.shortDescription,
-                      categories: p.categories.map((item) => item.name),
-                    }}
-                  />
-                  <AddToWishlistButton productId={p.id} />
-                </div>
+              </div>
+
+              <div className="pdp-utility-actions">
+                <AddToCompareButton
+                  item={{
+                    id: p.id,
+                    name: p.name,
+                    slug: p.slug,
+                    spu: productCode,
+                    priceLabel: t('product.requestQuote'),
+                    purchaseMode: p.purchaseMode,
+                    inStock: p.inStock,
+                    shortDescription: p.shortDescription,
+                    categories: p.categories.map((item) => item.name),
+                  }}
+                />
+                <AddToWishlistButton productId={p.id} />
               </div>
                 </>
               )}

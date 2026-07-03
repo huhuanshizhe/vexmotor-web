@@ -4,9 +4,12 @@ import Link from 'next/link';
 import { Pagination } from '@C/pagination';
 import { StorefrontFrame } from '@/components/layout/storefront-frame';
 import { AddToCartButton } from '@/components/storefront/add-to-cart-button';
+import { AddToQuoteButton } from '@/components/storefront/add-to-quote-button';
 import { AddToCompareButton } from '@/components/storefront/add-to-compare-button';
+import { CatalogFilterSidebar, buildCategorySection, buildPurchaseModeSection } from '@/components/storefront/catalog-filter-sidebar';
 import { CatalogProductCard } from '@/components/storefront/catalog-product-card';
 import { applicationCaseStudies } from '@/lib/applications';
+import { listCatalogSidebarCategories } from '@/lib/catalog-categories';
 import { withLocalePath, type Locale } from '@/lib/i18n';
 import { getServerSitePreferences, getServerTranslations } from '@/lib/i18n-server';
 import { glossaryTermToPlainText, techFaqEntryToPlainText } from '@/lib/knowledge';
@@ -30,9 +33,18 @@ type SearchPageSearchParams = Promise<{
   sort?: string;
   view?: string;
   pageSize?: string;
+  purchaseMode?: string;
   mode?: string;
+  category?: string;
   stock?: string;
 }>;
+
+function readPurchaseMode(value: string | undefined): 'buy' | 'inquiry' | undefined {
+  if (value === 'buy' || value === 'inquiry') {
+    return value;
+  }
+  return undefined;
+}
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -83,6 +95,8 @@ function normalizeLocalePath(path: string, locale: Locale) {
   return withLocalePath(path, locale);
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata() {
   const { locale } = await getServerSitePreferences();
   const { t } = getServerTranslations(locale);
@@ -105,7 +119,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   const currentPage = Math.max(1, Number.parseInt(params.page ?? '1', 10) || 1);
   const parsedPageSize = Number.parseInt(params.pageSize ?? '24', 10);
   const pageSize = [24, 48, 96].includes(parsedPageSize) ? parsedPageSize : 24;
-  const selectedMode = params.mode === 'buy' || params.mode === 'inquiry' ? params.mode : undefined;
+  const selectedMode = readPurchaseMode(params.purchaseMode ?? params.mode);
+  const selectedCategorySlug = params.category?.trim() || undefined;
   const selectedSort = normalizeSort(params.sort);
   const selectedView = params.view === 'row' ? 'row' : 'grid';
   const inStockOnly = params.stock === 'in-stock';
@@ -114,7 +129,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   function buildSearchHref(overrides: {
     q?: string | null;
     type?: string | null;
-    mode?: 'buy' | 'inquiry' | null;
+    purchaseMode?: 'buy' | 'inquiry' | null;
+    category?: string | null;
     sort?: ProductListSort | null;
     view?: 'grid' | 'row' | null;
     page?: number;
@@ -124,7 +140,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
     const search = new URLSearchParams();
     const nextQuery = overrides.q !== undefined ? overrides.q : query;
     const type = overrides.type !== undefined ? overrides.type : selectedType;
-    const mode = overrides.mode !== undefined ? overrides.mode : selectedMode;
+    const purchaseMode = overrides.purchaseMode !== undefined ? overrides.purchaseMode : selectedMode;
+    const category = overrides.category !== undefined ? overrides.category : selectedCategorySlug;
     const sort = overrides.sort !== undefined ? overrides.sort : selectedSort;
     const view = overrides.view !== undefined ? overrides.view : selectedView;
     const page = overrides.page ?? currentPage;
@@ -137,8 +154,11 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
     if (type && type !== 'all') {
       search.set('type', type);
     }
-    if (mode) {
-      search.set('mode', mode);
+    if (purchaseMode) {
+      search.set('purchaseMode', purchaseMode);
+    }
+    if (category) {
+      search.set('category', category);
     }
     if (sort && sort !== 'featured') {
       search.set('sort', sort);
@@ -160,11 +180,12 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
     return queryString ? `${normalizeLocalePath('/search', locale)}?${queryString}` : normalizeLocalePath('/search', locale);
   }
 
-  const [categories, listing, blogPosts, knowledgeCatalog, supportCatalog] = await Promise.all([
+  const [apiCategories, listing, blogPosts, knowledgeCatalog, supportCatalog] = await Promise.all([
     getCategories(),
     showProducts
       ? getProductList({
           keyword: query,
+          categorySlug: selectedCategorySlug,
           purchaseMode: selectedMode,
           page: currentPage,
           pageSize,
@@ -288,8 +309,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
     }
     return lowest === null ? item.price.amount : Math.min(lowest, item.price.amount);
   }, null);
-  const featuredCategories = categories.filter((item) => item.isFeatured).slice(0, 6);
-  const categoryShortcuts = (featuredCategories.length ? featuredCategories : categories).slice(0, 6);
+  const categoryShortcuts = listCatalogSidebarCategories(apiCategories);
 
   const resultTabs = [
     { id: 'all', label: t('search.tabAll') },
@@ -298,6 +318,44 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
     { id: 'faq', label: t('search.tabFaq') },
     { id: 'docs', label: t('search.tabDocs') },
   ] as const;
+
+  const purchaseModeSection = showProducts
+    ? buildPurchaseModeSection({
+        title: t('search.purchaseModeLabel'),
+        allLabel: t('search.all'),
+        facets: listing.facets,
+        selectedMode,
+        buildHref: (purchaseMode) => buildSearchHref({ purchaseMode, page: 1 }),
+      })
+    : null;
+
+  const categorySection = showProducts && query
+    ? buildCategorySection({
+        title: t('catalog.sidebarCategories'),
+        allLabel: t('search.all'),
+        facets: listing.facets,
+        shellCategories: categoryShortcuts.map((item) => ({ slug: item.slug, name: item.name })),
+        selectedCategorySlug,
+        buildHref: (category) => buildSearchHref({ category, page: 1 }),
+      })
+    : null;
+
+  const filterSections = [
+    {
+      id: 'result-type',
+      title: t('search.resultTypeLabel'),
+      defaultOpen: true,
+      options: resultTabs.map((tab) => ({
+        id: tab.id,
+        label: tab.label,
+        href: buildSearchHref({ type: tab.id === 'all' ? null : tab.id, page: 1 }),
+        active: selectedType === tab.id,
+        count: tabCounts[tab.id],
+      })),
+    },
+    ...(purchaseModeSection ? [purchaseModeSection] : []),
+    ...(categorySection ? [categorySection] : []),
+  ];
 
   return (
     <StorefrontFrame>
@@ -378,71 +436,23 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
           ) : null}
 
           <div className="catalog-page-grid">
-            <aside className="info-card catalog-sidebar catalog-filter-card">
-              <div className="catalog-filter-group">
-                <h2 className="catalog-filter-title">{t('search.searchPanelTitle')}</h2>
+            <CatalogFilterSidebar
+              panelTitle={t('search.searchPanelTitle')}
+              searchForm={(
                 <form action={normalizeLocalePath('/search', locale)} className="search-inline-form catalog-search-form" role="search">
                   <input type="hidden" name="sort" value={selectedSort} />
                   <input type="hidden" name="view" value={selectedView} />
                   <input type="hidden" name="pageSize" value={String(pageSize)} />
                   {selectedType !== 'all' ? <input type="hidden" name="type" value={selectedType} /> : null}
-                  {selectedMode ? <input type="hidden" name="mode" value={selectedMode} /> : null}
+                  {selectedMode ? <input type="hidden" name="purchaseMode" value={selectedMode} /> : null}
+                  {selectedCategorySlug ? <input type="hidden" name="category" value={selectedCategorySlug} /> : null}
                   {inStockOnly ? <input type="hidden" name="stock" value="in-stock" /> : null}
                   <input name="q" defaultValue={query} className="newsletter-input" placeholder={t('search.searchPlaceholder')} />
                   <button type="submit" className="button-primary">{t('search.searchButton')}</button>
                 </form>
-              </div>
-
-              <div className="catalog-filter-group">
-                <h3 className="catalog-filter-subtitle">{t('search.resultTypeLabel')}</h3>
-                <div className="filter-chip-list">
-                  {resultTabs.map((tab) => (
-                    <Link
-                      key={tab.id}
-                      href={buildSearchHref({ type: tab.id === 'all' ? null : tab.id, page: 1 })}
-                      className={`filter-chip filter-chip-link${selectedType === tab.id ? ' is-active' : ''}`}
-                    >
-                      {tab.label} ({tabCounts[tab.id]})
-                    </Link>
-                  ))}
-                </div>
-              </div>
-
-              {showProducts && listing.facets.length ? (
-                <div className="catalog-filter-group">
-                  <h3 className="catalog-filter-subtitle">{t('search.purchaseModeLabel')}</h3>
-                  <div className="filter-chip-list">
-                    <Link href={buildSearchHref({ mode: null, page: 1 })} className={`filter-chip filter-chip-link${!selectedMode ? ' is-active' : ''}`}>{t('search.all')}</Link>
-                    {listing.facets.flatMap((facet) =>
-                      facet.options.map((option) => (
-                        <Link
-                          key={`${facet.key}-${option.value}`}
-                          href={buildSearchHref({
-                            mode: selectedMode === option.value ? null : (option.value as 'buy' | 'inquiry'),
-                            page: 1,
-                          })}
-                          className={`filter-chip filter-chip-link${selectedMode === option.value ? ' is-active' : ''}`}
-                        >
-                          {option.label} · {option.count}
-                        </Link>
-                      )),
-                    )}
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="catalog-filter-group">
-                <h3 className="catalog-filter-subtitle">{t('search.browseFamilies')}</h3>
-                <div className="inline-link-list">
-                  {categoryShortcuts.map((item) => (
-                    <Link key={item.id} href={normalizeLocalePath(`/c/${item.slug}`, locale)} className="sidebar-link">
-                      <span>{item.name}</span>
-                      <span className="card-kicker">{item.productCount ?? 0}</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </aside>
+              )}
+              sections={filterSections}
+            />
 
             <section className="catalog-stack catalog-results-shell">
               {showProducts ? (
@@ -467,8 +477,13 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                   <div className="catalog-meta-row">
                     {query ? <span className="filter-chip">{t('search.queryChip', { query })}</span> : null}
                     {selectedMode ? <span className="filter-chip">{selectedMode === 'buy' ? t('search.modeChipBuy') : t('search.modeChipInquiry')}</span> : null}
+                    {selectedCategorySlug ? (
+                      <span className="filter-chip">
+                        {categoryShortcuts.find((item) => item.slug === selectedCategorySlug)?.name ?? selectedCategorySlug}
+                      </span>
+                    ) : null}
                     {inStockOnly ? <span className="filter-chip">{t('search.stockChip')}</span> : null}
-                    <Link href={buildSearchHref({ q: null, mode: null, stock: false, page: 1 })} className="section-link">
+                    <Link href={buildSearchHref({ q: null, purchaseMode: null, category: null, stock: false, page: 1 })} className="section-link">
                       {t('search.clearFilters')}
                     </Link>
                   </div>
@@ -518,7 +533,9 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
 
                                 <div className="catalog-row-footer">
                                   <div className="catalog-row-price-block">
-                                    <p className="product-price">{product.purchaseMode === 'buy' ? product.price.formatted : t('catalog.requestQuote')}</p>
+                                    {product.purchaseMode === 'buy' ? (
+                                      <p className="product-price">{product.price.formatted}</p>
+                                    ) : null}
                                     <p className="product-status">
                                       {product.inStock ? t('search.stockAvailable') : t('search.quoteWorkflow')}
                                     </p>
@@ -528,9 +545,16 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                                     {product.purchaseMode === 'buy' ? (
                                       <AddToCartButton productId={product.id} redirectToCart={false} />
                                     ) : (
-                                      <Link href={normalizeLocalePath(`/products/${product.slug}`, locale)} className="button-primary">
-                                        {t('catalog.requestQuote')}
-                                      </Link>
+                                      <AddToQuoteButton
+                                        productId={product.id}
+                                        name={product.name}
+                                        slug={product.slug}
+                                        spu={product.spu}
+                                        coverImage={product.coverImage ? { url: product.coverImage.url, alt: product.coverImage.alt || product.name } : null}
+                                        listUnitPrice={{ amount: product.price.amount, currency: product.price.currency, formatted: product.price.formatted }}
+                                        className="button-primary"
+                                        label={t('catalog.requestQuote')}
+                                      />
                                     )}
                                     <Link href={normalizeLocalePath(`/products/${product.slug}`, locale)} className="button-secondary catalog-row-secondary">
                                       {t('search.viewDetails')}
@@ -566,7 +590,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                       <h3 style={{ margin: 0 }}>{t('search.noProductsTitle')}</h3>
                       <p className="section-description">{t('search.noProductsDesc')}</p>
                       <div className="inline-link-list">
-                        <Link href={buildSearchHref({ q: null, mode: null, stock: false, page: 1 })} className="section-link">
+                        <Link href={buildSearchHref({ q: null, purchaseMode: null, category: null, stock: false, page: 1 })} className="section-link">
                           {t('search.clearFilters')}
                         </Link>
                         <Link href={normalizeLocalePath('/selector', locale)} className="section-link">

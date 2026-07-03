@@ -73,6 +73,10 @@ export function removeQuoteItem(productId: string) {
   return nextItems;
 }
 
+export function isProductInQuote(productId: string) {
+  return readQuoteItems().some((entry) => entry.id === productId);
+}
+
 export function clearQuoteItems() {
   writeQuoteItems([]);
   return [] as QuoteLiveItem[];

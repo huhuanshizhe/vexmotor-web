@@ -6,8 +6,10 @@ import { notFound } from 'next/navigation';
 import { Pagination } from '@C/pagination';
 import { StorefrontFrame } from '@/components/layout/storefront-frame';
 import { JsonLdScript } from '@/components/seo/json-ld';
+import { CatalogFilterSidebar, buildPurchaseModeSection } from '@/components/storefront/catalog-filter-sidebar';
 import { CatalogProductCard } from '@/components/storefront/catalog-product-card';
 import { AddToCartButton } from '@/components/storefront/add-to-cart-button';
+import { AddToQuoteButton } from '@/components/storefront/add-to-quote-button';
 import { AddToCompareButton } from '@/components/storefront/add-to-compare-button';
 import { AddToWishlistButton } from '@/components/storefront/add-to-wishlist-button';
 import { withLocalePath } from '@/lib/i18n';
@@ -25,11 +27,11 @@ type CategoryPageSearchParams = Promise<{
   keyword?: string;
   page?: string;
   mode?: string;
+  purchaseMode?: string;
   sort?: string;
   view?: string;
   pageSize?: string;
   stock?: string;
-  compare?: string;
 }>;
 
 function normalizeSort(value: string | undefined): ProductListSort {
@@ -42,6 +44,13 @@ function normalizeSort(value: string | undefined): ProductListSort {
 
 function normalizeLocalePath(path: string, locale: Locale) {
   return withLocalePath(path, locale);
+}
+
+function readPurchaseMode(value: string | undefined): 'buy' | 'inquiry' | undefined {
+  if (value === 'buy' || value === 'inquiry') {
+    return value;
+  }
+  return undefined;
 }
 
 export async function generateStaticParams() {
@@ -92,38 +101,35 @@ export default async function CategoryPage({
   const currentPage = Math.max(1, Number.parseInt(query.page ?? '1', 10) || 1);
   const parsedPageSize = Number.parseInt(query.pageSize ?? '24', 10);
   const pageSize = [24, 48, 96].includes(parsedPageSize) ? parsedPageSize : 24;
-  const selectedMode = query.mode === 'buy' || query.mode === 'inquiry' ? query.mode : undefined;
+  const selectedMode = readPurchaseMode(query.purchaseMode ?? query.mode);
   const selectedSort = normalizeSort(query.sort);
   const selectedView = query.view === 'row' ? 'row' : 'grid';
   const inStockOnly = query.stock === 'in-stock';
-  const compareMode = query.compare === '1';
 
   function buildCategoryHref(overrides: {
     keyword?: string | null;
-    mode?: 'buy' | 'inquiry' | null;
+    purchaseMode?: 'buy' | 'inquiry' | null;
     sort?: ProductListSort | null;
     view?: 'grid' | 'row' | null;
     page?: number;
     pageSize?: number | null;
     stock?: boolean | null;
-    compare?: boolean | null;
   }) {
     const search = new URLSearchParams();
     const keyword = overrides.keyword !== undefined ? overrides.keyword : query.keyword;
-    const mode = overrides.mode !== undefined ? overrides.mode : selectedMode;
+    const purchaseMode = overrides.purchaseMode !== undefined ? overrides.purchaseMode : selectedMode;
     const sort = overrides.sort !== undefined ? overrides.sort : selectedSort;
     const view = overrides.view !== undefined ? overrides.view : selectedView;
     const page = overrides.page ?? currentPage;
     const perPage = overrides.pageSize !== undefined ? overrides.pageSize : pageSize;
     const stock = overrides.stock !== undefined ? overrides.stock : inStockOnly;
-    const compare = overrides.compare !== undefined ? overrides.compare : compareMode;
 
     if (keyword) {
       search.set('keyword', keyword);
     }
 
-    if (mode) {
-      search.set('mode', mode);
+    if (purchaseMode) {
+      search.set('purchaseMode', purchaseMode);
     }
 
     if (sort && sort !== 'featured') {
@@ -140,10 +146,6 @@ export default async function CategoryPage({
 
     if (stock) {
       search.set('stock', 'in-stock');
-    }
-
-    if (compare) {
-      search.set('compare', '1');
     }
 
     if (page > 1) {
@@ -171,7 +173,6 @@ export default async function CategoryPage({
 
     return lowest === null ? item.price.amount : Math.min(lowest, item.price.amount);
   }, null);
-  const relatedCategories = categories.filter((item) => item.slug !== category.slug).slice(0, 6);
   const faqItems = [
     {
       question: t('catalog.faqNarrowQuestion', { category: category.name }),
@@ -204,6 +205,16 @@ export default async function CategoryPage({
       })),
     },
   };
+
+  const purchaseModeSection = buildPurchaseModeSection({
+    title: t('catalog.purchaseModeLabel'),
+    allLabel: t('catalog.all'),
+    facets: listing.facets,
+    selectedMode,
+    buildHref: (purchaseMode) => buildCategoryHref({ purchaseMode, page: 1 }),
+  });
+
+  const filterSections = purchaseModeSection ? [purchaseModeSection] : [];
 
   return (
     <StorefrontFrame>
@@ -243,40 +254,28 @@ export default async function CategoryPage({
             </div>
           </article>
 
-          <div className="catalog-related-chip-row">
-            <span className="summary-label">{t('catalog.relatedFamilies')}</span>
-            <div className="filter-chip-list">
-              {relatedCategories.map((item) => (
-                <Link key={item.slug} href={normalizeLocalePath(`/c/${item.slug}`, locale)} className="filter-chip filter-chip-link">
-                  {item.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-
           <div className="catalog-results-toolbar info-card">
             <div className="catalog-results-toolbar-group">
-              <strong className="catalog-toolbar-heading">{t('catalog.controlsLabel')}</strong>
+              <strong className="catalog-toolbar-heading">{t('search.sortLabel')}</strong>
               <div className="filter-chip-list">
-                <Link href={buildCategoryHref({ sort: 'featured', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'featured' ? ' is-active' : ''}`}>{t('catalog.bestseller')}</Link>
-                <Link href={buildCategoryHref({ sort: 'price-asc', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'price-asc' ? ' is-active' : ''}`}>{t('catalog.priceAsc')}</Link>
-                <Link href={buildCategoryHref({ sort: 'price-desc', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'price-desc' ? ' is-active' : ''}`}>{t('catalog.priceDesc')}</Link>
-                <Link href={buildCategoryHref({ sort: 'newest', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'newest' ? ' is-active' : ''}`}>{t('catalog.newest')}</Link>
+                <Link href={buildCategoryHref({ sort: 'featured', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'featured' ? ' is-active' : ''}`}>{t('search.bestseller')}</Link>
+                <Link href={buildCategoryHref({ sort: 'price-asc', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'price-asc' ? ' is-active' : ''}`}>{t('search.priceAsc')}</Link>
+                <Link href={buildCategoryHref({ sort: 'price-desc', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'price-desc' ? ' is-active' : ''}`}>{t('search.priceDesc')}</Link>
+                <Link href={buildCategoryHref({ sort: 'newest', page: 1 })} className={`filter-chip filter-chip-link${selectedSort === 'newest' ? ' is-active' : ''}`}>{t('search.newest')}</Link>
               </div>
             </div>
 
             <div className="catalog-results-toolbar-group">
-              <strong className="catalog-toolbar-heading">{t('catalog.viewLabel')}</strong>
+              <strong className="catalog-toolbar-heading">{t('search.viewLabel')}</strong>
               <div className="filter-chip-list">
-                <Link href={buildCategoryHref({ view: 'grid' })} className={`filter-chip filter-chip-link${selectedView === 'grid' ? ' is-active' : ''}`}>{t('catalog.grid')}</Link>
-                <Link href={buildCategoryHref({ view: 'row' })} className={`filter-chip filter-chip-link${selectedView === 'row' ? ' is-active' : ''}`}>{t('catalog.row')}</Link>
-                <Link href={buildCategoryHref({ stock: !inStockOnly, page: 1 })} className={`filter-chip filter-chip-link${inStockOnly ? ' is-active' : ''}`}>{t('catalog.inStockOnly')}</Link>
-                <Link href={buildCategoryHref({ compare: !compareMode })} className={`filter-chip filter-chip-link${compareMode ? ' is-active' : ''}`}>{t('catalog.compareMode')}</Link>
+                <Link href={buildCategoryHref({ view: 'grid' })} className={`filter-chip filter-chip-link${selectedView === 'grid' ? ' is-active' : ''}`}>{t('search.grid')}</Link>
+                <Link href={buildCategoryHref({ view: 'row' })} className={`filter-chip filter-chip-link${selectedView === 'row' ? ' is-active' : ''}`}>{t('search.row')}</Link>
+                <Link href={buildCategoryHref({ stock: !inStockOnly, page: 1 })} className={`filter-chip filter-chip-link${inStockOnly ? ' is-active' : ''}`}>{t('search.inStockOnly')}</Link>
               </div>
             </div>
 
             <div className="catalog-results-toolbar-group">
-              <strong className="catalog-toolbar-heading">{t('catalog.perPageLabel')}</strong>
+              <strong className="catalog-toolbar-heading">{t('search.perPageLabel')}</strong>
               <div className="filter-chip-list">
                 {[24, 48, 96].map((value) => (
                   <Link key={value} href={buildCategoryHref({ pageSize: value, page: 1 })} className={`filter-chip filter-chip-link${pageSize === value ? ' is-active' : ''}`}>
@@ -288,47 +287,21 @@ export default async function CategoryPage({
           </div>
 
           <div className="catalog-page-grid">
-            <aside className="info-card catalog-sidebar catalog-filter-card">
-              <div className="catalog-filter-group">
-                <h2 className="catalog-filter-title">{t('catalog.filterPanelTitle')}</h2>
+            <CatalogFilterSidebar
+              panelTitle={t('catalog.filterPanelTitle')}
+              searchForm={(
                 <form action={normalizeLocalePath(`/c/${selectedCategory.slug}`, locale)} className="search-inline-form catalog-search-form">
                   <input type="hidden" name="sort" value={selectedSort} />
                   <input type="hidden" name="view" value={selectedView} />
                   <input type="hidden" name="pageSize" value={String(pageSize)} />
-                  {selectedMode ? <input type="hidden" name="mode" value={selectedMode} /> : null}
+                  {selectedMode ? <input type="hidden" name="purchaseMode" value={selectedMode} /> : null}
                   {inStockOnly ? <input type="hidden" name="stock" value="in-stock" /> : null}
-                  {compareMode ? <input type="hidden" name="compare" value="1" /> : null}
                   <input name="keyword" defaultValue={query.keyword ?? ''} className="newsletter-input" placeholder={t('catalog.searchWithin', { category: selectedCategory.name })} />
                   <button type="submit" className="button-primary">{t('catalog.apply')}</button>
                 </form>
-              </div>
-
-              <div className="catalog-filter-group">
-                <h3 className="catalog-filter-subtitle">{t('catalog.purchaseModeLabel')}</h3>
-                <div className="filter-chip-list">
-                  <Link href={buildCategoryHref({ mode: null, page: 1 })} className={`filter-chip filter-chip-link${!selectedMode ? ' is-active' : ''}`}>{t('catalog.all')}</Link>
-                  {listing.facets.flatMap((facet) =>
-                    facet.options.map((option) => (
-                      <Link key={`${facet.key}-${option.value}`} href={buildCategoryHref({ mode: selectedMode === option.value ? null : (option.value as 'buy' | 'inquiry'), page: 1 })} className={`filter-chip filter-chip-link${selectedMode === option.value ? ' is-active' : ''}`}>
-                        {option.label} · {option.count}
-                      </Link>
-                    )),
-                  )}
-                </div>
-              </div>
-
-              <div className="catalog-filter-group">
-                <h3 className="catalog-filter-subtitle">{t('catalog.familyShortcuts')}</h3>
-                <div className="inline-link-list">
-                  {relatedCategories.map((item) => (
-                    <Link key={item.slug} href={normalizeLocalePath(`/c/${item.slug}`, locale)} className="sidebar-link">
-                      <span>{item.name}</span>
-                      <span className="card-kicker">{item.productCount ?? 0}</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </aside>
+              )}
+              sections={filterSections}
+            />
 
             <section className="catalog-stack catalog-results-shell">
               <div className="catalog-results-header">
@@ -388,7 +361,9 @@ export default async function CategoryPage({
 
                             <div className="catalog-row-footer">
                               <div className="catalog-row-price-block">
-                                <p className="product-price">{product.purchaseMode === 'buy' ? product.price.formatted : t('catalog.requestQuote')}</p>
+                                {product.purchaseMode === 'buy' ? (
+                                  <p className="product-price">{product.price.formatted}</p>
+                                ) : null}
                                 <p className="product-status">{product.inStock ? t('catalog.stockAvailable') : t('catalog.quoteWorkflow')}</p>
                               </div>
 
@@ -396,9 +371,16 @@ export default async function CategoryPage({
                                 {product.purchaseMode === 'buy' ? (
                                   <AddToCartButton productId={product.id} redirectToCart={false} />
                                 ) : (
-                                  <Link href={normalizeLocalePath(`/products/${product.slug}`, locale)} className="button-primary">
-                                    {t('catalog.requestQuote')}
-                                  </Link>
+                                  <AddToQuoteButton
+                                    productId={product.id}
+                                    name={product.name}
+                                    slug={product.slug}
+                                    spu={product.spu}
+                                    coverImage={product.coverImage ? { url: product.coverImage.url, alt: product.coverImage.alt || product.name } : null}
+                                    listUnitPrice={{ amount: product.price.amount, currency: product.price.currency, formatted: product.price.formatted }}
+                                    className="button-primary"
+                                    label={t('catalog.requestQuote')}
+                                  />
                                 )}
 
                                 <Link href={normalizeLocalePath(`/products/${product.slug}`, locale)} className="button-secondary catalog-row-secondary">
