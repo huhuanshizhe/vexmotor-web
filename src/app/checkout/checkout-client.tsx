@@ -203,6 +203,7 @@ export function CheckoutClient({
 
   const paymentOptions = [
     { value: 'Credit Card', title: t('checkout.creditCard'), note: t('checkout.paymentCreditCardNote'), disabled: false },
+    { value: 'Airwallex', title: t('checkout.airwallex'), note: t('checkout.paymentAirwallexNote'), disabled: true },
     { value: 'PayPal', title: t('checkout.paymentPayPal'), note: t('checkout.paymentPayPalNote'), disabled: true },
     { value: 'Wire transfer', title: t('checkout.paymentWire'), note: t('checkout.paymentWireNote'), disabled: true },
   ];

@@ -1,10 +1,13 @@
 import { apiFetch } from '@/lib/api-client';
 
 export type CheckoutPaymentIntentSession = {
+  gateway: 'stripe' | 'airwallex';
   intentId: string;
   clientSecret: string;
   currency: string;
-  env: 'demo' | 'prod';
+  publicKey?: string;
+  env?: 'demo' | 'prod';
+  mode?: 'test' | 'live';
 };
 
 export type CheckoutPaymentConfirmResult = {
@@ -122,8 +125,16 @@ export async function finalizeCheckoutPayment(orderNumber: string, guestToken?: 
   const status = await waitForOrderPaymentGatewayPaid(orderNumber, guestToken);
   return {
     paymentStatus: 'paid',
-    intentStatus: status.gatewayStatus ?? 'SUCCEEDED',
+    intentStatus: status.gatewayStatus ?? 'succeeded',
     redirectPath: status.redirectPath,
     guestAccessToken: guestToken,
   } satisfies CheckoutPaymentConfirmResult;
+}
+
+export async function completeCheckoutPayment(orderNumber: string, guestToken?: string) {
+  try {
+    return await confirmCheckoutPayment(orderNumber, guestToken);
+  } catch {
+    return finalizeCheckoutPayment(orderNumber, guestToken);
+  }
 }

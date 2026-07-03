@@ -1,3 +1,5 @@
+import { Suspense } from 'react';
+
 import { StorefrontFrame } from '@/components/layout/storefront-frame';
 import { getServerSitePreferences } from '@/lib/i18n-server';
 import { buildMetadata } from '@/lib/seo';
@@ -29,7 +31,9 @@ export default async function CheckoutPaymentPage({
     <StorefrontFrame>
       <section className="section payment-gateway-page">
         <div className="section-inner">
-          <CheckoutPaymentClient orderNumber={orderNumber} guestToken={guestToken} />
+          <Suspense fallback={<div className="payment-gateway-status">Loading payment…</div>}>
+            <CheckoutPaymentClient orderNumber={orderNumber} guestToken={guestToken} />
+          </Suspense>
         </div>
       </section>
     </StorefrontFrame>

@@ -2,13 +2,17 @@
 
 import Image from 'next/image';
 import { LocalizedLink as Link } from '@/components/i18n/localized-link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState, useTransition } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 
 import { AirwallexDropIn } from '@/components/checkout/airwallex-drop-in';
+import { PaymentGatewayModeBadge } from '@/components/checkout/payment-gateway-mode-badge';
+import { StripePaymentCheckout } from '@/components/checkout/stripe-payment-checkout';
 import { useAuth } from '@/components/providers/auth-provider';
 import { fetchGuestOrderDetail, fetchOrderByNumber } from '@/lib/account-api';
 import {
+  completeCheckoutPayment,
+  confirmCheckoutPayment,
   createCheckoutPaymentIntent,
   fetchOrderPaymentGatewayStatus,
   finalizeCheckoutPayment,
@@ -65,15 +69,33 @@ function buildPaidRedirect(redirectPath: string, guestToken?: string) {
   return redirectPath;
 }
 
+function isOnlineCardPaymentMethod(paymentMethod: string) {
+  return paymentMethod === 'Credit Card' || paymentMethod === 'Credit Card (Stripe)' || paymentMethod === 'Credit Card (Airwallex)';
+}
+
 export function CheckoutPaymentClient({ orderNumber, guestToken }: CheckoutPaymentClientProps) {
   const { user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [order, setOrder] = useState<PayableOrder | null>(null);
   const [paymentSession, setPaymentSession] = useState<CheckoutPaymentIntentSession | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [phase, setPhase] = useState<'loading' | 'ready' | 'confirming' | 'error'>('loading');
   const [isPending, startTransition] = useTransition();
+
+  const returnUrl = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return '';
+    }
+    const params = new URLSearchParams();
+    if (guestToken) {
+      params.set('guestToken', guestToken);
+    }
+    const query = params.toString();
+    return `${window.location.origin}${pathname}${query ? `?${query}` : ''}`;
+  }, [guestToken, pathname]);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,7 +124,7 @@ export function CheckoutPaymentClient({ orderNumber, guestToken }: CheckoutPayme
           return;
         }
 
-        if (nextOrder.paymentMethod !== 'Credit Card') {
+        if (!isOnlineCardPaymentMethod(nextOrder.paymentMethod)) {
           router.replace(
             guestToken
               ? `/checkout/confirmation/${orderNumber}?guestToken=${encodeURIComponent(guestToken)}`
@@ -115,6 +137,28 @@ export function CheckoutPaymentClient({ orderNumber, guestToken }: CheckoutPayme
         if (isOrderPaidOnSite(gatewayStatus)) {
           router.replace(buildPaidRedirect(gatewayStatus.redirectPath, guestToken));
           return;
+        }
+
+        const redirectPaymentIntent = searchParams.get('payment_intent');
+        const redirectClientSecret = searchParams.get('payment_intent_client_secret');
+        if (redirectPaymentIntent && redirectClientSecret) {
+          setPhase('confirming');
+          try {
+            const confirmResult = await completeCheckoutPayment(orderNumber, guestToken);
+            router.replace(buildPaidRedirect(confirmResult.redirectPath, guestToken));
+            router.refresh();
+            return;
+          } catch (error) {
+            if (!cancelled) {
+              setPhase('error');
+              setLoadError(
+                error instanceof Error
+                  ? error.message
+                  : 'Payment was not confirmed after redirect. Please try again.',
+              );
+            }
+            return;
+          }
         }
 
         setOrder({
@@ -161,20 +205,42 @@ export function CheckoutPaymentClient({ orderNumber, guestToken }: CheckoutPayme
     return () => {
       cancelled = true;
     };
-  }, [guestToken, orderNumber, router, user]);
+  }, [guestToken, orderNumber, router, searchParams, user]);
 
   function redirectAfterPayment(redirectPath: string) {
     router.push(buildPaidRedirect(redirectPath, guestToken));
     router.refresh();
   }
 
-  function handlePaymentSuccess() {
+  function handleAirwallexSuccess() {
     startTransition(async () => {
       setPhase('confirming');
       setMessage(null);
 
       try {
         const confirmResult = await finalizeCheckoutPayment(orderNumber, guestToken);
+        redirectAfterPayment(confirmResult.redirectPath);
+      } catch (error) {
+        setPhase('ready');
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : 'Payment was not confirmed. Your order remains unpaid — please try again.',
+        );
+      }
+    });
+  }
+
+  function handleStripeSuccess(paymentIntentStatus: string) {
+    startTransition(async () => {
+      setPhase('confirming');
+      setMessage(null);
+
+      try {
+        const confirmResult =
+          paymentIntentStatus === 'succeeded'
+            ? await confirmCheckoutPayment(orderNumber, guestToken).catch(() => completeCheckoutPayment(orderNumber, guestToken))
+            : await completeCheckoutPayment(orderNumber, guestToken);
         redirectAfterPayment(confirmResult.redirectPath);
       } catch (error) {
         setPhase('ready');
@@ -273,7 +339,9 @@ export function CheckoutPaymentClient({ orderNumber, guestToken }: CheckoutPayme
         <section className="payment-gateway-card payment-gateway-card--form">
           <div className="payment-gateway-card-head">
             <h2>Card payment</h2>
-            <span className="payment-gateway-secure-badge">SSL encrypted</span>
+            {paymentSession?.mode ? (
+              <PaymentGatewayModeBadge mode={paymentSession.mode} gateway={paymentSession.gateway} />
+            ) : null}
           </div>
 
           {phase === 'confirming' || isPending ? (
@@ -284,14 +352,26 @@ export function CheckoutPaymentClient({ orderNumber, guestToken }: CheckoutPayme
 
           {paymentSession && phase !== 'confirming' ? (
             <div className="payment-gateway-dropin-wrap">
-              <AirwallexDropIn
-                intentId={paymentSession.intentId}
-                clientSecret={paymentSession.clientSecret}
-                currency={paymentSession.currency}
-                env={paymentSession.env}
-                onSuccess={handlePaymentSuccess}
-                onError={(errorMessage) => setMessage(errorMessage)}
-              />
+              {paymentSession.gateway === 'stripe' && paymentSession.publicKey ? (
+                <StripePaymentCheckout
+                  publicKey={paymentSession.publicKey}
+                  clientSecret={paymentSession.clientSecret}
+                  returnUrl={returnUrl}
+                  onSuccess={handleStripeSuccess}
+                  onError={(errorMessage) => setMessage(errorMessage)}
+                />
+              ) : paymentSession.gateway === 'airwallex' && paymentSession.env ? (
+                <AirwallexDropIn
+                  intentId={paymentSession.intentId}
+                  clientSecret={paymentSession.clientSecret}
+                  currency={paymentSession.currency}
+                  env={paymentSession.env}
+                  onSuccess={handleAirwallexSuccess}
+                  onError={(errorMessage) => setMessage(errorMessage)}
+                />
+              ) : (
+                <p className="form-error">Unable to load the payment form for this order.</p>
+              )}
             </div>
           ) : null}
 

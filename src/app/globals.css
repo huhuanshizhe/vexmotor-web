@@ -6422,6 +6422,58 @@ main {
   border: 1px solid #e7edf4;
 }
 
+.checkout-stripe-payment-form {
+  display: grid;
+  gap: 16px;
+}
+
+.payment-gateway-submit {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.payment-gateway-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.payment-gateway-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.payment-gateway-mode-badge.is-test {
+  background: #fff7e6;
+  color: #ad6800;
+  border: 1px solid #ffd591;
+}
+
+.payment-gateway-mode-badge.is-live {
+  background: #f6ffed;
+  color: #237804;
+  border: 1px solid #b7eb8f;
+}
+
+.payment-gateway-sandbox-hint {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  color: #614700;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
 .payment-gateway-loading,
 .payment-gateway-status {
   margin: 0 0 12px;
