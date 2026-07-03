@@ -101,9 +101,19 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>;
 }
 
+const devWishlistFallback: WishlistContextValue = {
+  isLoading: false,
+  isInWishlist: () => false,
+  addToWishlist: async () => [],
+  refresh: async () => undefined,
+};
+
 export function useWishlist() {
   const context = useContext(WishlistContext);
   if (!context) {
+    if (process.env.NODE_ENV === 'development') {
+      return devWishlistFallback;
+    }
     throw new Error('useWishlist must be used within WishlistProvider');
   }
   return context;

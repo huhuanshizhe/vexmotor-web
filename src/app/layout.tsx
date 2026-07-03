@@ -2,8 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import 'antd/dist/reset.css';
 
-import { AuthProvider } from '@/components/providers/auth-provider';
-import { WishlistProvider } from '@/components/providers/wishlist-provider';
+import { StorefrontProviders } from '@/components/providers/storefront-providers';
 import { AntdProvider } from '@/components/providers/antd-provider';
 import { UiStringsProvider } from '@/components/providers/ui-strings-provider';
 import { GoogleAnalytics } from '@/components/seo/google-analytics';
@@ -42,13 +41,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <JsonLdScript id="organization-jsonld" data={buildOrganizationJsonLd()} />
         <UiStringsProvider initialStrings={uiStrings}>
           <I18nProvider initialLocale={preferences.locale} initialUiStrings={uiStrings}>
-            <AuthProvider>
-              <WishlistProvider>
-                <AntdProvider>
-                  <ToastProvider>{children}</ToastProvider>
-                </AntdProvider>
-              </WishlistProvider>
-            </AuthProvider>
+            <StorefrontProviders>
+              <AntdProvider>
+                <ToastProvider>{children}</ToastProvider>
+              </AntdProvider>
+            </StorefrontProviders>
           </I18nProvider>
         </UiStringsProvider>
         <GoogleAnalytics />
