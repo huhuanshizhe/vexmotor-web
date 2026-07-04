@@ -24,8 +24,9 @@ export type ShippingCountryRateConfig = {
   id: string;
   regionCode: string;
   countryIsoCode: string | null;
+  regionName?: string | null;
   countryCode: string;
-  countryName: string;
+  countryName: string | null;
   shippingMethodCode: string;
   currencyCode: string;
   rate: number;
@@ -103,6 +104,26 @@ function sortShippingMethods(methods: ShippingMethodConfig[]) {
 export function normalizeCommerceCountryCode(countryCode: string, fallback = '') {
   const normalized = countryCode.trim().toUpperCase();
   return normalized || fallback;
+}
+
+function resolveShippingCountryLabel(rate: ShippingCountryRateConfig) {
+  const countryName = rate.countryName?.trim();
+  if (countryName) {
+    return countryName;
+  }
+
+  const regionName = rate.regionName?.trim();
+  if (regionName) {
+    return regionName;
+  }
+
+  const isoCode = rate.countryIsoCode?.trim();
+  if (isoCode) {
+    return isoCode;
+  }
+
+  const legacyCode = normalizeCommerceCountryCode(rate.countryCode);
+  return legacyCode === 'OTHER' ? 'Other' : legacyCode || 'Other';
 }
 
 export function cloneCommerceConfig(config: CommerceConfig): CommerceConfig {
@@ -298,7 +319,7 @@ export function getShippingCountryOptions(config: CommerceConfig) {
     .filter((rate) => rate.enabled)
     .map((rate) => ({
       code: normalizeCommerceCountryCode(rate.countryCode),
-      label: rate.countryName,
+      label: resolveShippingCountryLabel(rate),
     }))
     .filter((country) => {
       if (seen.has(country.code)) {
@@ -344,7 +365,7 @@ export function getShippingOptions(
         price: qualifiesForFreeShipping ? 0 : convertedBaseRate,
         baseRate: convertedBaseRate,
         countryCode: normalizeCommerceCountryCode(rate.countryCode),
-        countryName: rate.countryName,
+        countryName: resolveShippingCountryLabel(rate),
         freeShippingThreshold: convertedFreeShippingThreshold,
         taxRate: rate.taxRate,
       } satisfies StorefrontShippingOption;

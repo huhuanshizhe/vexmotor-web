@@ -15,6 +15,8 @@ import {
   type AccountOrderLineItem,
 } from '@/lib/account-orders-api';
 import { buildCheckoutPayPath } from '@/lib/checkout-pay-path';
+import { withLocalePath, type Locale } from '@/lib/i18n';
+import { useTranslation } from '@/lib/i18n-context';
 import {
   formatOrderDate,
   formatOrderMoney,
@@ -32,7 +34,7 @@ import {
 
 type AccountOrderDetailClientProps = {
   orderNumber: string;
-  locale?: string;
+  locale?: Locale;
 };
 
 function formatAddress(snapshot: Record<string, string | null>) {
@@ -54,43 +56,96 @@ function OrderLineCard({
 }: {
   item: AccountOrderLineItem;
   currencyCode: string;
-  locale: string;
+  locale: Locale;
 }) {
+  const { t } = useTranslation();
+  const [previewImage, setPreviewImage] = useState<{ url: string; alt: string } | null>(null);
+  const productHref = item.slug ? withLocalePath(`/products/${item.slug}`, locale) : null;
+
   return (
-    <article className="account-order-line-card">
-      <div className="account-order-line-card__thumb">
-        {item.coverImage?.url ? (
-          <Image
-            src={item.coverImage.url}
-            alt={item.coverImage.alt || item.productName}
-            width={item.coverImage.width ?? 88}
-            height={item.coverImage.height ?? 88}
-            className="account-order-line-card__image"
-          />
-        ) : (
-          <span className="account-order-line-card__thumb-fallback" aria-hidden="true">
-            {item.spu.slice(0, 2)}
+    <>
+      <article className="account-order-line-card">
+        <button
+          type="button"
+          className="account-order-line-card__thumb account-order-line-card__thumb-button"
+          onClick={() => {
+            if (item.coverImage?.url) {
+              setPreviewImage({ url: item.coverImage.url, alt: item.coverImage.alt || item.productName });
+            }
+          }}
+          disabled={!item.coverImage?.url}
+          aria-label={
+            item.coverImage?.url
+              ? t('wishlist.previewFor', { name: item.productName })
+              : t('wishlist.noImageFor', { name: item.productName })
+          }
+        >
+          {item.coverImage?.url ? (
+            <Image
+              src={item.coverImage.url}
+              alt={item.coverImage.alt || item.productName}
+              width={item.coverImage.width ?? 88}
+              height={item.coverImage.height ?? 88}
+              className="account-order-line-card__image"
+            />
+          ) : (
+            <span className="account-order-line-card__thumb-fallback" aria-hidden="true">
+              {item.spu.slice(0, 2)}
+            </span>
+          )}
+        </button>
+        <div className="account-order-line-card__body">
+          {productHref ? (
+            <Link href={productHref} target="_blank" rel="noopener noreferrer" className="account-order-line-card__title-link">
+              <strong className="account-order-line-card__title">{item.productName}</strong>
+            </Link>
+          ) : (
+            <strong className="account-order-line-card__title">{item.productName}</strong>
+          )}
+          <span className="account-order-line-card__sku">
+            <span className="catalog-grid-spu-label">{t('product.spu')}</span>
+            {item.spu}
           </span>
-        )}
-      </div>
-      <div className="account-order-line-card__body">
-        <strong className="account-order-line-card__title">{item.productName}</strong>
-        <span className="account-quote-mono account-order-line-card__sku">{item.spu}</span>
-        {item.featureSelections?.length ? (
-          <p className="account-order-line-card__features">
-            {item.featureSelections.map((selection) => selection.display).join(' · ')}
-          </p>
-        ) : null}
-        <div className="account-order-line-card__meta">
-          <span>Qty {item.quantity}</span>
-          <span>Unit {formatOrderMoney(item.unitPrice, currencyCode, locale)}</span>
+          {item.featureSelections?.length ? (
+            <p className="account-order-line-card__features">
+              {item.featureSelections.map((selection) => selection.display).join(' · ')}
+            </p>
+          ) : null}
+          <div className="account-order-line-card__meta">
+            <span>Qty {item.quantity}</span>
+            <span>Unit {formatOrderMoney(item.unitPrice, currencyCode, locale)}</span>
+          </div>
         </div>
-      </div>
-      <div className="account-order-line-card__price">
-        <span className="account-order-line-card__price-label">Line total</span>
-        <strong>{formatOrderMoney(item.subtotal, currencyCode, locale)}</strong>
-      </div>
-    </article>
+        <div className="account-order-line-card__price">
+          <span className="account-order-line-card__price-label">Line total</span>
+          <strong>{formatOrderMoney(item.subtotal, currencyCode, locale)}</strong>
+        </div>
+      </article>
+
+      {previewImage ? (
+        <div
+          className="wishlist-preview-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('wishlist.previewDialog')}
+          onClick={() => setPreviewImage(null)}
+        >
+          <button type="button" className="wishlist-preview-close" onClick={() => setPreviewImage(null)} aria-label={t('wishlist.closePreview')}>
+            ×
+          </button>
+          <div className="wishlist-preview-frame" onClick={(event) => event.stopPropagation()}>
+            <Image
+              src={previewImage.url}
+              alt={previewImage.alt}
+              width={960}
+              height={960}
+              unoptimized
+              className="wishlist-preview-image"
+            />
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
 

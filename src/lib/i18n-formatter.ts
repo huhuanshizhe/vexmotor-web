@@ -72,39 +72,61 @@ export function formatDate(date: Date | string, locale: Locale, options?: Intl.D
 
 /**
  * Handle pluralization in translations
- * Supports: {count, plural, one {item} other {items}}
+ * Supports: {count, plural, one {# item} other {# items}}
  */
 export function handlePluralization(
   template: string,
   count: number,
   locale: Locale,
-  params?: TranslationParams
+  _params?: TranslationParams,
 ): string {
   const pluralForm = pluralRules[locale](count);
-  
-  const pluralRegex = /\{(\w+),\s*plural,\s*(.+?)\}/g;
-  
-  return template.replace(pluralRegex, (match, param, forms) => {
-    if (param !== 'count') return match;
-    
-    const formRegex = /(zero|one|two|few|many|other)\s*\{([^}]*)\}/g;
-    let result: string | null = null;
-    
-    let formMatch;
-    while ((formMatch = formRegex.exec(forms)) !== null) {
-      if (formMatch[1] === pluralForm) {
-        result = formMatch[2];
+  const pluralMarker = '{count, plural,';
+  const startIndex = template.indexOf(pluralMarker);
+  if (startIndex === -1) {
+    return template;
+  }
+
+  let depth = 0;
+  let endIndex = -1;
+  for (let i = startIndex; i < template.length; i++) {
+    if (template[i] === '{') depth++;
+    else if (template[i] === '}') {
+      depth--;
+      if (depth === 0) {
+        endIndex = i;
         break;
       }
-      if (formMatch[1] === 'other') {
-        result = formMatch[2];
-      }
     }
-    
-    if (!result) return match;
-    
-    return result.replace(/\{count\}/g, String(count));
-  });
+  }
+
+  if (endIndex === -1) {
+    return template;
+  }
+
+  const formsContent = template.slice(startIndex + pluralMarker.length, endIndex).trim();
+  const formRegex = /(zero|one|two|few|many|other)\s*\{([^}]*)\}/g;
+  let selected: string | null = null;
+  let fallback: string | null = null;
+
+  let formMatch: RegExpExecArray | null;
+  while ((formMatch = formRegex.exec(formsContent)) !== null) {
+    if (formMatch[1] === pluralForm) {
+      selected = formMatch[2];
+      break;
+    }
+    if (formMatch[1] === 'other') {
+      fallback = formMatch[2];
+    }
+  }
+
+  const resolved = selected ?? fallback;
+  if (!resolved) {
+    return template;
+  }
+
+  const formatted = resolved.replace(/#/g, String(count)).replace(/\{count\}/g, String(count));
+  return template.slice(0, startIndex) + formatted + template.slice(endIndex + 1);
 }
 
 /**

@@ -11,7 +11,6 @@ import type { Locale } from '@/lib/i18n';
 import type { SitePreferences } from '@/lib/i18n';
 import { withLocalePath } from '@/lib/i18n';
 import { getServerSitePreferences } from '@/lib/i18n-server';
-import { notificationBarConfig, NOTIFICATION_BAR_COOKIE_NAME } from '@/lib/site-config';
 import { buildCategoryLookupByShellSlug, localizeStorefrontNavigation } from '@/lib/catalog-categories';
 import { getStorefrontNavigation, homeShell } from '@/lib/site-shell';
 import { getCategories, getHomeData } from '@/lib/storefront-api';
@@ -68,12 +67,11 @@ export async function StorefrontFrame({ title, description, eyebrow, actions, ch
     canonicalCategories.length ? canonicalCategories : localizedCategories,
   );
   const navigation = localizeStorefrontNavigation(getStorefrontNavigation(), categoryLookup);
-  const notificationDismissed = cookieStore.get(NOTIFICATION_BAR_COOKIE_NAME)?.value === notificationBarConfig.id;
   const cookieConsentAccepted = cookieStore.get(COOKIE_CONSENT_COOKIE_NAME)?.value === 'accepted';
 
   return (
     <main className="storefront-shell">
-      <NotificationBar locale={preferences.locale} initiallyDismissed={notificationDismissed} />
+      <NotificationBar />
 
       <div className="storefront-topbar">
         <div className="storefront-topbar-inner">

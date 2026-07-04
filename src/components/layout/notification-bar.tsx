@@ -1,22 +1,37 @@
 'use client';
 
-import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
+import { LocalizedLink } from '@/components/i18n/localized-link';
 import { cn } from '@/lib/classnames';
-import { type Locale, withLocalePath } from '@/lib/i18n';
-import { NOTIFICATION_BAR_COOKIE_MAX_AGE, NOTIFICATION_BAR_COOKIE_NAME, notificationBarConfig } from '@/lib/site-config';
+import { NOTIFICATION_BAR_STORAGE_KEY, notificationBarConfig } from '@/lib/site-config';
 
-type NotificationBarProps = {
-  locale: Locale;
-  initiallyDismissed: boolean;
-};
+function readDismissedFromStorage() {
+  try {
+    return localStorage.getItem(NOTIFICATION_BAR_STORAGE_KEY) === notificationBarConfig.id;
+  } catch {
+    return false;
+  }
+}
 
-export function NotificationBar({ locale, initiallyDismissed }: NotificationBarProps) {
-  const [dismissed, setDismissed] = useState(initiallyDismissed);
-  const href = useMemo(() => withLocalePath(notificationBarConfig.ctaHref, locale), [locale]);
+function persistDismissedToStorage() {
+  try {
+    localStorage.setItem(NOTIFICATION_BAR_STORAGE_KEY, notificationBarConfig.id);
+  } catch {
+    // Ignore storage failures (private mode, quota, etc.).
+  }
+}
 
-  if (dismissed) {
+export function NotificationBar() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!readDismissedFromStorage()) {
+      setVisible(true);
+    }
+  }, []);
+
+  if (!visible) {
     return null;
   }
 
@@ -25,15 +40,15 @@ export function NotificationBar({ locale, initiallyDismissed }: NotificationBarP
       <div className="notification-bar-inner">
         <p className="notification-bar-copy">{notificationBarConfig.message}</p>
         <div className="notification-bar-actions">
-          <Link href={href} className="notification-bar-link">
+          <LocalizedLink href={notificationBarConfig.ctaHref} className="notification-bar-link">
             {notificationBarConfig.ctaLabel}
-          </Link>
+          </LocalizedLink>
           <button
             type="button"
-            className={cn('notification-bar-dismiss', dismissed && 'is-hidden')}
+            className={cn('notification-bar-dismiss')}
             onClick={() => {
-              document.cookie = `${NOTIFICATION_BAR_COOKIE_NAME}=${notificationBarConfig.id}; Path=/; Max-Age=${NOTIFICATION_BAR_COOKIE_MAX_AGE}; SameSite=Lax`;
-              setDismissed(true);
+              persistDismissedToStorage();
+              setVisible(false);
             }}
             aria-label="Dismiss site notification"
           >

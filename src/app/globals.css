@@ -12762,6 +12762,21 @@ main {
   place-items: center;
 }
 
+.account-order-line-card__thumb-button {
+  padding: 0;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.account-order-line-card__thumb-button:hover:not(:disabled) {
+  border-color: #c7d4e4;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.account-order-line-card__thumb-button:disabled {
+  cursor: default;
+}
+
 .account-order-line-card__image {
   width: 100%;
   height: 100%;
@@ -12785,7 +12800,20 @@ main {
   line-height: 1.35;
 }
 
+.account-order-line-card__title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.account-order-line-card__title-link:hover .account-order-line-card__title {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
 .account-order-line-card__sku {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 0.86rem;
   color: #5b6b7f;
 }

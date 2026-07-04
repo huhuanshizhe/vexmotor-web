@@ -19,8 +19,7 @@ export const DEFAULT_SEO_TITLE = 'STEPMOTECH — Precision Stepper, BLDC & Servo
 export const DEFAULT_SEO_DESCRIPTION =
   'Engineering-grade motion components. Ship worldwide from US/EU/CN warehouses. Datasheets, CAD, tiered pricing.';
 
-export const NOTIFICATION_BAR_COOKIE_NAME = 'site_notice_dismissed';
-export const NOTIFICATION_BAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
+export const NOTIFICATION_BAR_STORAGE_KEY = 'site_notice_dismissed';
 
 export const notificationBarConfig = {
   id: 'global-shipping-and-rfq',

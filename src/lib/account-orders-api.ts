@@ -42,6 +42,7 @@ export type AccountOrderLineItem = {
   productId: string;
   productName: string;
   spu: string;
+  slug?: string | null;
   quantity: number;
   unitPrice: string;
   subtotal: string;
