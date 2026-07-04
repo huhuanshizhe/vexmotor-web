@@ -95,7 +95,7 @@ export async function StorefrontFrame({ title, description, eyebrow, actions, ch
             </button>
           </form>
 
-          <HeaderUtilityStrip links={navigation.utilityLinks} initialCartCount={0} locale={preferences.locale} />
+          <HeaderUtilityStrip links={navigation.utilityLinks} initialCartCount={0} />
         </div>
 
         <div className="storefront-nav-band">

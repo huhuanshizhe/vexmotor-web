@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { LocalizedLink as Link } from '@/components/i18n/localized-link';
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { useAuth } from '@/components/providers/auth-provider';
@@ -9,7 +9,6 @@ import type { UserProfile } from '@/lib/auth-client';
 import { CART_UPDATED_EVENT, getCartLineItemCount, type CartApiSnapshot, type CartUpdatedDetail } from '@/lib/cart-session';
 import { COMPARE_ITEMS_UPDATED_EVENT, readCompareItems } from '@/lib/compare-items';
 import { QUOTE_ITEMS_UPDATED_EVENT, readQuoteItems } from '@/lib/quote-live-items';
-import { withLocalePath, type Locale } from '@/lib/i18n';
 import { useTranslation } from '@/lib/i18n-context';
 import { localizeUtilityLabel } from '@/lib/site-shell-localize';
 import { LanguageSwitcher } from '@/components/storefront/language-switcher';
@@ -18,7 +17,6 @@ import type { StorefrontUtilityLink } from '@/lib/storefront-api';
 type HeaderUtilityStripProps = {
   links: StorefrontUtilityLink[];
   initialCartCount: number;
-  locale: Locale;
 };
 
 function CartIcon({ className }: { className?: string }) {
@@ -148,9 +146,8 @@ function getServerAccessTokenSnapshot() {
   return false;
 }
 
-export function HeaderUtilityStrip({ links, initialCartCount, locale: serverLocale }: HeaderUtilityStripProps) {
-  const { locale: clientLocale, t } = useTranslation();
-  const locale = clientLocale ?? serverLocale;
+export function HeaderUtilityStrip({ links, initialCartCount }: HeaderUtilityStripProps) {
+  const { t } = useTranslation();
   const { user, isLoading } = useAuth();
   const hasStoredToken = useSyncExternalStore(
     subscribeAccessToken,
@@ -260,7 +257,7 @@ export function HeaderUtilityStrip({ links, initialCartCount, locale: serverLoca
           }
 
           return (
-            <Link key={`${item.label}-${item.href}`} href={item.href.startsWith('/') ? withLocalePath(item.href, locale) : item.href} className={className} title={linkTitle} aria-label={ariaLabel}>
+            <Link key={`${item.label}-${item.href}`} href={item.href} className={className} title={linkTitle} aria-label={ariaLabel}>
               {linkContent}
             </Link>
           );
