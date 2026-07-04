@@ -134,11 +134,32 @@ export function I18nProvider({
   );
 }
 
+function createFallbackI18n(initialLocale: Locale = DEFAULT_LOCALE): I18nContextType {
+  return {
+    locale: initialLocale,
+    t: (key: string, params?: TranslationParams): string => {
+      const template = resolveEnglishTemplate(key);
+      if (template) {
+        return interpolateString(template, params);
+      }
+      return key;
+    },
+    setLocale: () => {},
+    isLocaleSwitching: false,
+  };
+}
+
+const devTranslationFallback = createFallbackI18n();
+
 // Hook to use translations
 export function useTranslation() {
   const context = useContext(I18nContext);
   
   if (!context) {
+    if (process.env.NODE_ENV === 'development') {
+      return devTranslationFallback;
+    }
+
     throw new Error('useTranslation must be used within an I18nProvider');
   }
   

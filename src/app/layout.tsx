@@ -8,7 +8,6 @@ import { UiStringsProvider } from '@/components/providers/ui-strings-provider';
 import { GoogleAnalytics } from '@/components/seo/google-analytics';
 import { JsonLdScript } from '@/components/seo/json-ld';
 import { ToastProvider } from '@C/toast';
-import { I18nProvider } from '@/lib/i18n-context';
 import { getServerSitePreferences } from '@/lib/i18n-server';
 import { fetchUiStringGroups } from '@/lib/ui-strings-client';
 import { buildMetadata, buildOrganizationJsonLd } from '@/lib/seo';
@@ -40,13 +39,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body data-currency={preferences.currency} data-unit-system={preferences.unitSystem}>
         <JsonLdScript id="organization-jsonld" data={buildOrganizationJsonLd()} />
         <UiStringsProvider initialStrings={uiStrings}>
-          <I18nProvider initialLocale={preferences.locale} initialUiStrings={uiStrings}>
-            <StorefrontProviders>
-              <AntdProvider>
-                <ToastProvider>{children}</ToastProvider>
-              </AntdProvider>
-            </StorefrontProviders>
-          </I18nProvider>
+          <StorefrontProviders initialLocale={preferences.locale} initialUiStrings={uiStrings}>
+            <AntdProvider>
+              <ToastProvider>{children}</ToastProvider>
+            </AntdProvider>
+          </StorefrontProviders>
         </UiStringsProvider>
         <GoogleAnalytics />
       </body>
