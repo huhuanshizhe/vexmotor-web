@@ -9,7 +9,7 @@ type AuthContextValue = {
   user: UserProfile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  refreshProfile: () => Promise<void>;
+  refreshProfile: (options?: { silent?: boolean }) => Promise<void>;
   logout: () => void;
 };
 
@@ -19,17 +19,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const refreshProfile = useCallback(async () => {
+  const refreshProfile = useCallback(async (options?: { silent?: boolean }) => {
     if (!getAccessToken()) {
       setUser(null);
-      setIsLoading(false);
+      if (!options?.silent) {
+        setIsLoading(false);
+      }
       return;
     }
 
-    setIsLoading(true);
+    if (!options?.silent) {
+      setIsLoading(true);
+    }
+
     const profile = await getProfile();
     setUser(profile);
-    setIsLoading(false);
+
+    if (!options?.silent) {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {

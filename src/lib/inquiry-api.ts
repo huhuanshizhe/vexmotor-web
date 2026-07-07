@@ -7,7 +7,11 @@ export type InquiryAttachment = {
   contentType: string;
 };
 
+export type InquiryRfqKind = 'rfq' | 'contact';
+
 export type InquiryRfqPayload = {
+  kind?: InquiryRfqKind;
+  procurementDetails?: string;
   project: {
     projectName: string;
     industry: string;
@@ -71,6 +75,7 @@ export type AccountInquiryListItem = {
   expiresAt: string | null;
   createdAt: string;
   quotedLines?: InquiryQuotedLine[] | null;
+  inquiryKind?: InquiryRfqKind | null;
 };
 
 export type AccountInquiryDetail = AccountInquiryListItem & {
@@ -83,9 +88,9 @@ export type AccountInquiryDetail = AccountInquiryListItem & {
   rfqPayload: InquiryRfqPayload | null;
   quotedLines: InquiryQuotedLine[] | null;
   messages: InquiryMessage[];
-  productName: string;
-  productSlug: string;
-  productSpu: string;
+  productName: string | null;
+  productSlug: string | null;
+  productSpu: string | null;
 };
 
 export async function fetchInquiries() {
@@ -112,6 +117,22 @@ export async function submitInquiry(payload: {
   country?: string;
   rfqPayload: InquiryRfqPayload;
 }) {
+  return apiFetch<{ id: string; quoteNumber: string; redirectPath: string }>('/api/front/inquiries', {
+    method: 'POST',
+    body: JSON.stringify({ ...payload, rfqPayload: { kind: 'rfq', ...payload.rfqPayload } }),
+  });
+}
+
+export type ContactInquiryPayload = {
+  fullName: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  country?: string;
+  rfqPayload: InquiryRfqPayload & { kind: 'contact'; procurementDetails: string; lines: [] };
+};
+
+export async function submitContactInquiry(payload: ContactInquiryPayload) {
   return apiFetch<{ id: string; quoteNumber: string; redirectPath: string }>('/api/front/inquiries', {
     method: 'POST',
     body: JSON.stringify(payload),

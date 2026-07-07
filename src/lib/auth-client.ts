@@ -204,6 +204,20 @@ export async function changePassword(currentPassword: string, newPassword: strin
   });
 }
 
+export async function requestEmailVerification() {
+  return apiFetch<{ message: string }>('/api/front/auth/verify-email', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'request' }),
+  });
+}
+
+export async function confirmEmailVerification(token: string) {
+  return apiFetch<{ email: string; message: string; redirectPath: string }>('/api/front/auth/verify-email', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'confirm', token }),
+  });
+}
+
 export async function getCompanyProfile(): Promise<CompanyProfile | null> {
   try {
     return await apiFetch<CompanyProfile>('/api/front/profile/company');

@@ -20,10 +20,11 @@ function formatDate(value: string | null, locale: Locale) {
 }
 
 function renderQuoteCell(quote: AccountInquiryListItem) {
-  const hasValue = quote.valueLabel && !quote.valueLabel.toLowerCase().includes('pending');
+  const isContact = quote.inquiryKind === 'contact';
+  const hasValue = quote.valueLabel && !quote.valueLabel.toLowerCase().includes('pending') && quote.valueLabel !== 'Contact';
   return (
     <div className="account-quote-cell">
-      <strong className="account-quote-cell__value">{hasValue ? quote.valueLabel : 'Pending quote'}</strong>
+      <strong className="account-quote-cell__value">{isContact ? 'Contact' : hasValue ? quote.valueLabel : 'Pending quote'}</strong>
       <span className="account-quote-status-pill">{formatStatus(quote.status)}</span>
     </div>
   );
@@ -69,7 +70,7 @@ export function AccountQuotesClient({
 
         {quotes.length ? quotes.map((quote) => {
           const quoteNumber = quote.quoteNumber ?? quote.id;
-          const canConvert = quote.status === 'quoted' && Boolean(quote.quotedLines?.length);
+          const canConvert = quote.status === 'quoted' && Boolean(quote.quotedLines?.length) && quote.inquiryKind !== 'contact';
 
           return (
             <div key={quote.id} className="account-quote-table-row">
@@ -77,7 +78,7 @@ export function AccountQuotesClient({
               <div className="account-quote-table-project">
                 <strong>{quote.projectName}</strong>
               </div>
-              <span>{quote.lineCount}</span>
+              <span>{quote.inquiryKind === 'contact' ? '—' : quote.lineCount}</span>
               <span>{formatDate(quote.createdAt, locale)}</span>
               {renderQuoteCell(quote)}
               <span>{formatDate(quote.expiresAt, locale)}</span>

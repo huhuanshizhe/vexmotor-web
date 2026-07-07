@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 
 import { apiFetch } from '@/lib/api-client';
 import type { Locale } from '@/lib/i18n';
@@ -12,6 +12,8 @@ type PasswordResetFormProps = {
   locale: Locale;
   token?: string | null;
 };
+
+type TokenValidationState = 'idle' | 'checking' | 'valid' | 'invalid';
 
 function getPasswordStrength(password: string) {
   let score = 0;
@@ -30,9 +32,38 @@ export function PasswordResetForm({ locale, token }: PasswordResetFormProps) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [debugResetUrl, setDebugResetUrl] = useState<string | null>(null);
+  const [resetAccountEmail, setResetAccountEmail] = useState<string | null>(null);
+  const [tokenState, setTokenState] = useState<TokenValidationState>(token ? 'checking' : 'idle');
   const [isPending, startTransition] = useTransition();
 
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
+
+  useEffect(() => {
+    if (!token) {
+      setTokenState('idle');
+      return;
+    }
+
+    let cancelled = false;
+    setTokenState('checking');
+
+    void apiFetch<{ valid: boolean; email?: string }>(`/api/front/auth/password-reset?token=${encodeURIComponent(token)}`)
+      .then((payload) => {
+        if (!cancelled) {
+          setResetAccountEmail(payload.email ?? null);
+          setTokenState('valid');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTokenState('invalid');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   function handleRequest(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -42,13 +73,13 @@ export function PasswordResetForm({ locale, token }: PasswordResetFormProps) {
       setSuccessMessage(null);
 
       try {
-        const payload = await apiFetch<{ resetUrl?: string }>('/api/front/auth/password-reset', {
+        const payload = await apiFetch<{ resetUrl?: string | null }>('/api/front/auth/password-reset', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'request', email }),
         });
         setDebugResetUrl(payload?.resetUrl ?? null);
-        setSuccessMessage('If the account exists, a reset link has been prepared. Check your inbox or use the local debug link below.');
+        setSuccessMessage('If the account exists, a reset link has been sent. Check your inbox for instructions.');
       } catch (error) {
         setFeedback(error instanceof Error ? error.message : 'Unable to prepare a reset link right now.');
       }
@@ -88,8 +119,36 @@ export function PasswordResetForm({ locale, token }: PasswordResetFormProps) {
   }
 
   if (token) {
+    if (tokenState === 'checking') {
+      return <p className="section-description">Validating your reset link...</p>;
+    }
+
+    if (tokenState === 'invalid') {
+      return (
+        <div className="auth-form">
+          <p className="form-feedback form-feedback-error">
+            This reset link is invalid or has expired. Links are valid for 1 hour and can only be used once.
+          </p>
+          <div className="auth-link-row">
+            <Link href={withLocalePath('/password-reset', locale)} className="section-link">
+              Request a new reset link
+            </Link>
+            <Link href={withLocalePath('/login', locale)} className="section-link">
+              Back to sign in
+            </Link>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <form className="auth-form" onSubmit={handleReset}>
+        {resetAccountEmail ? (
+          <label className="form-field">
+            <span>Account</span>
+            <input className="form-input" type="email" value={resetAccountEmail} readOnly aria-readonly="true" />
+          </label>
+        ) : null}
         <label className="form-field">
           <span>New password</span>
           <input className="form-input" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Use at least 8 characters" required disabled={isPending} />
@@ -129,7 +188,7 @@ export function PasswordResetForm({ locale, token }: PasswordResetFormProps) {
         <input className="form-input" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@company.com" required disabled={isPending} />
       </label>
       <button type="submit" className="button-primary" disabled={isPending}>
-        {isPending ? 'Preparing...' : 'Send reset link'}
+        {isPending ? 'Sending...' : 'Send reset link'}
       </button>
       <div className="auth-link-row">
         <Link href={withLocalePath('/login', locale)} className="section-link">
@@ -142,9 +201,12 @@ export function PasswordResetForm({ locale, token }: PasswordResetFormProps) {
       {successMessage ? <p className="form-feedback form-feedback-success">{successMessage}</p> : null}
       {feedback ? <p className="form-feedback form-feedback-error">{feedback}</p> : null}
       {debugResetUrl ? (
-        <Link href={withLocalePath(debugResetUrl, locale)} className="section-link">
-          Open local reset link
-        </Link>
+        <p className="section-description">
+          Local dev link:{' '}
+          <a href={debugResetUrl} className="section-link">
+            Open reset link
+          </a>
+        </p>
       ) : null}
     </form>
   );

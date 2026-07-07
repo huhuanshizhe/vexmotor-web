@@ -1,12 +1,12 @@
 import Link from 'next/link';
 
 import { StorefrontFrame } from '@/components/layout/storefront-frame';
-import { ProductInquiryForm } from '@/components/storefront/product-inquiry-form';
+import { ContactInquiryForm } from '@/components/storefront/contact-inquiry-form';
 import { withLocalePath } from '@/lib/i18n';
 import { getServerSitePreferences } from '@/lib/i18n-server';
 import { sanitizeLegacyCopy } from '@/lib/legacy-content';
 import { buildMetadata } from '@/lib/seo';
-import { getCmsPageByLegacySlug, getProductList } from '@/lib/storefront-api';
+import { getCmsPageByLegacySlug } from '@/lib/storefront-api';
 
 export async function generateMetadata() {
   const { locale } = await getServerSitePreferences();
@@ -19,12 +19,10 @@ export async function generateMetadata() {
 }
 
 export default async function ContactPage() {
-  const [{ locale }, legacyContactPage, productList] = await Promise.all([
+  const [{ locale }, legacyContactPage] = await Promise.all([
     getServerSitePreferences(),
     getCmsPageByLegacySlug('10-contact-us', 'en'),
-    getProductList({ purchaseMode: 'buy', pageSize: 1, sort: 'featured' }),
   ]);
-  const rfqProduct = productList.items[0] ?? null;
   const legacySummary = sanitizeLegacyCopy(legacyContactPage?.summary ?? legacyContactPage?.content ?? '');
   const supportChannels = [
     'Sales inquiries for pricing, MOQ, and export shipping coordination.',
@@ -80,18 +78,11 @@ export default async function ContactPage() {
               </div>
               <span className="product-badge">Sales desk</span>
             </div>
-            {rfqProduct ? (
-              <ProductInquiryForm
-                productId={rfqProduct.id}
-                productName={rfqProduct.name}
-                mode="rfq"
-                submitLabel="Send RFQ"
-                successMessage="RFQ submitted. Sales will review the scope and reply with the right quote path."
-                contextNote="This general RFQ channel routes bundle requests, OEM projects, and other quotation-led demand into the same inquiry queue."
-              />
-            ) : (
-              <p className="section-description">Catalog data is still syncing. Please refresh shortly or submit inquiry from any product page.</p>
-            )}
+            <ContactInquiryForm
+              submitLabel="Send inquiry"
+              successMessage="Inquiry submitted. Sales will review the scope and reply with the right quote path."
+              contextNote="This channel routes general procurement requests into the same inquiry queue as product RFQs, without requiring catalog line items."
+            />
           </article>
 
           <div className="trade-side-stack">

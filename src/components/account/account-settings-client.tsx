@@ -4,6 +4,7 @@ import { LocalizedLink as Link } from '@/components/i18n/localized-link';
 import { useAuth } from '@/components/providers/auth-provider';
 import {
   changePassword,
+  requestEmailVerification,
   updateProfile,
   type UserProfile,
 } from '@/lib/auth-client';
@@ -14,7 +15,8 @@ import {
   type Locale,
 } from '@/lib/i18n';
 import { useTranslation } from '@/lib/i18n-context';
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 type ProfileFormState = {
   firstName: string;
@@ -70,6 +72,7 @@ function formatStatus(status: UserProfile['status']) {
 export function AccountSettingsClient() {
   const { user, refreshProfile } = useAuth();
   const { locale, setLocale } = useTranslation();
+  const searchParams = useSearchParams();
   const [profile, setProfile] = useState<UserProfile | null>(user);
   const [profileForm, setProfileForm] = useState<ProfileFormState | null>(user ? profileToForm(user) : null);
   const [passwordForm, setPasswordForm] = useState<PasswordFormState>({
@@ -81,8 +84,15 @@ export function AccountSettingsClient() {
   const [profileError, setProfileError] = useState<string | null>(null);
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [verificationMessage, setVerificationMessage] = useState<string | null>(null);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
   const [isProfilePending, startProfileTransition] = useTransition();
   const [isPasswordPending, startPasswordTransition] = useTransition();
+  const [isVerificationPending, startVerificationTransition] = useTransition();
+  const verifiedRefreshDone = useRef(false);
+  const [showVerifiedBanner, setShowVerifiedBanner] = useState(false);
+
+  const verifiedQuery = searchParams.get('verified') === '1';
 
   useEffect(() => {
     if (!user) {
@@ -94,6 +104,16 @@ export function AccountSettingsClient() {
     setProfile(user);
     setProfileForm(profileToForm(user));
   }, [user]);
+
+  useEffect(() => {
+    if (!verifiedQuery || verifiedRefreshDone.current) {
+      return;
+    }
+
+    verifiedRefreshDone.current = true;
+    setShowVerifiedBanner(true);
+    void refreshProfile({ silent: true });
+  }, [verifiedQuery, refreshProfile]);
 
   const profileDirty = useMemo(() => {
     if (!profile || !profileForm) {
@@ -172,6 +192,20 @@ export function AccountSettingsClient() {
     });
   }
 
+  function handleSendVerification() {
+    startVerificationTransition(async () => {
+      setVerificationMessage(null);
+      setVerificationError(null);
+
+      try {
+        await requestEmailVerification();
+        setVerificationMessage('Verification email sent. Check your inbox.');
+      } catch (error) {
+        setVerificationError(error instanceof Error ? error.message : 'Unable to send verification email right now.');
+      }
+    });
+  }
+
   return (
     <div className="account-settings-page">
       <header className="account-company-page__header">
@@ -189,6 +223,12 @@ export function AccountSettingsClient() {
           </span>
         </div>
       </header>
+
+      {showVerifiedBanner ? (
+        <p className="account-company-page__message" role="status">
+          Your email has been verified successfully.
+        </p>
+      ) : null}
 
       <section className="account-quote-block">
         <div className="account-quote-block__header">
@@ -260,6 +300,15 @@ export function AccountSettingsClient() {
             <dd>{profile.emailVerifiedAt ? `Verified ${formatAccountDate(profile.emailVerifiedAt, locale)}` : 'Not verified'}</dd>
           </div>
         </dl>
+        {!profile.emailVerifiedAt ? (
+          <div className="account-settings-page__form-actions">
+            {verificationMessage ? <p className="account-company-page__message" role="status">{verificationMessage}</p> : null}
+            {verificationError ? <p className="form-feedback form-feedback-error" role="alert">{verificationError}</p> : null}
+            <button type="button" className="button-primary" onClick={handleSendVerification} disabled={isVerificationPending}>
+              {isVerificationPending ? 'Sending…' : 'Send verification email'}
+            </button>
+          </div>
+        ) : null}
       </section>
 
       <section className="account-quote-block">

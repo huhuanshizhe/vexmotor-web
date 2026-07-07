@@ -171,8 +171,9 @@ export function AccountQuoteDetailClient({ locale, quote: initialQuote }: { loca
   const { getLabel: getIndustryLabel } = useIndustries();
   const { getLabel: getCountryLabel } = useCountries();
 
+  const isContactInquiry = quote.rfqPayload?.kind === 'contact' || quote.inquiryKind === 'contact';
   const quoteNumber = quote.quoteNumber ?? quote.id;
-  const canConvert = quote.status === 'quoted' && Boolean(quote.quotedLines?.length);
+  const canConvert = !isContactInquiry && quote.status === 'quoted' && Boolean(quote.quotedLines?.length);
   const quotedTotal = quote.quotedLines?.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0) ?? 0;
   const quotedCurrency = quote.quotedLines?.[0]?.currency ?? 'USD';
   const mergedLines = buildMergedQuoteLines(quote.rfqPayload?.lines ?? [], quote.quotedLines);
@@ -203,7 +204,7 @@ export function AccountQuoteDetailClient({ locale, quote: initialQuote }: { loca
         </div>
       </header>
 
-      {hasLineItems ? (
+      {hasLineItems && !isContactInquiry ? (
         <section className="account-quote-block account-quote-block--lines">
           <div className="account-quote-block__header">
             <span className="account-quote-block__step">01</span>
@@ -229,9 +230,23 @@ export function AccountQuoteDetailClient({ locale, quote: initialQuote }: { loca
       ) : null}
 
       <div className="account-quote-panels">
+        {isContactInquiry && quote.rfqPayload?.procurementDetails ? (
+          <section className="account-quote-block account-quote-block--panel account-quote-block--full">
+            <div className="account-quote-block__header">
+              <span className="account-quote-block__step">01</span>
+              <div>
+                <h2 className="account-quote-block__title">Procurement details</h2>
+              </div>
+            </div>
+            <p className="account-quote-detail__subtitle" style={{ whiteSpace: 'pre-wrap' }}>
+              {quote.rfqPayload.procurementDetails}
+            </p>
+          </section>
+        ) : null}
+
         <section className="account-quote-block account-quote-block--panel">
           <div className="account-quote-block__header">
-            <span className="account-quote-block__step">02</span>
+            <span className="account-quote-block__step">{isContactInquiry ? '02' : '02'}</span>
             <div>
               <h2 className="account-quote-block__title">Contact & company</h2>
             </div>
@@ -248,7 +263,7 @@ export function AccountQuoteDetailClient({ locale, quote: initialQuote }: { loca
 
         <section className="account-quote-block account-quote-block--panel">
           <div className="account-quote-block__header">
-            <span className="account-quote-block__step">03</span>
+            <span className="account-quote-block__step">{isContactInquiry ? '03' : '03'}</span>
             <div>
               <h2 className="account-quote-block__title">Project info</h2>
             </div>
@@ -264,7 +279,7 @@ export function AccountQuoteDetailClient({ locale, quote: initialQuote }: { loca
 
       <section className="account-quote-block">
         <div className="account-quote-block__header">
-          <span className="account-quote-block__step">04</span>
+          <span className="account-quote-block__step">{isContactInquiry ? '04' : '04'}</span>
           <div>
             <h2 className="account-quote-block__title">Attachments</h2>
             <p className="account-quote-block__desc">Project files submitted with your RFQ.</p>

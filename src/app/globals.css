@@ -1462,6 +1462,18 @@ main {
   font-weight: 600;
 }
 
+.form-field__label--required::after {
+  content: ' *';
+  color: #b33a2c;
+}
+
+.form-field__label--optional::after {
+  content: ' (optional)';
+  font-weight: 600;
+  color: #8a95a3;
+  font-size: 0.92em;
+}
+
 .form-input {
   width: 100%;
   min-height: 46px;
